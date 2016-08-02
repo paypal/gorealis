@@ -96,7 +96,7 @@ func (a *Job) ExecutorData(data string) *Job {
 	return a
 }
 
-func (a *Job) NumCpus(cpus float64) *Job {
+func (a *Job) CPU(cpus float64) *Job {
 	a.numCpus.NumCpus = &cpus
 	a.jobConfig.TaskConfig.NumCpus = cpus //Will be deprecated soon
 

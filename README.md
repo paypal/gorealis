@@ -70,16 +70,16 @@ defer r.Close()
 
 Construct a job using an AuroraJob struct.
 ```
-job = realis.NewJob().SetEnvironment("prod").
-    SetRole("vagrant").
-    SetName("hello_world_from_gorealis").
-    SetExecutorName("docker-compose-executor").
-    SetExecutorData("{}").
-    SetNumCpus(1).
-    SetRam(64).
+job = realis.NewJob().Environment("prod").
+    Role("vagrant").
+    Name("hello_world_from_gorealis").
+    ExecutorName("docker-compose-executor").
+    ExecutorData("{}").
+    NumCpus(1).
+    Ram(64).
     SetDisk(100).
-    SetIsService(false).
-    SetInstanceCount(1).
+    IsService(false).
+    InstanceCount(1).
     AddPorts(1).
     AddLabel("fileName", "sample-app/sample-app.yml").
     AddURI("https://dl.bintray.com/rdelvalle/mesos-compose-executor/sample-app.tar.gz", true, true)
@@ -109,8 +109,8 @@ r.AddInstances(job.GetKey(), 5)
 Updating the job configuration of a service job:
 ```
 updateJob := realis.NewUpdateJob(job)
-updateJob.SetInstanceCount(1)
-updateJob.SetRam(128)
+updateJob.InstanceCount(1)
+updateJob.Ram(128)
 
 msg, err := r.UpdateJob(updateJob, "")
 ```
