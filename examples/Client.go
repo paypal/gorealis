@@ -52,29 +52,29 @@ func main() {
 			fmt.Print("Error reading json config file: ", err)
 			os.Exit(1)
 		}
-		job = realis.NewJob().SetEnvironment("prod").
-			SetRole("vagrant").
-			SetName("hello_world_from_gorealis").
-			SetExecutorName(aurora.AURORA_EXECUTOR_NAME).
-			SetExecutorData(string(payload)).
-			SetNumCpus(1).
-			SetRam(64).
-			SetDisk(100).
-			SetIsService(true).
-			SetInstanceCount(1).
+		job = realis.NewJob().Environment("prod").
+			Role("vagrant").
+			Name("hello_world_from_gorealis").
+			ExecutorName(aurora.AURORA_EXECUTOR_NAME).
+			ExecutorData(string(payload)).
+			NumCpus(1).
+			Ram(64).
+			Disk(100).
+			IsService(true).
+			InstanceCount(1).
 			AddPorts(1)
 		break
 	case "compose":
-		job = realis.NewJob().SetEnvironment("prod").
-			SetRole("vagrant").
-			SetName("docker-compose").
-			SetExecutorName("docker-compose-executor").
-			SetExecutorData("{}").
-			SetNumCpus(1).
-			SetRam(64).
-			SetDisk(100).
-			SetIsService(false).
-			SetInstanceCount(1).
+		job = realis.NewJob().Environment("prod").
+			Role("vagrant").
+			Name("docker-compose").
+			ExecutorName("docker-compose-executor").
+			ExecutorData("{}").
+			NumCpus(1).
+			Ram(64).
+			Disk(100).
+			IsService(false).
+			InstanceCount(1).
 			AddPorts(1).
 			AddLabel("fileName", "sample-app/sample-app.yml").
 			AddURI("https://dl.bintray.com/rdelvalle/mesos-compose-executor/sample-app.tar.gz", true, true)
@@ -97,7 +97,7 @@ func main() {
 	case "kill":
 		fmt.Println("Killing job")
 
-		msg, err := r.KillJob(job.GetJobKey())
+		msg, err := r.KillJob(job.JobKey())
 		if err != nil {
 			fmt.Print(err)
 		}
@@ -106,7 +106,7 @@ func main() {
 		break
 	case "restart":
 		fmt.Println("Restarting job")
-		msg, err := r.RestartJob(job.GetJobKey())
+		msg, err := r.RestartJob(job.JobKey())
 		if err != nil {
 			fmt.Print(err)
 		}
@@ -115,7 +115,7 @@ func main() {
 		break
 	case "flexUp":
 		fmt.Println("Flexing up job")
-		msg, err := r.AddInstances(job.GetJobKey(), 5)
+		msg, err := r.AddInstances(job.JobKey(), 5)
 		if err != nil {
 			fmt.Print(err)
 		}
@@ -125,7 +125,7 @@ func main() {
 		fmt.Println("Updating a job with a new name")
 		updateJob := realis.NewUpdateJob(job)
 
-		updateJob.SetInstanceCount(3).SetRam(128)
+		updateJob.InstanceCount(3).Ram(128)
 
 		msg, err := r.StartJobUpdate(updateJob, "")
 		if err != nil {
@@ -135,7 +135,7 @@ func main() {
 		break
 	case "abortUpdate":
 		fmt.Println("Abort update")
-		msg, err := r.AbortJobUpdate(job.GetJobKey(), *updateId, "")
+		msg, err := r.AbortJobUpdate(job.JobKey(), *updateId, "")
 		if err != nil {
 			fmt.Print(err)
 		}
