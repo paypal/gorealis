@@ -21,7 +21,7 @@ Download and run the Client to create a Thermos Job:
 ```
 $ go get github.com/rdelval/gorealis
 $ cd go run $GOPATH/src/github.com/rdelval/gorealis
-$ go run examples/Client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=create
+$ go run examples/client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=create
 ```
 
 ### Using the Sample client with Docker Compose executor
@@ -51,7 +51,7 @@ If the page is not found, wait a few minutes while the docker image is downloade
 
 Finally, terminate the job:
 ```
-$ go run $GOPATH/src/github.com/rdelval/gorealis.git/examples/Client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=kill
+$ go run $GOPATH/src/github.com/rdelval/gorealis.git/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=kill
 ```
 
 ### Leveraging the library 
