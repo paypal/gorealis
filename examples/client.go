@@ -46,7 +46,7 @@ func main() {
 
 	switch *executor {
 	case "thermos":
-		payload, err := ioutil.ReadFile("thermos_payload.json")
+		payload, err := ioutil.ReadFile("examples/thermos_payload.json")
 
 		if err != nil {
 			fmt.Print("Error reading json config file: ", err)
