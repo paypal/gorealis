@@ -20,7 +20,8 @@ $ vagrant up
 Download and run the Client to create a Thermos Job:
 ```
 $ go get github.com/rdelval/gorealis
-$ go run $GOPATH/src/github.com/rdelval/gorealis/examples/Client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=create
+$ cd go run $GOPATH/src/github.com/rdelval/gorealis
+$ go run examples/Client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=create
 ```
 
 ### Using the Sample client with Docker Compose executor
