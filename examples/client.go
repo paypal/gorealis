@@ -52,12 +52,13 @@ func main() {
 			fmt.Print("Error reading json config file: ", err)
 			os.Exit(1)
 		}
-		job = realis.NewJob().Environment("prod").
+		job = realis.NewJob().
+			Environment("prod").
 			Role("vagrant").
 			Name("hello_world_from_gorealis").
 			ExecutorName(aurora.AURORA_EXECUTOR_NAME).
 			ExecutorData(string(payload)).
-			NumCpus(1).
+			CPU(1).
 			Ram(64).
 			Disk(100).
 			IsService(true).
@@ -65,12 +66,13 @@ func main() {
 			AddPorts(1)
 		break
 	case "compose":
-		job = realis.NewJob().Environment("prod").
+		job = realis.NewJob().
+			Environment("prod").
 			Role("vagrant").
 			Name("docker-compose").
 			ExecutorName("docker-compose-executor").
 			ExecutorData("{}").
-			NumCpus(1).
+			CPU(1).
 			Ram(64).
 			Disk(100).
 			IsService(false).
