@@ -40,44 +40,44 @@ func NewUpdateJob(job *Job) *UpdateJob {
 	return &UpdateJob{job, req}
 }
 
-func (u *UpdateJob) SetInstanceCount(inst int32) *UpdateJob {
+func (u *UpdateJob) InstanceCount(inst int32) *UpdateJob {
 	u.req.InstanceCount = inst
 	return u
 }
 
 // Max number of instances being updated at any given moment.
-func (u *UpdateJob) SetBatchSize(size int32) *UpdateJob {
+func (u *UpdateJob) BatchSize(size int32) *UpdateJob {
 	u.req.Settings.UpdateGroupSize = size
 	return u
 }
 
 // Minimum number of seconds a shard must remain in RUNNING state before considered a success
-func (u *UpdateJob) SetWatchTime(milliseconds int32) *UpdateJob {
+func (u *UpdateJob) WatchTime(milliseconds int32) *UpdateJob {
 	u.req.Settings.MaxPerInstanceFailures = milliseconds
 	return u
 }
 
 // Wait for all instances in a group to be done before moving on
-func (u *UpdateJob) SetWaitForBatchCompletion(batchWait bool) *UpdateJob {
+func (u *UpdateJob) WaitForBatchCompletion(batchWait bool) *UpdateJob {
 	u.req.Settings.WaitForBatchCompletion = batchWait
 	return u
 }
 
 //	Max number of instance failures to tolerate before marking instance as FAILED.
-func (u *UpdateJob) SetMaxPerInstanceFailures(inst int32) *UpdateJob {
+func (u *UpdateJob) MaxPerInstanceFailures(inst int32) *UpdateJob {
 	u.req.Settings.MaxPerInstanceFailures = inst
 	return u
 }
 
 // Max number of FAILED instances to tolerate before terminating the update.
-func (u *UpdateJob) SetMaxFailedInstances(inst int32) *UpdateJob {
+func (u *UpdateJob) MaxFailedInstances(inst int32) *UpdateJob {
 
 	u.req.Settings.MaxFailedInstances = inst
 	return u
 }
 
 // When False, prevents auto rollback of a failed update
-func (u *UpdateJob) SetRollbackOnFail(rollback bool) *UpdateJob {
+func (u *UpdateJob) RollbackOnFail(rollback bool) *UpdateJob {
 
 	u.req.Settings.RollbackOnFailure = rollback
 	return u

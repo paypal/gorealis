@@ -66,12 +66,12 @@ func NewJob() *Job {
 	return &Job{jobConfig, numCpus, ramMb, diskMb, 0}
 }
 
-func (a *Job) SetEnvironment(env string) *Job {
+func (a *Job) Environment(env string) *Job {
 	a.jobConfig.Key.Environment = env
 	return a
 }
 
-func (a *Job) SetRole(role string) *Job {
+func (a *Job) Role(role string) *Job {
 	a.jobConfig.Key.Role = role
 
 	//Will be deprecated
@@ -81,58 +81,58 @@ func (a *Job) SetRole(role string) *Job {
 	return a
 }
 
-func (a *Job) SetName(name string) *Job {
+func (a *Job) Name(name string) *Job {
 	a.jobConfig.Key.Name = name
 	return a
 }
 
-func (a *Job) SetExecutorName(name string) *Job {
+func (a *Job) ExecutorName(name string) *Job {
 	a.jobConfig.TaskConfig.ExecutorConfig.Name = name
 	return a
 }
 
-func (a *Job) SetExecutorData(data string) *Job {
+func (a *Job) ExecutorData(data string) *Job {
 	a.jobConfig.TaskConfig.ExecutorConfig.Data = data
 	return a
 }
 
-func (a *Job) SetNumCpus(cpus float64) *Job {
+func (a *Job) NumCpus(cpus float64) *Job {
 	a.numCpus.NumCpus = &cpus
 	a.jobConfig.TaskConfig.NumCpus = cpus //Will be deprecated soon
 
 	return a
 }
 
-func (a *Job) SetRam(ram int64) *Job {
+func (a *Job) Ram(ram int64) *Job {
 	a.ramMb.RamMb = &ram
 	a.jobConfig.TaskConfig.RamMb = ram //Will be deprecated soon
 
 	return a
 }
 
-func (a *Job) SetDisk(disk int64) *Job {
+func (a *Job) Disk(disk int64) *Job {
 	a.diskMb.DiskMb = &disk
 	a.jobConfig.TaskConfig.DiskMb = disk //Will be deprecated
 
 	return a
 }
 
-func (a *Job) SetMaxFailure(maxFail int32) *Job {
+func (a *Job) MaxFailure(maxFail int32) *Job {
 	a.jobConfig.TaskConfig.MaxTaskFailures = maxFail
 	return a
 }
 
-func (a *Job) SetInstanceCount(instCount int32) *Job {
+func (a *Job) InstanceCount(instCount int32) *Job {
 	a.jobConfig.InstanceCount = instCount
 	return a
 }
 
-func (a *Job) SetIsService(isService bool) *Job {
+func (a *Job) IsService(isService bool) *Job {
 	a.jobConfig.TaskConfig.IsService = isService
 	return a
 }
 
-func (a *Job) GetJobKey() *aurora.JobKey {
+func (a *Job) JobKey() *aurora.JobKey {
 	return a.jobConfig.Key
 }
 
