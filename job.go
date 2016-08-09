@@ -103,7 +103,7 @@ func (a *Job) CPU(cpus float64) *Job {
 	return a
 }
 
-func (a *Job) Ram(ram int64) *Job {
+func (a *Job) RAM(ram int64) *Job {
 	a.ramMb.RamMb = &ram
 	a.jobConfig.TaskConfig.RamMb = ram //Will be deprecated soon
 

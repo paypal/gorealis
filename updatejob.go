@@ -36,7 +36,7 @@ func NewUpdateJob(job *Job) *UpdateJob {
 	req.Settings.RollbackOnFailure = true
 	req.Settings.WaitForBatchCompletion = false
 
-	//TODO(rdelvalle): Deep copy job
+	//TODO(rdelvalle): Deep copy job struct to avoid unexpected behavior
 	return &UpdateJob{job, req}
 }
 
