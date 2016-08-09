@@ -11,15 +11,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package realis
 
 import "gen-go/apache/aurora"
 
+// Structure to collect all information requrired to create job update
 type UpdateJob struct {
-	*Job //Go Embedding, SetInstanceCount for job is hidden
+	*Job // SetInstanceCount for job is hidden, access via full qualifier
 	req  *aurora.JobUpdateRequest
 }
 
+// Create a default UpdateJob object.
 func NewUpdateJob(job *Job) *UpdateJob {
 
 	req := aurora.NewJobUpdateRequest()
@@ -40,6 +43,7 @@ func NewUpdateJob(job *Job) *UpdateJob {
 	return &UpdateJob{job, req}
 }
 
+// Set instance count the job will have after the update.
 func (u *UpdateJob) InstanceCount(inst int32) *UpdateJob {
 	u.req.InstanceCount = inst
 	return u
@@ -51,13 +55,13 @@ func (u *UpdateJob) BatchSize(size int32) *UpdateJob {
 	return u
 }
 
-// Minimum number of seconds a shard must remain in RUNNING state before considered a success
+// Minimum number of seconds a shard must remain in RUNNING state before considered a success.
 func (u *UpdateJob) WatchTime(milliseconds int32) *UpdateJob {
 	u.req.Settings.MaxPerInstanceFailures = milliseconds
 	return u
 }
 
-// Wait for all instances in a group to be done before moving on
+// Wait for all instances in a group to be done before moving on.
 func (u *UpdateJob) WaitForBatchCompletion(batchWait bool) *UpdateJob {
 	u.req.Settings.WaitForBatchCompletion = batchWait
 	return u
@@ -76,7 +80,7 @@ func (u *UpdateJob) MaxFailedInstances(inst int32) *UpdateJob {
 	return u
 }
 
-// When False, prevents auto rollback of a failed update
+// When False, prevents auto rollback of a failed update.
 func (u *UpdateJob) RollbackOnFail(rollback bool) *UpdateJob {
 
 	u.req.Settings.RollbackOnFailure = rollback
