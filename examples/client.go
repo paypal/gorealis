@@ -47,11 +47,11 @@ func main() {
 	switch *executor {
 	case "thermos":
 		payload, err := ioutil.ReadFile("examples/thermos_payload.json")
-
 		if err != nil {
 			fmt.Print("Error reading json config file: ", err)
 			os.Exit(1)
 		}
+
 		job = realis.NewJob().
 			Environment("prod").
 			Role("vagrant").
@@ -59,7 +59,7 @@ func main() {
 			ExecutorName(aurora.AURORA_EXECUTOR_NAME).
 			ExecutorData(string(payload)).
 			CPU(1).
-			Ram(64).
+			RAM(64).
 			Disk(100).
 			IsService(true).
 			InstanceCount(1).
@@ -73,7 +73,7 @@ func main() {
 			ExecutorName("docker-compose-executor").
 			ExecutorData("{}").
 			CPU(1).
-			Ram(64).
+			RAM(64).
 			Disk(100).
 			IsService(false).
 			InstanceCount(1).
@@ -89,62 +89,62 @@ func main() {
 	switch *cmd {
 	case "create":
 		fmt.Println("Creating job")
-		msg, err := r.CreateJob(job)
+		response, err := r.CreateJob(job)
 		if err != nil {
 			fmt.Print(err)
 		}
 
-		fmt.Print(msg)
+		fmt.Print(response.String())
 		break
 	case "kill":
 		fmt.Println("Killing job")
 
-		msg, err := r.KillJob(job.JobKey())
+		response, err := r.KillJob(job.JobKey())
 		if err != nil {
 			fmt.Print(err)
 		}
 
-		fmt.Print(msg)
+		fmt.Print(response.String())
 		break
 	case "restart":
 		fmt.Println("Restarting job")
-		msg, err := r.RestartJob(job.JobKey())
+		response, err := r.RestartJob(job.JobKey())
 		if err != nil {
 			fmt.Print(err)
 		}
 
-		fmt.Print(msg)
+		fmt.Print(response.String())
 		break
 	case "flexUp":
 		fmt.Println("Flexing up job")
-		msg, err := r.AddInstances(job.JobKey(), 5)
+		response, err := r.AddInstances(job.JobKey(), 5)
 		if err != nil {
 			fmt.Print(err)
 		}
-		fmt.Print(msg)
+		fmt.Print(response.String())
 		break
 	case "update":
 		fmt.Println("Updating a job with a new name")
 		updateJob := realis.NewUpdateJob(job)
 
-		updateJob.InstanceCount(3).Ram(128)
+		updateJob.InstanceCount(3).RAM(128)
 
-		msg, err := r.StartJobUpdate(updateJob, "")
+		resposne, err := r.StartJobUpdate(updateJob, "")
 		if err != nil {
 			fmt.Print(err)
 		}
-		fmt.Print(msg)
+		fmt.Print(resposne.String())
 		break
 	case "abortUpdate":
 		fmt.Println("Abort update")
-		msg, err := r.AbortJobUpdate(job.JobKey(), *updateId, "")
+		response, err := r.AbortJobUpdate(job.JobKey(), *updateId, "")
 		if err != nil {
 			fmt.Print(err)
 		}
-		fmt.Print(msg)
+		fmt.Print(response.String())
 		break
 	default:
-		fmt.Println("Only Create, Kill, and Restart are supported now")
+		fmt.Println("Only create, kill, restart, flexUp, update, and abortUpdate are supported now")
 		os.Exit(1)
 	}
 }

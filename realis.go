@@ -52,7 +52,7 @@ func NewDefaultConfig(url string) (RealisConfig, error) {
 	jar, err := cookiejar.New(nil)
 
 	if err != nil {
-		return RealisConfig{}, errors.Wrap(err, "Error creating Cookie Jar")
+		return RealisConfig{}, errors.Wrap(err, "Error creating Cookie Jar.")
 	}
 
 	//Custom client to timeout after 10 seconds to avoid hanging
@@ -60,12 +60,12 @@ func NewDefaultConfig(url string) (RealisConfig, error) {
 		thrift.THttpClientOptions{Client: &http.Client{Timeout: time.Second * 10, Jar: jar}})
 
 	if err != nil {
-		return RealisConfig{}, errors.Wrap(err, "Error creating transport")
+		return RealisConfig{}, errors.Wrap(err, "Error creating transport.")
 	}
 
 	if err := trans.Open(); err != nil {
 		fmt.Fprintln(os.Stderr)
-		return RealisConfig{}, errors.Wrapf(err, "Error opening connection to %s", url)
+		return RealisConfig{}, errors.Wrapf(err, "Error opening connection to %s.", url)
 	}
 
 	return RealisConfig{transport: trans}, nil
@@ -111,85 +111,86 @@ func (r *Realis) getActiveTaskIds(key *aurora.JobKey) (map[int32]bool, error) {
 }
 
 // Sends a kill message to the scheduler for all active tasks under a job
-func (r *Realis) KillJob(key *aurora.JobKey) (string, error) {
+func (r *Realis) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 
 	taskIds, err := r.getActiveTaskIds(key)
 	if err != nil {
-		return "", errors.Wrap(err, "Could not retrieve relevant task IDs")
+		return nil, errors.Wrap(err, "Could not retrieve relevant task IDs.")
 	}
 
 	if len(taskIds) > 0 {
 		response, err := r.client.KillTasks(key, taskIds)
 
 		if err != nil {
-			return "", errors.Wrap(err, "Error sending Kill command to Aurora Scheduler")
+			return nil, errors.Wrap(err, "Error sending Kill command to Aurora Scheduler.")
 		}
-		return response.String(), nil
+
+		return response, nil
 	} else {
-		return "No tasks in the Active state.", nil
+		return nil, errors.New("No tasks in the Active state.")
 	}
 }
 
 // Sends a create job message to the scheduler with a specific job configuration
-func (r *Realis) CreateJob(auroraJob *Job) (string, error) {
+func (r *Realis) CreateJob(auroraJob *Job) (*aurora.Response, error) {
 	response, err := r.client.CreateJob(auroraJob.jobConfig)
 
 	if err != nil {
-		return "", errors.Wrap(err, "Error sending Create command to Aurora Scheduler")
+		return nil, errors.Wrap(err, "Error sending Create command to Aurora Scheduler.")
 	}
 
-	return response.String(), nil
+	return response, nil
 }
 
 // Restarts all active tasks under a job configuration
-func (r *Realis) RestartJob(key *aurora.JobKey) (string, error) {
+func (r *Realis) RestartJob(key *aurora.JobKey) (*aurora.Response, error) {
 
 	taskIds, err := r.getActiveTaskIds(key)
 	if err != nil {
-		return "", errors.Wrap(err, "Could not retrieve relevant task IDs")
+		return nil, errors.Wrap(err, "Could not retrieve relevant task IDs.")
 	}
 
 	if len(taskIds) > 0 {
 		response, err := r.client.RestartShards(key, taskIds)
 
 		if err != nil {
-			return "", errors.Wrap(err, "Error sending Restart command to Aurora Scheduler")
+			return nil, errors.Wrap(err, "Error sending Restart command to Aurora Scheduler.")
 		}
 
-		return response.String(), nil
+		return response, nil
 	} else {
-		return "No tasks in the Active state.", nil
+		return nil, errors.New("No tasks in the Active state.")
 	}
 }
 
 // Update all tasks under a job configuration
-func (r *Realis) StartJobUpdate(updateJob *UpdateJob, message string) (string, error) {
+func (r *Realis) StartJobUpdate(updateJob *UpdateJob, message string) (*aurora.Response, error) {
 
 	response, err := r.client.StartJobUpdate(updateJob.req, message)
 
 	if err != nil {
-		return "", errors.Wrap(err, "Error sending StartJobUpdate command to Aurora Scheduler")
+		return nil, errors.Wrap(err, "Error sending StartJobUpdate command to Aurora Scheduler.")
 	}
 
-	return response.String(), nil
+	return response, nil
 }
 
 func (r *Realis) AbortJobUpdate(
 	key *aurora.JobKey,
 	updateId string,
-	message string) (string, error) {
+	message string) (*aurora.Response, error) {
 
 	response, err := r.client.AbortJobUpdate(&aurora.JobUpdateKey{key, updateId}, message)
 
 	if err != nil {
-		return "", errors.Wrap(err, "Error sending AbortJobUpdate command to Aurora Scheduler")
+		return nil, errors.Wrap(err, "Error sending AbortJobUpdate command to Aurora Scheduler.")
 	}
 
-	return response.String(), nil
+	return response, nil
 }
 
 // Scale up the number of instances under a job configuration
-func (r *Realis) AddInstances(key *aurora.JobKey, count int32) (string, error) {
+func (r *Realis) AddInstances(key *aurora.JobKey, count int32) (*aurora.Response, error) {
 
 	//Scale up using the config from task 0. All tasks should be homogeneous.
 	instKey := &aurora.InstanceKey{key, 0}
@@ -197,9 +198,8 @@ func (r *Realis) AddInstances(key *aurora.JobKey, count int32) (string, error) {
 	response, err := r.client.AddInstances(instKey, count)
 
 	if err != nil {
-		return "", errors.Wrap(err, "Error sending AddInstances command to Aurora Scheduler")
+		return nil, errors.Wrap(err, "Error sending AddInstances command to Aurora Scheduler.")
 	}
 
-	return response.String(), nil
-
+	return response, nil
 }
