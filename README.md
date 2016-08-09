@@ -3,6 +3,10 @@
 Go library for communicating with Apache Aurora.
 Named after the northern lights (Aurora Borealis).
 
+### Aurora Compatible version
+Please see [AURORA.VER](./AURORA.VER) to see the latest Aurora version against which this
+library has been tested against. Vendoring a working version is highly recommended.
+
 ## Usage
 
 ### Using the Sample client with Thermos
@@ -20,7 +24,7 @@ $ vagrant up
 Download and run the Client to create a Thermos Job:
 ```
 $ go get github.com/rdelval/gorealis
-$ cd go run $GOPATH/src/github.com/rdelval/gorealis
+$ cd $GOPATH/src/github.com/rdelval/gorealis
 $ go run examples/client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=create
 ```
 
@@ -41,12 +45,12 @@ $ vagrant up
 Download and run the Client to create a Docker-Compose Job:
 ```
 $ go get github.com/rdelval/gorealis
-$ go run $GOPATH/src/github.com/rdelval/gorealis/examples/Client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=create
+$ go run $GOPATH/src/github.com/rdelval/gorealis/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=create
 ```
 From the [Aurora web UI](http://192.168.33.7:8081/scheduler/vagrant/prod/docker-compose/0), create struct dump by clicking on the task ID.
 In the struct dump, find the port assigned to the task (named "port0"). 
 
-Navigate to the 192.168.33.7:`<assigned port>`. Currently the redis image being deployed is broken, so an error is expected.
+Navigate to the 192.168.33.7:`<assigned port>`.
 If the page is not found, wait a few minutes while the docker image is downloaded and the container is deployed.
 
 Finally, terminate the job:
