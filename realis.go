@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 // Package realis provides the ability to use Thrift API to communicate with Apache Aurora.
 package realis
 
@@ -35,19 +36,18 @@ type RealisConfig struct {
 	transport thrift.TTransport
 }
 
-// Create a new Client
+// Create a new Client with a default transport layer
 func NewClient(config RealisConfig) *Realis {
 
 	httpTrans := (config.transport).(*thrift.THttpClient)
 	httpTrans.SetHeader("User-Agent", "GoRealis v0.1")
 
-	// Aurora can only communicate in JSON, leave it here as default
 	protocolFactory := thrift.NewTJSONProtocolFactory()
 
 	return &Realis{client: aurora.NewAuroraSchedulerManagerClientFactory(config.transport, protocolFactory)}
 }
 
-// Create a default configuration of the transport layer, requires a URL
+// Create a default configuration of the transport layer, requires a URL to test connection with.
 func NewDefaultConfig(url string) (RealisConfig, error) {
 	jar, err := cookiejar.New(nil)
 
@@ -72,7 +72,7 @@ func NewDefaultConfig(url string) (RealisConfig, error) {
 
 }
 
-// Helper function to add basic authorization needed to communicate with Apache Aurora
+// Helper function to add basic authorization needed to communicate with Apache Aurora.
 func AddBasicAuth(config *RealisConfig, username string, password string) {
 	httpTrans := (config.transport).(*thrift.THttpClient)
 	httpTrans.SetHeader("Authorization", "Basic "+basicAuth(username, password))
@@ -83,12 +83,12 @@ func basicAuth(username, password string) string {
 	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
-// Releases resources associated with the realis client
+// Releases resources associated with the realis client.
 func (r *Realis) Close() {
 	r.client.Transport.Close()
 }
 
-// Uses predefined set of states to retrieve a set of active jobs in Apache Aurora
+// Uses predefined set of states to retrieve a set of active jobs in Apache Aurora.
 func (r *Realis) getActiveInstanceIds(key *aurora.JobKey) (map[int32]bool, error) {
 	taskQ := &aurora.TaskQuery{Role: key.Role,
 		Environment: key.Environment,
@@ -110,6 +110,7 @@ func (r *Realis) getActiveInstanceIds(key *aurora.JobKey) (map[int32]bool, error
 	return jobInstanceIds, nil
 }
 
+// Kill a specific instance of a job.
 func (r *Realis) KillInstance(key *aurora.JobKey, instanceId int32) (*aurora.Response, error) {
 
 	instanceIds := make(map[int32]bool)
@@ -124,7 +125,7 @@ func (r *Realis) KillInstance(key *aurora.JobKey, instanceId int32) (*aurora.Res
 	return response, nil
 }
 
-// Sends a kill message to the scheduler for all active tasks under a job
+// Sends a kill message to the scheduler for all active tasks under a job.
 func (r *Realis) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 
 	instanceIds, err := r.getActiveInstanceIds(key)
@@ -145,7 +146,7 @@ func (r *Realis) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 	}
 }
 
-// Sends a create job message to the scheduler with a specific job configuration
+// Sends a create job message to the scheduler with a specific job configuration.
 func (r *Realis) CreateJob(auroraJob *Job) (*aurora.Response, error) {
 	response, err := r.client.CreateJob(auroraJob.jobConfig)
 
@@ -156,7 +157,7 @@ func (r *Realis) CreateJob(auroraJob *Job) (*aurora.Response, error) {
 	return response, nil
 }
 
-// Restarts all active tasks under a job configuration
+// Restarts all active tasks under a job configuration.
 func (r *Realis) RestartJob(key *aurora.JobKey) (*aurora.Response, error) {
 
 	instanceIds, err := r.getActiveInstanceIds(key)
@@ -177,7 +178,7 @@ func (r *Realis) RestartJob(key *aurora.JobKey) (*aurora.Response, error) {
 	}
 }
 
-// Update all tasks under a job configuration
+// Update all tasks under a job configuration. Currently there's no support for canary deployments.
 func (r *Realis) StartJobUpdate(updateJob *UpdateJob, message string) (*aurora.Response, error) {
 
 	response, err := r.client.StartJobUpdate(updateJob.req, message)
@@ -189,6 +190,7 @@ func (r *Realis) StartJobUpdate(updateJob *UpdateJob, message string) (*aurora.R
 	return response, nil
 }
 
+// Abort Job Update on Aurora. Requires the updateId which can be obtained on the Aurora web UI.
 func (r *Realis) AbortJobUpdate(
 	key *aurora.JobKey,
 	updateId string,
@@ -203,7 +205,8 @@ func (r *Realis) AbortJobUpdate(
 	return response, nil
 }
 
-// Scale up the number of instances under a job configuration
+// Scale up the number of instances under a job configuration using the configuration for specific
+// instance to scale up.
 func (r *Realis) AddInstances(instKey *aurora.InstanceKey, count int32) (*aurora.Response, error) {
 
 	response, err := r.client.AddInstances(instKey, count)

@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package realis
 
 import (
@@ -18,6 +19,7 @@ import (
 	"strconv"
 )
 
+// Structure to collect all information pertaining to an Aurora job.
 type Job struct {
 	jobConfig *aurora.JobConfiguration
 	numCpus   *aurora.Resource
@@ -26,15 +28,7 @@ type Job struct {
 	portCount int
 }
 
-type CreateJobBuilder struct {
-	jobConfig  *aurora.JobConfiguration
-	jobKey     *aurora.JobKey
-	taskConfig *aurora.TaskConfig
-	numCpus    *aurora.Resource
-	ramMb      *aurora.Resource
-	diskMb     *aurora.Resource
-}
-
+// Create a Job object with everything initialized.
 func NewJob() *Job {
 	jobConfig := aurora.NewJobConfiguration()
 	taskConfig := aurora.NewTaskConfig()
@@ -66,11 +60,13 @@ func NewJob() *Job {
 	return &Job{jobConfig, numCpus, ramMb, diskMb, 0}
 }
 
+// Set Job Key environment.
 func (a *Job) Environment(env string) *Job {
 	a.jobConfig.Key.Environment = env
 	return a
 }
 
+// Set Job Key Role.
 func (a *Job) Role(role string) *Job {
 	a.jobConfig.Key.Role = role
 
@@ -81,16 +77,19 @@ func (a *Job) Role(role string) *Job {
 	return a
 }
 
+// Set Job Key Name.
 func (a *Job) Name(name string) *Job {
 	a.jobConfig.Key.Name = name
 	return a
 }
 
+// Set name of the executor that will the task will be configured to.
 func (a *Job) ExecutorName(name string) *Job {
 	a.jobConfig.TaskConfig.ExecutorConfig.Name = name
 	return a
 }
 
+// Will be included as part of entire task inside the scheduler that will be serialized.
 func (a *Job) ExecutorData(data string) *Job {
 	a.jobConfig.TaskConfig.ExecutorConfig.Data = data
 	return a
@@ -117,30 +116,37 @@ func (a *Job) Disk(disk int64) *Job {
 	return a
 }
 
+// How many failures to tolerate before giving up.
 func (a *Job) MaxFailure(maxFail int32) *Job {
 	a.jobConfig.TaskConfig.MaxTaskFailures = maxFail
 	return a
 }
 
+// How many instances of the job to run
 func (a *Job) InstanceCount(instCount int32) *Job {
 	a.jobConfig.InstanceCount = instCount
 	return a
 }
 
+// Restart the job's tasks if they fail
 func (a *Job) IsService(isService bool) *Job {
 	a.jobConfig.TaskConfig.IsService = isService
 	return a
 }
 
+// Get the current job configurations key to use for some realis calls.
 func (a *Job) JobKey() *aurora.JobKey {
 	return a.jobConfig.Key
 }
 
+// Add URI to fetch using the mesos fetcher. Scheduler must have --enable_mesos_fetcher flag
+// enabled.
 func (a *Job) AddURI(value string, extract bool, cache bool) *Job {
 	a.jobConfig.TaskConfig.MesosFetcherUris[&aurora.MesosFetcherURI{value, &extract, &cache}] = true
 	return a
 }
 
+// Add a list of URIs with the same extract and cache configuration.
 func (a *Job) AddURIs(extract bool, cache bool, values ...string) *Job {
 	for _, value := range values {
 		a.jobConfig.TaskConfig.MesosFetcherUris[&aurora.MesosFetcherURI{value, &extract, &cache}] = true
@@ -148,13 +154,15 @@ func (a *Job) AddURIs(extract bool, cache bool, values ...string) *Job {
 	return a
 }
 
-// Note: By default Aurora will add the prefix "org.apache.aurora.metadata." to the beginning of each key
+// Adds a Mesos label to the job. Note that as of Aurora 0.15.0, Aurora will add the
+// prefix "org.apache.aurora.metadata." to the beginning of each key.
 func (a *Job) AddLabel(key string, value string) *Job {
 	a.jobConfig.TaskConfig.Metadata[&aurora.Metadata{key, value}] = true
 	return a
 }
 
-//Each port is equivalent to Marathon's 0 port
+// Adds a request for a number of ports to the job configuration. These are random ports as it's
+// not currently possible to request specific ports using Aurora.
 func (a *Job) AddPorts(num int) *Job {
 	start := a.portCount
 	a.portCount += num
@@ -166,9 +174,11 @@ func (a *Job) AddPorts(num int) *Job {
 	return a
 }
 
-// Add a Value constraint,
+// From Aurora Docs:
+// Add a Value constraint
 // name - Mesos slave attribute that the constraint is matched against.
 // If negated = true , treat this as a 'not' - to avoid specific values.
+// Values - list of values we look for in attribute name
 func (a *Job) AddValueConstraint(name string,
 	negated bool,
 	values ...string) *Job {
@@ -183,7 +193,8 @@ func (a *Job) AddValueConstraint(name string,
 	return a
 }
 
-// From Aurora Docs: A constraint the specifies the maximum number of active tasks on a host with
+// From Aurora Docs:
+// A constraint the specifies the maximum number of active tasks on a host with
 // a matching attribute that may be scheduled simultaneously.
 func (a *Job) AddLimitConstraint(name string, limit int32) *Job {
 

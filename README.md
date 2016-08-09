@@ -1,4 +1,4 @@
-# GoRealis
+# gorealis [![GoDoc](https://godoc.org/github.com/rdelval/gorealis?status.svg)](https://godoc.org/github.com/rdelval/gorealis)
 
 Go library for communicating with Apache Aurora.
 Named after the northern lights (Aurora Borealis).
@@ -117,17 +117,6 @@ updateJob.Ram(128)
 
 msg, err := r.UpdateJob(updateJob, "")
 ```
-
-### Methods:
-
-|Method    | Arguments  | Description|
-|----------|------------|------------|
-|CreateJob | `*Job` | Sends a job create request to Apache Aurora |
-|KillJob   | `*aurora.JobKey` | Attempts to kill all active instances running in Aurora. Only needs environment, role, name |
-|RestartJob| `*aurora.JobKey` | Attempts to restart all active instances running in Aurora |
-|AddInstances|`*aurora.InstanceKey`, `int32`| Launches the specified number of new instances based on existing job config |
-|StartUpdateJob|`*UpdateJob`, `string`| Updates a service job with a new configuration |
-|AbortUpdateJob|`*aurora.Jobkey`, `string`, `string`| Abort the job update that matches the ID |
 
 ## To Do
 * Create or import a custom transport that uses https://github.com/jmcvetta/napping to improve efficiency
