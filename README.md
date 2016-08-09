@@ -121,6 +121,7 @@ msg, err := r.UpdateJob(updateJob, "")
 ## To Do
 * Create or import a custom transport that uses https://github.com/jmcvetta/napping to improve efficiency
 * Allow library to use ZK to find the master
+* End to end testing with Vagrant setup
 
 ## Contributions
 Contributions are very much welcome. Please raise an issue so that the contribution may be discussed before it's made.
