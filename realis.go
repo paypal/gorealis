@@ -110,6 +110,22 @@ func (r *Realis) getActiveTaskIds(key *aurora.JobKey) (map[int32]bool, error) {
 	return jobTaskIds, nil
 }
 
+
+func (r *Realis) KillTask(key *aurora.JobKey, taskId int32) {
+
+	taskIds := make(map[int32]bool)
+	taskIds[taskId] = true
+
+	response, err := r.client.KillTasks(key, taskIds)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Error sending Kill command to Aurora Scheduler.")
+	}
+
+	return response, nil
+
+}
+
 // Sends a kill message to the scheduler for all active tasks under a job
 func (r *Realis) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 
@@ -190,10 +206,7 @@ func (r *Realis) AbortJobUpdate(
 }
 
 // Scale up the number of instances under a job configuration
-func (r *Realis) AddInstances(key *aurora.JobKey, count int32) (*aurora.Response, error) {
-
-	//Scale up using the config from task 0. All tasks should be homogeneous.
-	instKey := &aurora.InstanceKey{key, 0}
+func (r *Realis) AddInstances(instKey *aurora.InstanceKey, count int32) (*aurora.Response, error) {
 
 	response, err := r.client.AddInstances(instKey, count)
 
