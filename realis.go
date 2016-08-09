@@ -89,7 +89,7 @@ func (r *Realis) Close() {
 }
 
 // Uses predefined set of states to retrieve a set of active jobs in Apache Aurora
-func (r *Realis) getActiveTaskIds(key *aurora.JobKey) (map[int32]bool, error) {
+func (r *Realis) getActiveInstanceIds(key *aurora.JobKey) (map[int32]bool, error) {
 	taskQ := &aurora.TaskQuery{Role: key.Role,
 		Environment: key.Environment,
 		JobName:     key.Name,
@@ -102,40 +102,38 @@ func (r *Realis) getActiveTaskIds(key *aurora.JobKey) (map[int32]bool, error) {
 
 	tasks := response.GetResult_().GetScheduleStatusResult_().GetTasks()
 
-	jobTaskIds := make(map[int32]bool)
+	jobInstanceIds := make(map[int32]bool)
 	for _, task := range tasks {
-		jobTaskIds[task.GetAssignedTask().GetInstanceId()] = true
+		jobInstanceIds[task.GetAssignedTask().GetInstanceId()] = true
 	}
 
-	return jobTaskIds, nil
+	return jobInstanceIds, nil
 }
 
+func (r *Realis) KillInstance(key *aurora.JobKey, instanceId int32) (*aurora.Response, error) {
 
-func (r *Realis) KillTask(key *aurora.JobKey, taskId int32) {
+	instanceIds := make(map[int32]bool)
+	instanceIds[instanceId] = true
 
-	taskIds := make(map[int32]bool)
-	taskIds[taskId] = true
-
-	response, err := r.client.KillTasks(key, taskIds)
+	response, err := r.client.KillTasks(key, instanceIds)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Error sending Kill command to Aurora Scheduler.")
 	}
 
 	return response, nil
-
 }
 
 // Sends a kill message to the scheduler for all active tasks under a job
 func (r *Realis) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 
-	taskIds, err := r.getActiveTaskIds(key)
+	instanceIds, err := r.getActiveInstanceIds(key)
 	if err != nil {
-		return nil, errors.Wrap(err, "Could not retrieve relevant task IDs.")
+		return nil, errors.Wrap(err, "Could not retrieve relevant task instance IDs.")
 	}
 
-	if len(taskIds) > 0 {
-		response, err := r.client.KillTasks(key, taskIds)
+	if len(instanceIds) > 0 {
+		response, err := r.client.KillTasks(key, instanceIds)
 
 		if err != nil {
 			return nil, errors.Wrap(err, "Error sending Kill command to Aurora Scheduler.")
@@ -161,13 +159,13 @@ func (r *Realis) CreateJob(auroraJob *Job) (*aurora.Response, error) {
 // Restarts all active tasks under a job configuration
 func (r *Realis) RestartJob(key *aurora.JobKey) (*aurora.Response, error) {
 
-	taskIds, err := r.getActiveTaskIds(key)
+	instanceIds, err := r.getActiveInstanceIds(key)
 	if err != nil {
-		return nil, errors.Wrap(err, "Could not retrieve relevant task IDs.")
+		return nil, errors.Wrap(err, "Could not retrieve relevant task instance IDs.")
 	}
 
-	if len(taskIds) > 0 {
-		response, err := r.client.RestartShards(key, taskIds)
+	if len(instanceIds) > 0 {
+		response, err := r.client.RestartShards(key, instanceIds)
 
 		if err != nil {
 			return nil, errors.Wrap(err, "Error sending Restart command to Aurora Scheduler.")
