@@ -58,8 +58,7 @@ Finally, terminate the job:
 $ go run $GOPATH/src/github.com/rdelval/gorealis.git/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=kill
 ```
 
-### Leveraging the library 
-Commands available: create, kill, restart
+### How to leverage the library (based on the [sample client](examples/client.go))
 
 Create a default configuration file (alternatively, manually create your own Config):
 ```
@@ -107,7 +106,7 @@ r.RestartJob(job.GetKey())
 
 Adding instances (based on config of instance 0) to Aurora:
 ```
-r.AddInstances(job.GetKey(), 5)
+r.AddInstances(&aurora.InstanceKey{job.GetKey(),0}, 5)
 ```
 
 Updating the job configuration of a service job:
@@ -126,7 +125,7 @@ msg, err := r.UpdateJob(updateJob, "")
 |CreateJob | `*Job` | Sends a job create request to Apache Aurora |
 |KillJob   | `*aurora.JobKey` | Attempts to kill all active instances running in Aurora. Only needs environment, role, name |
 |RestartJob| `*aurora.JobKey` | Attempts to restart all active instances running in Aurora |
-|AddInstances|`*aurora.JobKey`, `int32`| Launches the specified number of new instances based on existing job config |
+|AddInstances|`*aurora.InstanceKey`, `int32`| Launches the specified number of new instances based on existing job config |
 |StartUpdateJob|`*UpdateJob`, `string`| Updates a service job with a new configuration |
 |AbortUpdateJob|`*aurora.Jobkey`, `string`, `string`| Abort the job update that matches the ID |
 

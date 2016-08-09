@@ -117,7 +117,7 @@ func main() {
 		break
 	case "flexUp":
 		fmt.Println("Flexing up job")
-		response, err := r.AddInstances(job.JobKey(), 5)
+		response, err := r.AddInstances(&aurora.InstanceKey{job.JobKey(), 0}, 5)
 		if err != nil {
 			fmt.Print(err)
 		}
