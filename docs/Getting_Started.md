@@ -7,7 +7,7 @@ steps also apply to an Aurora installation made via a package manager. Differenc
 the cluster between the vagrant image and the package manager will be clarified when necessary.
 
 ## Spinning up an Aurora instance with Vagrant
-Follow the [guide](https://github.com/apache/aurora/blob/master/docs/operations/configuration.md) at the Aurora repository in order to spin up a local cluster.
+Follow the **[guide](https://github.com/apache/aurora/blob/master/docs/getting-started/vagrant.md)** at the Aurora repository in order to spin up a local cluster.
 
 ## Configuring Scheduler to use Docker-Compose executor
 In order use the docker compose executor with Aurora, we must first give the scheduler
