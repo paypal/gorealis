@@ -48,12 +48,12 @@ A sample config file for the docker-compose executor looks like this:
 
 
 ### Configuring Scheduler to run custom executor
-#### Setting the proper flags `-custom_executor_config` flag and enabling mesos fetcher on jobs
+#### Setting the proper flags
 Some flags need to be set on the Aurora scheduler in order for custom executors to work properly.
 
-The `--custom_executor_config` flag must point to the location of the JSON blob.
+The `-custom_executor_config` flag must point to the location of the JSON blob.
 
-The `--enable_mesos_fetcher` flag must be set to true in order to allow jobs to fetch resources.
+The `-enable_mesos_fetcher` flag must be set to true in order to allow jobs to fetch resources.
 
 #### On vagrant
 * Log into the vagrant image by going to the folder at which the Aurora repository
@@ -64,20 +64,18 @@ $ vagrant ssh
 
 * Write the sample JSON blob provided above to a file inside the vagrant image.
 
-
 * Inside the vagrant image, modify the file `/etc/init/aurora-scheduler.conf` to include:
 ```
-   --custom_executor_config=<Location of JSON blob> \
-   --enable_mesos_fetcher=true
+   -custom_executor_config=<Location of JSON blob> \
+   -enable_mesos_fetcher=true
 ```
 
 #### On a scheduler installed via package manager
 * Write the sample JSON blob provided above to a file on the same machine where the scheduler is running.
 
-* Modify the file `/etc/default/aurora-scheduler.conf` to include:
+* Modify `EXTRA_SCHEDULER_ARGS` in the file file `/etc/default/aurora-scheduler` to be:
 ```
-  AURORA_EXTRA_ARGS="--custom_executor_config=<Location of JSON blob> \
-   --enable_mesos_fetcher=true"
+  EXTRA_SCHEDULER_ARGS="-custom_executor_config=<Location of JSON blob> -enable_mesos_fetcher=true"
 ```
 
 ## Using a custom client
@@ -148,6 +146,7 @@ Finally we must reload the .profile configuration:
 ```
 $ source $HOME/.profile
 ```
+
 ### Windows
 
 Download and run the msi installer from https://golang.org/dl/
