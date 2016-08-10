@@ -27,7 +27,7 @@
         "ephemeral": false,
         "max_failures": 1,
         "min_duration": 5,
-        "cmdline": "\n    while true; do\n      echo hello world from GoRealis\n      sleep 10\n    done\n  ",
+        "cmdline": "\n    while true; do\n      echo hello world from gorealis\n      sleep 10\n    done\n  ",
         "final": false
       }
     ],
