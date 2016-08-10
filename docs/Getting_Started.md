@@ -7,7 +7,8 @@ steps also apply to an Aurora installation made via a package manager. Differenc
 the cluster between the vagrant image and the package manager will be clarified when necessary.
 
 ## Spinning up an Aurora instance with Vagrant
-Follow the **[guide](https://github.com/apache/aurora/blob/master/docs/getting-started/vagrant.md)** at the Aurora repository in order to spin up a local cluster.
+Follow the **[guide](https://github.com/apache/aurora/blob/master/docs/getting-started/vagrant.md)** at the Aurora repository in order to spin up a local cluster
+until step 4 (Start the local cluster).
 
 ## Configuring Scheduler to use Docker-Compose executor
 In order use the docker compose executor with Aurora, we must first give the scheduler
@@ -16,7 +17,7 @@ a configuration file that contains information on how to run the executor.
 ### Configuration file
 The configuration is a JSON file that contains where to find the executor and how to run it.
 
-More information about how an executor may be configured for consumption by Aurora can be found [here](https://github.com/apache/aurora/blob/master/docs/operations/configuration.md)
+More information about how an executor may be configured for consumption by Aurora can be found [here](https://github.com/apache/aurora/blob/master/docs/operations/configuration.md#custom-executors)
 under the custom executors section.
 
 A sample config file for the docker-compose executor looks like this:
@@ -100,10 +101,9 @@ $ sudo apt-get update
 $ sudo apt-get install golang
 ```
 
-##### Setting the GOPATH
+##### Configuring the GOPATH
 
 Configure the environment to be able to compile and run Go code.
-
 ```
 $ mkdir $HOME/go
 $ echo export GOPATH=$HOME/go >> $HOME/.bashrc
@@ -133,10 +133,9 @@ Run the following command from the terminal to install Go:
 $ brew install go
 ```
 
-#### Setting the GOPATH
+#### Configuring the GOPATH
 
 Configure the environment to be able to compile and run Go code.
-
 ```
 $ mkdir $HOME/go
 $ echo export GOPATH=$HOME/go >> $HOME/.profile
@@ -145,6 +144,10 @@ $ echo export PATH=$PATH:$GOPATH/bin >> $HOME/.profile
 $ echo export PATH=$PATH:$GOROOT/bin >> $HOME/.profile
 ```
 
+Finally we must reload the .profile configuration:
+```
+$ source $HOME/.profile
+```
 ### Windows
 
 Download and run the msi installer from https://golang.org/dl/
@@ -210,7 +213,7 @@ to the scheduler, specifying that we would like to use the docker-compose execut
 Furthermore, we will be specifying what resources we need to download in order to
 successfully run a docker compose job.
 
-The job configuration in the sample client looks like this:
+For example, the job configuration in the sample client looks like this:
 ```
 job = realis.NewJob().
     Environment("prod").
@@ -225,12 +228,12 @@ job = realis.NewJob().
     InstanceCount(1).
     AddPorts(1).
     AddLabel("fileName", "sample-app/docker-compose.yml").
-    AddURI("https://dl.bintray.com/rdelvalle/mesos-compose-executor/sample-app.tar.gz", true, true)
+    AddURI("https://github.com/mesos/docker-compose-executor/releases/download/0.1.0/sample-app.tar.gz", true, true)
 ```
 
-Now we run the client sending the create job command to Aurora:
+Using a vagrant setup as an example, we can run the following command to create a compose job:
 ```
-go run $GOPATH/src/github.com/rdelval/gorealis/examples/Client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=create
+go run $GOPATH/src/github.com/rdelval/gorealis/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=create
 ```
 
 If everything went according to plan, a new job will be shown in the Aurora UI.
@@ -242,11 +245,15 @@ Inside the sandbox, under the sample-app folder, we can find a docker-compose.ym
 If we inspect this file, we can find the port at which we can find the web server we launched.
 
 Under Web->Ports, we find the port Mesos allocated. We can then navigate to:
-`<agent address>:<assigned port>`
+`<agent address>:<assigned port>`. (In vagrant's case the agent address is `192.68.33.7`)
 
-And a message from the executor should greet us.
+A message from the executor should greet us.
 
 ## Cleaning up
+
+To stop the jobs we've launched, we can need to send a job kill request to Aurora.
+It should be noted that although we can't create jobs using a custom executor using the default Aurora client,
+we can use the default Aurora client to kill them. In addition, we can use gorealis perform the clean up as well.
 
 ### Using the Default Client
 
@@ -259,8 +266,8 @@ $ aurora job killall devcluster/vagrant/prod/docker-compose
 ### Using gorealis
 
 ```
-$ go run $GOPATH/src/github.com/rdelval/gorealis/examples/Client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=kill
-$ go run $GOPATH/src/github.com/rdelval/gorealis/examples/Client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=kill
+$ go run $GOPATH/src/github.com/rdelval/gorealis/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=kill
+$ go run $GOPATH/src/github.com/rdelval/gorealis/examples/client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=kill
 ```
 
 
