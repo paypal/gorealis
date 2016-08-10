@@ -79,7 +79,7 @@ func main() {
 			IsService(false).
 			InstanceCount(1).
 			AddPorts(1).
-			AddLabel("fileName", "sample-app/sample-app.yml").
+			AddLabel("fileName", "sample-app/docker-compose.yml").
 			AddURI("https://dl.bintray.com/rdelvalle/mesos-compose-executor/sample-app.tar.gz", true, true)
 		break
 	default:

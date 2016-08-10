@@ -1,7 +1,13 @@
 # Running custom executors on Aurora
 
-In this instance we will be using the docker-compose executor to demonstrate
-how Aurora can use multiple executors on a single Scheduler.
+In this document, we will be using the docker-compose executor to demonstrate
+how Aurora can use multiple executors on a single Scheduler. For this guide,
+we will be using a vagrant instance to demonstrate the setup process. Many of the same
+steps also apply to an Aurora installation made via a package manager. Differences in how to configure
+the cluster between the vagrant image and the package manager will be clarified when necessary.
+
+## Spinning up an Aurora instance with Vagrant
+Follow the [guide](https://github.com/apache/aurora/blob/master/docs/operations/configuration.md) at the Aurora repository in order to spin up a local cluster.
 
 ## Configuring Scheduler to use Docker-Compose executor
 In order use the docker compose executor with Aurora, we must first give the scheduler
@@ -10,20 +16,23 @@ a configuration file that contains information on how to run the executor.
 ### Configuration file
 The configuration is a JSON file that contains where to find the executor and how to run it.
 
+More information about how an executor may be configured for consumption by Aurora can be found [here](https://github.com/apache/aurora/blob/master/docs/operations/configuration.md)
+under the custom executors section.
+
 A sample config file for the docker-compose executor looks like this:
 ```
 [  
   {  
     "executor":{  
       "command":{  
-        "value":"java -jar docker-compose-executor_0.0.1.jar",
+        "value":"java -jar docker-compose-executor_0.1.0.jar",
         "shell":"true",
         "uris":[  
           {  
             "cache":false,
             "executable":true,
             "extract":false,
-            "value":"https://dl.bintray.com/rdelvalle/mesos-compose-executor/docker-compose-executor_0.0.1.jar"
+            "value":"https://github.com/mesos/docker-compose-executor/releases/download/0.1.0/docker-compose-executor_0.1.0.jar"
           }
         ]
       },
@@ -39,20 +48,32 @@ A sample config file for the docker-compose executor looks like this:
 
 ### Configuring Scheduler to run custom executor
 #### Setting the proper flags `-custom_executor_config` flag and enabling mesos fetcher on jobs
+Some flags need to be set on the Aurora scheduler in order for custom executors to work properly.
 
 The `--custom_executor_config` flag must point to the location of the JSON blob.
 
 The `--enable_mesos_fetcher` flag must be set to true in order to allow jobs to fetch resources.
 
 #### On vagrant
-Modify the file `/etc/init/aurora-scheduler.conf` to include:
+* Log into the vagrant image by going to the folder at which the Aurora repository
+was cloned and running:
+```
+$ vagrant ssh
+```
+
+* Write the sample JSON blob provided above to a file inside the vagrant image.
+
+
+* Inside the vagrant image, modify the file `/etc/init/aurora-scheduler.conf` to include:
 ```
    --custom_executor_config=<Location of JSON blob> \
    --enable_mesos_fetcher=true
 ```
 
 #### On a scheduler installed via package manager
-Modify the file `/etc/default/aurora-scheduler.conf` to include:
+* Write the sample JSON blob provided above to a file on the same machine where the scheduler is running.
+
+* Modify the file `/etc/default/aurora-scheduler.conf` to include:
 ```
   AURORA_EXTRA_ARGS="--custom_executor_config=<Location of JSON blob> \
    --enable_mesos_fetcher=true"
@@ -72,42 +93,47 @@ the compose executor on Aurora.
 
 #### Ubuntu
 
-##### Add PPA and install via apt-get
+##### Adding a PPA and install via apt-get
 ```
 $ sudo add-apt-repository ppa:ubuntu-lxc/lxd-stable
 $ sudo apt-get update
 $ sudo apt-get install golang
 ```
 
-##### Set GOPATH
+##### Setting the GOPATH
 
 Configure the environment to be able to compile and run Go code.
 
 ```
 $ mkdir $HOME/go
-$ echo export GOPATH=$HOME/go >> $HOME/.profile
-$ echo export PATH=$PATH:$GOPATH/bin >> $HOME/.profile
-$ echo export PATH=$PATH:$GOROOT/bin >> $HOME/.profile
+$ echo export GOPATH=$HOME/go >> $HOME/.bashrc
+$ echo export PATH=$PATH:$GOPATH/bin >> $HOME/.bashrc
+$ echo export PATH=$PATH:$GOROOT/bin >> $HOME/.bashrc
+```
+
+Finally we must reload the .bashrc configuration:
+```
+$ source $HOME/.bashrc
 ```
 
 ### OS X
 
 One way to install go on OS X is by using [Homebrew](http://brew.sh/)
 
-#### Install Homebrew
+#### Installing Homebrew
 Run the following command from the terminal to install Hombrew:
 ```
 $ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
 
-#### Install Go using Hombrew
+#### Installing Go using Hombrew
 
 Run the following command from the terminal to install Go:
 ```
 $ brew install go
 ```
 
-#### Set the GOPATH
+#### Setting the GOPATH
 
 Configure the environment to be able to compile and run Go code.
 
@@ -124,9 +150,10 @@ $ echo export PATH=$PATH:$GOROOT/bin >> $HOME/.profile
 Download and run the msi installer from https://golang.org/dl/
 
 ## Installing Docker Compose
+To show Aurora's new multi executor feature, we need to use at least one custom executor.
+In this case we will be using the [docker-compose-executor](https://github.com/mesos/docker-compose-executor).
 
-In order to run the docker-compose executor, each agent must have docker-compose
-installed on it. 
+In order to run the docker-compose executor, each agent must have docker-compose installed on it.
 
 This can be done using pip:
 ```
@@ -178,7 +205,7 @@ aurora job create devcluster/www-data/prod/hello hello_world.aurora
 Now that we have a thermos job running, it's time to launch a docker-compose job.
 
 We'll be using the gorealis library sample client to send a create job request
-to the scheduler, specifiying that we would like to use the docker-compose executor.
+to the scheduler, specifying that we would like to use the docker-compose executor.
 
 Furthermore, we will be specifying what resources we need to download in order to
 successfully run a docker compose job.
@@ -186,19 +213,19 @@ successfully run a docker compose job.
 The job configuration in the sample client looks like this:
 ```
 job = realis.NewJob().
-			Environment("prod").
-			Role("vagrant").
-			Name("docker-compose").
-			ExecutorName("docker-compose-executor").
-			ExecutorData("{}").
-			CPU(1).
-			Ram(64).
-			Disk(100).
-			IsService(false).
-			InstanceCount(1).
-			AddPorts(1).
-			AddLabel("fileName", "sample-app/sample-app.yml").
-			AddURI("https://dl.bintray.com/rdelvalle/mesos-compose-executor/sample-app.tar.gz", true, true)
+    Environment("prod").
+    Role("vagrant").
+    Name("docker-compose").
+    ExecutorName("docker-compose-executor").
+    ExecutorData("{}").
+    CPU(1).
+    RAM(64).
+    Disk(100).
+    IsService(false).
+    InstanceCount(1).
+    AddPorts(1).
+    AddLabel("fileName", "sample-app/docker-compose.yml").
+    AddURI("https://dl.bintray.com/rdelvalle/mesos-compose-executor/sample-app.tar.gz", true, true)
 ```
 
 Now we run the client sending the create job command to Aurora:
