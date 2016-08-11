@@ -25,10 +25,12 @@ import (
 
 func main() {
 
-	cmd := flag.String("cmd", "", "Action to execute on Apache Aurora Sched")
-	executor := flag.String("executor", "thermos", "Executor to use, thermos by default")
-	url := flag.String("url", "", "URL at which the Apache Aurora Scheduler exists [url]:[port]")
+	cmd := flag.String("cmd", "", "Job request type to send to Aurora Scheduler")
+	executor := flag.String("executor", "thermos", "Executor to use")
+	url := flag.String("url", "", "URL at which the Aurora Scheduler exists as [url]:[port]")
 	updateId := flag.String("updateId", "", "Update ID to operate on")
+	username := flag.String("username", "aurora", "Username to use for authorization")
+	password := flag.String("password", "secret", "Password to use for authorization")
 	flag.Parse()
 
 	//Create new configuration with default transport layer
@@ -38,8 +40,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Needed for authorization for Vagrant
-	realis.AddBasicAuth(&config, "aurora", "secret")
+	// Configured for vagrant
+	realis.AddBasicAuth(&config, *username, *password)
 	r := realis.NewClient(config)
 	defer r.Close()
 
