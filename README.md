@@ -9,12 +9,13 @@ library has been tested. Vendoring a working version of this library is highly r
 
 ## Usage
 
+* [Getting started](docs/getting-started.md)
 * [Using the sample client](docs/using-the-sample-client.md)
 * [Leveraging the library](docs/leveraging-the-library.md)
 
 ## To Do
-* Create or import a custom transport that uses https://github.com/jmcvetta/napping to improve efficiency
 * Allow library to use ZK to find the master
+* Create or import a custom transport that uses https://github.com/jmcvetta/napping to improve efficiency
 * End to end testing with Vagrant setup
 
 ## Contributions

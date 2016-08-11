@@ -10,6 +10,28 @@ the cluster between the vagrant image and the package manager will be clarified 
 Follow the **[guide](https://github.com/apache/aurora/blob/master/docs/getting-started/vagrant.md)** at the Aurora repository in order to spin up a local cluster
 until step 4 (Start the local cluster).
 
+### Pre-configured Vagrant box
+Alternatively, if Vagrant and VirtualBox are already configured your machine, 
+you may use a pre-configured vagrant image and skip to the [Creating Aurora Jobs](#creating-aurora-jobs).
+
+To take this path, start by cloning the following repository:
+```
+$  git clone git@github.com:rdelval/aurora.git
+```
+
+Checking out the DockerComposeExecutor branch:
+```
+$ git checkout DockerComposeExecutor
+```
+
+And bringing the vagrant box
+```
+$ cd aurora
+$ vagrant up
+```
+
+**The pre-configured Vagrant box will most likely run on a stale version of Aurora (compared to the master)**
+
 ## Configuring Scheduler to use Docker-Compose executor
 In order use the docker compose executor with Aurora, we must first give the scheduler
 a configuration file that contains information on how to run the executor.
@@ -169,7 +191,6 @@ Finally, we must get `gorealis` using the `go get` command:
 go get github.com/rdelval/gorealis
 ```
 
-
 # Creating Aurora Jobs
 
 ### Creating a thermos job
@@ -236,38 +257,64 @@ go run $GOPATH/src/github.com/rdelval/gorealis/examples/client.go -executor=comp
 ```
 
 If everything went according to plan, a new job will be shown in the Aurora UI.
-
-We can further investigate inside the Mesos task sandbox.
-
-Inside the sandbox, under the sample-app folder, we can find a docker-compose.yml-generated.yml.
-
-If we inspect this file, we can find the port at which we can find the web server we launched.
+We can further investigate inside the Mesos task sandbox. Inside the sandbox, under 
+the sample-app folder, we can find a docker-compose.yml-generated.yml. If we inspect this file, 
+we can find the port at which we can find the web server we launched.
 
 Under Web->Ports, we find the port Mesos allocated. We can then navigate to:
 `<agent address>:<assigned port>`. (In vagrant's case the agent address is `192.68.33.7`)
 
 A message from the executor should greet us.
 
-## Cleaning up
+# Creating a Thermos job using gorealis
+It is also possible to create a thermos job using gorealis. To do this, however, 
+a thermos payload is required. A thermos payload consists of a JSON blob that details
+the entire task as it exists inside the Aurora Scheduler. *Creating the blob is unfortunately
+out of the scope of was gorealis does*, so a thermos payload must be generated beforehand or 
+retrieved from the structdump of an existing task for testing purposes.
+
+A sample thermos JSON payload may be found [here](../examples/thermos_payload.json) in the examples folder.
+
+The job struct configuration for a Thermos job looks something like this:
+```
+payload, err := ioutil.ReadFile("examples/thermos_payload.json")
+
+job = realis.NewJob().
+    Environment("prod").
+    Role("vagrant").
+    Name("hello_world_from_gorealis").
+    ExecutorName(aurora.AURORA_EXECUTOR_NAME).
+    ExecutorData(string(payload)).
+    CPU(1).
+    RAM(64).
+    Disk(100).
+    IsService(true).
+    InstanceCount(1).
+    AddPorts(1)
+```
+
+Using a vagrant setup as an example, we can run the following command to create a Thermos job:
+```
+$ cd $GOPATH/src/github.com/rdelval/gorealis
+$ go run examples/client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=create -executor=thermos
+```
+
+# Cleaning up
 
 To stop the jobs we've launched, we can need to send a job kill request to Aurora.
 It should be noted that although we can't create jobs using a custom executor using the default Aurora client,
 we can use the default Aurora client to kill them. In addition, we can use gorealis perform the clean up as well.
 
-### Using the Default Client
+## Using the Default Client
 
 ```
 $ aurora job killall devcluster/www-data/prod/hello
 $ aurora job killall devcluster/vagrant/prod/docker-compose
 ```
 
-
-### Using gorealis
+## Using gorealis
 
 ```
 $ go run $GOPATH/src/github.com/rdelval/gorealis/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=kill
 $ go run $GOPATH/src/github.com/rdelval/gorealis/examples/client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=kill
 ```
-
-
-
