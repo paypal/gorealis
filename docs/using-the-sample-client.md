@@ -1,4 +1,4 @@
-# Using the Sample client with Thermos
+# Using the Sample client
 
 ## Usage: 
 ```
@@ -33,11 +33,11 @@ $ go run $GOPATH/src/github.com/rdelval/gorealis.git/examples/client.go -executo
 ```
 
 ### Docker Compose executor (custom executor)
-### Creating Docker Compose executor job
+#### Creating Docker Compose executor job
 ```
 $ go run $GOPATH/src/github.com/rdelval/gorealis/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=create
 ```
-### Kill a Docker Compose executor job
+#### Kill a Docker Compose executor job
 ```
 $ go run $GOPATH/src/github.com/rdelval/gorealis.git/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=kill
 ```
