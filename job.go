@@ -208,7 +208,7 @@ func (a *Job) AddValueConstraint(name string,
 }
 
 // From Aurora Docs:
-// A constraint the specifies the maximum number of active tasks on a host with
+// A constraint that specifies the maximum number of active tasks on a host with
 // a matching attribute that may be scheduled simultaneously.
 func (a *Job) AddLimitConstraint(name string, limit int32) *Job {
 
