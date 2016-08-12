@@ -67,7 +67,7 @@ func (u *UpdateJob) WaitForBatchCompletion(batchWait bool) *UpdateJob {
 	return u
 }
 
-//	Max number of instance failures to tolerate before marking instance as FAILED.
+// Max number of instance failures to tolerate before marking instance as FAILED.
 func (u *UpdateJob) MaxPerInstanceFailures(inst int32) *UpdateJob {
 	u.req.Settings.MaxPerInstanceFailures = inst
 	return u

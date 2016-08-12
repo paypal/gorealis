@@ -14,14 +14,9 @@ until step 4 (Start the local cluster).
 Alternatively, if Vagrant and VirtualBox are already configured your machine, 
 you may use a pre-configured vagrant image and skip to the [Creating Aurora Jobs](#creating-aurora-jobs).
 
-To take this path, start by cloning the following repository:
+To take this path, start by cloning the following repository and checking out the DockerComposeExecutor branch:
 ```
-$  git clone git@github.com:rdelval/aurora.git
-```
-
-Checking out the DockerComposeExecutor branch:
-```
-$ git checkout DockerComposeExecutor
+$  git clone -b DockerComposeExecutor git@github.com:rdelval/aurora.git
 ```
 
 And bringing the vagrant box
