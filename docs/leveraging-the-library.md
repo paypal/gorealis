@@ -28,7 +28,7 @@ job = realis.NewJob().
     InstanceCount(1).
     AddPorts(1).
     AddLabel("fileName", "sample-app/docker-compose.yml").
-    AddURI("https://github.com/mesos/docker-compose-executor/releases/download/0.1.0/sample-app.tar.gz", true, true)
+    AddURIs(true, true, "https://github.com/mesos/docker-compose-executor/releases/download/0.1.0/sample-app.tar.gz")
 ```
 
 * Use client to send a job to Aurora:

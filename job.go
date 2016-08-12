@@ -139,22 +139,18 @@ func (a *Job) JobKey() *aurora.JobKey {
 	return a.jobConfig.Key
 }
 
-// Add URI to fetch using the mesos fetcher. Scheduler must have --enable_mesos_fetcher flag
-// enabled.
-func (a *Job) AddURI(value string, extract bool, cache bool) *Job {
-	a.jobConfig.TaskConfig.MesosFetcherUris[&aurora.MesosFetcherURI{value, &extract, &cache}] = true
-	return a
-}
-
-// Add a list of URIs with the same extract and cache configuration.
+// Add a list of URIs with the same extract and cache configuration. Scheduler must have
+// --enable_mesos_fetcher flag enabled. Currently there is no duplicate detection.
 func (a *Job) AddURIs(extract bool, cache bool, values ...string) *Job {
 	for _, value := range values {
-		a.jobConfig.TaskConfig.MesosFetcherUris[&aurora.MesosFetcherURI{value, &extract, &cache}] = true
+		a.jobConfig.
+			TaskConfig.
+			MesosFetcherUris[&aurora.MesosFetcherURI{value, &extract, &cache}] = true
 	}
 	return a
 }
 
-// Adds a Mesos label to the job. Note that as of Aurora 0.15.0, Aurora will add the
+// Adds a Mesos label to the job. Note that Aurora will add the
 // prefix "org.apache.aurora.metadata." to the beginning of each key.
 func (a *Job) AddLabel(key string, value string) *Job {
 	a.jobConfig.TaskConfig.Metadata[&aurora.Metadata{key, value}] = true
@@ -171,7 +167,6 @@ func (a *Job) AddNamedPorts(names ...string) *Job {
 
 	return a
 }
-
 
 // Adds a request for a number of ports to the job configuration. The names chosen for these ports
 // will be org.apache.aurora.portX, where X is the current port count for the job configuration

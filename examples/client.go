@@ -82,7 +82,7 @@ func main() {
 			InstanceCount(1).
 			AddPorts(1).
 			AddLabel("fileName", "sample-app/docker-compose.yml").
-			AddURI("https://github.com/mesos/docker-compose-executor/releases/download/0.1.0/sample-app.tar.gz", true, true)
+			AddURIs(true, true, "https://github.com/mesos/docker-compose-executor/releases/download/0.1.0/sample-app.tar.gz")
 		break
 	default:
 		fmt.Println("Only thermos and compose are supported for now")

@@ -243,7 +243,7 @@ job = realis.NewJob().
     InstanceCount(1).
     AddPorts(1).
     AddLabel("fileName", "sample-app/docker-compose.yml").
-    AddURI("https://github.com/mesos/docker-compose-executor/releases/download/0.1.0/sample-app.tar.gz", true, true)
+    AddURIs(true, true, "https://github.com/mesos/docker-compose-executor/releases/download/0.1.0/sample-app.tar.gz")
 ```
 
 Using a vagrant setup as an example, we can run the following command to create a compose job:
