@@ -11,7 +11,6 @@
 		},
 		{
 			"checksumSHA1": "GcaTbmmzSGqTb2X6qnNtmDyew1Q=",
-			"origin": "github.com/rdelval/gorealis/vendor/github.com/pkg/errors",
 			"path": "github.com/pkg/errors",
 			"revision": "a2d6902c6d2a2f194eb3fb474981ab7867c81505",
 			"revisionTime": "2016-06-27T22:23:52Z"
