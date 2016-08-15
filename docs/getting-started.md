@@ -231,6 +231,10 @@ aurora job create devcluster/www-data/prod/hello hello_world.aurora
 
 ```
 
+Note that user `www-data` must exist on the Agent on which the task will be run.
+If that user doesn't exist, please modify the role value inside the .aurora file as well
+as the command to a user that exists on the machine on which the task will be run.
+
 ## Creating a docker-compose-executor job
 Now that we have a thermos job running, it's time to launch a docker-compose job.
 
