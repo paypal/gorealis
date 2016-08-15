@@ -312,9 +312,9 @@ $ go run examples/client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd
 
 # Cleaning up
 
-To stop the jobs we've launched, we can need to send a job kill request to Aurora.
+To stop the jobs we've launched, we need to send a job kill request to Aurora.
 It should be noted that although we can't create jobs using a custom executor using the default Aurora client,
-we can use the default Aurora client to kill them. In addition, we can use gorealis perform the clean up as well.
+we ~can~ use the default Aurora client to kill them. Additionally, we can use gorealis perform the clean up as well.
 
 ## Using the Default Client
 
