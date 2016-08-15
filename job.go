@@ -169,14 +169,14 @@ func (a *Job) AddNamedPorts(names ...string) *Job {
 }
 
 // Adds a request for a number of ports to the job configuration. The names chosen for these ports
-// will be org.apache.aurora.portX, where X is the current port count for the job configuration
+// will be org.apache.aurora.port.X, where X is the current port count for the job configuration
 // starting at 0. These are random ports as it's not currently possible to request
 // specific ports using Aurora.
 func (a *Job) AddPorts(num int) *Job {
 	start := a.portCount
 	a.portCount += num
 	for i := start; i < a.portCount; i++ {
-		portName := "gorealis.port" + strconv.Itoa(i)
+		portName := "org.apache.aurora.port." + strconv.Itoa(i)
 		a.jobConfig.TaskConfig.Resources[&aurora.Resource{NamedPort: &portName}] = true
 	}
 
