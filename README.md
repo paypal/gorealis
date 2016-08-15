@@ -4,7 +4,7 @@ Go library for communicating with Apache Aurora.
 Named after the northern lights (Aurora Borealis).
 
 ### Aurora version compatibility
-Please see [AURORA.VER](./AURORA.VER) to see the latest Aurora version against which this
+Please see [.auroraversion](./.auroraversion) to see the latest Aurora version against which this
 library has been tested. Vendoring a working version of this library is highly recommended.
 
 ## Usage
