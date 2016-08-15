@@ -6,11 +6,7 @@ we will be using a vagrant instance to demonstrate the setup process. Many of th
 steps also apply to an Aurora installation made via a package manager. Differences in how to configure
 the cluster between the vagrant image and the package manager will be clarified when necessary.
 
-## Spinning up an Aurora instance with Vagrant
-Follow the **[guide](https://github.com/apache/aurora/blob/master/docs/getting-started/vagrant.md)** at the Aurora repository in order to spin up a local cluster
-until step 4 (Start the local cluster).
-
-### Pre-configured Vagrant box
+## Pre-configured Aurora Vagrant box
 Alternatively, if Vagrant and VirtualBox are already configured your machine, 
 you may use a pre-configured vagrant image and skip to the [Creating Aurora Jobs](#creating-aurora-jobs).
 
@@ -24,14 +20,21 @@ And bringing the vagrant box
 $ cd aurora
 $ vagrant up
 ```
-
 **The pre-configured Vagrant box will most likely run on a stale version of Aurora (compared to the master)**
 
-## Configuring Scheduler to use Docker-Compose executor
+## Configuring Aurora manually
+### Spinning up an Aurora instance with Vagrant
+Follow the guide at http://aurora.apache.org/documentation/latest/getting-started/vagrant/
+until the end of step 4 (Start the local cluster) and skip to configuring Docker-Compose executor.
+
+### Installing Aurora through a package manager
+Follow the guide at http://aurora.apache.org/documentation/latest/operations/installation/
+
+### Configuring Scheduler to use Docker-Compose executor
 In order use the docker compose executor with Aurora, we must first give the scheduler
 a configuration file that contains information on how to run the executor.
 
-### Configuration file
+#### Configuration file
 The configuration is a JSON file that contains where to find the executor and how to run it.
 
 More information about how an executor may be configured for consumption by Aurora can be found [here](https://github.com/apache/aurora/blob/master/docs/operations/configuration.md#custom-executors)
@@ -64,15 +67,15 @@ A sample config file for the docker-compose executor looks like this:
 ```
 
 
-### Configuring Scheduler to run custom executor
-#### Setting the proper flags
+#### Configuring the Scheduler to run a custom executor
+##### Setting the proper flags
 Some flags need to be set on the Aurora scheduler in order for custom executors to work properly.
 
 The `-custom_executor_config` flag must point to the location of the JSON blob.
 
 The `-enable_mesos_fetcher` flag must be set to true in order to allow jobs to fetch resources.
 
-#### On vagrant
+##### On vagrant
 * Log into the vagrant image by going to the folder at which the Aurora repository
 was cloned and running:
 ```
@@ -87,7 +90,7 @@ $ vagrant ssh
    -enable_mesos_fetcher=true
 ```
 
-#### On a scheduler installed via package manager
+##### On a scheduler installed via package manager
 * Write the sample JSON blob provided above to a file on the same machine where the scheduler is running.
 
 * Modify `EXTRA_SCHEDULER_ARGS` in the file file `/etc/default/aurora-scheduler` to be:
@@ -95,33 +98,42 @@ $ vagrant ssh
   EXTRA_SCHEDULER_ARGS="-custom_executor_config=<Location of JSON blob> -enable_mesos_fetcher=true"
 ```
 
-## Using a custom client
-Pystachio does yet support launching tasks using a custom executors. Therefore, a custom
+For these configurations to kick in, the aurora-scheduler must be restarted.
+Depending on the distribution of choice being used this command may look a bit different.
+
+On Ubuntu, restarting the aurora-scheduler can be achieved by running the following command:
+```
+$ sudo service aurora-scheduler restart
+```
+
+### Using a custom client
+Pystachio does yet support launching tasks using custom executors. Therefore, a custom
 client must be used in order to launch tasks using a custom executor. In this case,
 we will be using [gorealis](https://github.com/rdelval/gorealis) to launch a task with
 the compose executor on Aurora.
 
-# Configuring the system to run the custom client and docker-compose executor
+## Configuring the system to run a custom client and docker-compose executor
 
-## Installing Go
+### Installing Go
 
-### Linux
+#### Linux
 
-#### Ubuntu
+##### Ubuntu
 
-##### Adding a PPA and install via apt-get
+###### Adding a PPA and install via apt-get
 ```
 $ sudo add-apt-repository ppa:ubuntu-lxc/lxd-stable
 $ sudo apt-get update
 $ sudo apt-get install golang
 ```
 
-##### Configuring the GOPATH
+###### Configuring the GOPATH
 
 Configure the environment to be able to compile and run Go code.
 ```
 $ mkdir $HOME/go
 $ echo export GOPATH=$HOME/go >> $HOME/.bashrc
+$ echo export GOROOT=/usr/lib/go >> $HOME/.bashrc
 $ echo export PATH=$PATH:$GOPATH/bin >> $HOME/.bashrc
 $ echo export PATH=$PATH:$GOROOT/bin >> $HOME/.bashrc
 ```
@@ -131,24 +143,24 @@ Finally we must reload the .bashrc configuration:
 $ source $HOME/.bashrc
 ```
 
-### OS X
+#### OS X
 
 One way to install go on OS X is by using [Homebrew](http://brew.sh/)
 
-#### Installing Homebrew
+##### Installing Homebrew
 Run the following command from the terminal to install Hombrew:
 ```
 $ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
 
-#### Installing Go using Hombrew
+##### Installing Go using Hombrew
 
 Run the following command from the terminal to install Go:
 ```
 $ brew install go
 ```
 
-#### Configuring the GOPATH
+##### Configuring the GOPATH
 
 Configure the environment to be able to compile and run Go code.
 ```
@@ -164,7 +176,7 @@ Finally we must reload the .profile configuration:
 $ source $HOME/.profile
 ```
 
-### Windows
+#### Windows
 
 Download and run the msi installer from https://golang.org/dl/
 
@@ -188,7 +200,7 @@ go get github.com/rdelval/gorealis
 
 # Creating Aurora Jobs
 
-### Creating a thermos job
+## Creating a thermos job
 To demonstrate that we are able to run jobs using different executors on the 
 same scheduler, we'll first launch a thermos job using the default Aurora Client.
 
@@ -219,7 +231,7 @@ aurora job create devcluster/www-data/prod/hello hello_world.aurora
 
 ```
 
-### Creating a docker-compose-executor job
+## Creating a docker-compose-executor job
 Now that we have a thermos job running, it's time to launch a docker-compose job.
 
 We'll be using the gorealis library sample client to send a create job request
@@ -261,7 +273,7 @@ Under Web->Ports, we find the port Mesos allocated. We can then navigate to:
 
 A message from the executor should greet us.
 
-# Creating a Thermos job using gorealis
+## Creating a Thermos job using gorealis
 It is also possible to create a thermos job using gorealis. To do this, however, 
 a thermos payload is required. A thermos payload consists of a JSON blob that details
 the entire task as it exists inside the Aurora Scheduler. *Creating the blob is unfortunately
