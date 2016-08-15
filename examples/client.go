@@ -95,6 +95,7 @@ func main() {
 		response, err := r.CreateJob(job)
 		if err != nil {
 			fmt.Print(err)
+			os.Exit(1)
 		}
 
 		fmt.Print(response.String())
@@ -105,6 +106,7 @@ func main() {
 		response, err := r.KillJob(job.JobKey())
 		if err != nil {
 			fmt.Print(err)
+			os.Exit(1)
 		}
 
 		fmt.Print(response.String())
@@ -114,6 +116,7 @@ func main() {
 		response, err := r.RestartJob(job.JobKey())
 		if err != nil {
 			fmt.Print(err)
+			os.Exit(1)
 		}
 
 		fmt.Print(response.String())
@@ -123,6 +126,7 @@ func main() {
 		response, err := r.AddInstances(&aurora.InstanceKey{job.JobKey(), 0}, 5)
 		if err != nil {
 			fmt.Print(err)
+			os.Exit(1)
 		}
 		fmt.Print(response.String())
 		break
@@ -135,6 +139,7 @@ func main() {
 		resposne, err := r.StartJobUpdate(updateJob, "")
 		if err != nil {
 			fmt.Print(err)
+			os.Exit(1)
 		}
 		fmt.Print(resposne.String())
 		break
@@ -143,6 +148,7 @@ func main() {
 		response, err := r.AbortJobUpdate(job.JobKey(), *updateId, "")
 		if err != nil {
 			fmt.Print(err)
+			os.Exit(1)
 		}
 		fmt.Print(response.String())
 		break

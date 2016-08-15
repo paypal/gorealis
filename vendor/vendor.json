@@ -4,10 +4,9 @@
 	"package": [
 		{
 			"checksumSHA1": "hcwvwW3c+NPM+g4nyv1prqgNrC4=",
-			"origin": "github.com/rdelval/gorealis/vendor/git.apache.org/thrift.git/lib/go/thrift",
 			"path": "git.apache.org/thrift.git/lib/go/thrift",
-			"revision": "bcad91771b7f0bff28a1cac1981d7ef2b9bcef3c",
-			"revisionTime": "2016-07-24T10:11:25Z"
+			"revision": "2007783e874d524a46b818598a45078448ecc53e",
+			"revisionTime": "2016-08-09T19:04:53Z"
 		},
 		{
 			"checksumSHA1": "GcaTbmmzSGqTb2X6qnNtmDyew1Q=",
