@@ -28,15 +28,33 @@ func main() {
 	cmd := flag.String("cmd", "", "Job request type to send to Aurora Scheduler")
 	executor := flag.String("executor", "thermos", "Executor to use")
 	url := flag.String("url", "", "URL at which the Aurora Scheduler exists as [url]:[port]")
+	clustersConfig := flag.String("clusters", "", "Location of the clusters.json file used by aurora.")
 	updateId := flag.String("updateId", "", "Update ID to operate on")
 	username := flag.String("username", "aurora", "Username to use for authorization")
 	password := flag.String("password", "secret", "Password to use for authorization")
 	flag.Parse()
 
+	// Attempt to load leader from zookeeper
+	if *clustersConfig != "" {
+		clusters, err := realis.LoadClusters(*clustersConfig)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		cluster, _ := clusters["devcluster"]
+
+		*url, err = realis.LeaderFromZK(cluster)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	}
+
 	//Create new configuration with default transport layer
 	config, err := realis.NewDefaultConfig(*url)
 	if err != nil {
-		fmt.Print(err)
+		fmt.Println(err)
 		os.Exit(1)
 	}
 
@@ -51,7 +69,7 @@ func main() {
 	case "thermos":
 		payload, err := ioutil.ReadFile("examples/thermos_payload.json")
 		if err != nil {
-			fmt.Print("Error reading json config file: ", err)
+			fmt.Println("Error reading json config file: ", err)
 			os.Exit(1)
 		}
 
@@ -94,41 +112,41 @@ func main() {
 		fmt.Println("Creating job")
 		response, err := r.CreateJob(job)
 		if err != nil {
-			fmt.Print(err)
+			fmt.Println(err)
 			os.Exit(1)
 		}
 
-		fmt.Print(response.String())
+		fmt.Println(response.String())
 		break
 	case "kill":
 		fmt.Println("Killing job")
 
 		response, err := r.KillJob(job.JobKey())
 		if err != nil {
-			fmt.Print(err)
+			fmt.Println(err)
 			os.Exit(1)
 		}
 
-		fmt.Print(response.String())
+		fmt.Println(response.String())
 		break
 	case "restart":
 		fmt.Println("Restarting job")
 		response, err := r.RestartJob(job.JobKey())
 		if err != nil {
-			fmt.Print(err)
+			fmt.Println(err)
 			os.Exit(1)
 		}
 
-		fmt.Print(response.String())
+		fmt.Println(response.String())
 		break
 	case "flexUp":
 		fmt.Println("Flexing up job")
 		response, err := r.AddInstances(&aurora.InstanceKey{job.JobKey(), 0}, 5)
 		if err != nil {
-			fmt.Print(err)
+			fmt.Println(err)
 			os.Exit(1)
 		}
-		fmt.Print(response.String())
+		fmt.Println(response.String())
 		break
 	case "update":
 		fmt.Println("Updating a job with a new name")
@@ -138,19 +156,19 @@ func main() {
 
 		resposne, err := r.StartJobUpdate(updateJob, "")
 		if err != nil {
-			fmt.Print(err)
+			fmt.Println(err)
 			os.Exit(1)
 		}
-		fmt.Print(resposne.String())
+		fmt.Println(resposne.String())
 		break
 	case "abortUpdate":
 		fmt.Println("Abort update")
 		response, err := r.AbortJobUpdate(job.JobKey(), *updateId, "")
 		if err != nil {
-			fmt.Print(err)
+			fmt.Println(err)
 			os.Exit(1)
 		}
-		fmt.Print(response.String())
+		fmt.Println(response.String())
 		break
 	default:
 		fmt.Println("Only create, kill, restart, flexUp, update, and abortUpdate are supported now")

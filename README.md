@@ -14,7 +14,6 @@ library has been tested. Vendoring a working version of this library is highly r
 * [Leveraging the library](docs/leveraging-the-library.md)
 
 ## To Do
-* Allow library to use ZK to find the master
 * Create or import a custom transport that uses https://github.com/jmcvetta/napping to improve efficiency
 * End to end testing with Vagrant setup
 

@@ -13,6 +13,18 @@
 			"path": "github.com/pkg/errors",
 			"revision": "a2d6902c6d2a2f194eb3fb474981ab7867c81505",
 			"revisionTime": "2016-06-27T22:23:52Z"
+		},
+		{
+			"checksumSHA1": "dF3fORwN1HTgrlrdmll9K2cOjOg=",
+			"path": "github.com/samuel/go-zookeeper/zk",
+			"revision": "e64db453f3512cade908163702045e0f31137843",
+			"revisionTime": "2016-06-16T02:49:54Z"
+		},
+		{
+			"checksumSHA1": "iydUphwYqZRq3WhstEdGsbvBAKs=",
+			"path": "github.com/stretchr/testify/assert",
+			"revision": "d77da356e56a7428ad25149ca77381849a6a5232",
+			"revisionTime": "2016-06-15T09:26:46Z"
 		}
 	],
 	"rootPath": "github.com/rdelval/gorealis"
