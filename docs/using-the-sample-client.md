@@ -2,7 +2,9 @@
 
 ## Usage: 
 ```
-client:
+Usage of client:
+  -clusters string
+        Location of the clusters.json file used by aurora.
   -cmd string
         Job request type to send to Aurora Scheduler
   -executor string
