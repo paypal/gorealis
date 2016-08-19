@@ -1,0 +1,21 @@
+{
+  "name": "sample",
+  "cpu": 1.4,
+  "ram_mb": 128,
+  "disk_mb": 64,
+  "executor": "docker-compose-executor",
+  "service": false,
+  "ports": 1,
+  "instances": 1,
+  "uris": [
+    {
+      "uri": "https://github.com/mesos/docker-compose-executor/releases/download/0.1.0/sample-app.tar.gz",
+      "extract": true,
+      "cache": true
+    }
+  ],
+  "labels":{
+    "fileName":"sample-app/docker-compose.yml"
+  }
+
+}
