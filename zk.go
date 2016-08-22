@@ -39,12 +39,14 @@ type ServiceInstance struct {
 func LeaderFromZK(cluster Cluster) (string, error) {
 
 	endpoints := strings.Split(cluster.ZK, ",")
+
 	//TODO (rdelvalle): When enabling debugging, change logger here
 	c, _, err := zk.Connect(endpoints, time.Second*10, zk.WithoutLogger())
-	defer c.Close()
 	if err != nil {
 		return "", errors.Wrap(err, "Failed to connect to Zookeeper at "+cluster.ZK)
 	}
+
+	defer c.Close()
 
 	children, _, _, err := c.ChildrenW(cluster.SchedZKPath)
 	if err != nil {
