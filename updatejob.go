@@ -14,7 +14,9 @@
 
 package realis
 
-import "gen-go/apache/aurora"
+import (
+	"gen-go/apache/aurora"
+)
 
 // Structure to collect all information required to create job update
 type UpdateJob struct {
@@ -32,9 +34,7 @@ func NewUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 	job := NewJob().(AuroraJob)
 	job.jobConfig.TaskConfig = config
 
-
 	// Rebuild resource map from TaskConfig
-	job.resources = make(map[string]*aurora.Resource)
 	for ptr := range config.Resources {
 		if(ptr.NumCpus != nil){
 			job.resources["cpu"].NumCpus = ptr.NumCpus

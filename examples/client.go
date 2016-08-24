@@ -29,6 +29,7 @@ func main() {
 	executor := flag.String("executor", "thermos", "Executor to use")
 	url := flag.String("url", "", "URL at which the Aurora Scheduler exists as [url]:[port]")
 	clustersConfig := flag.String("clusters", "", "Location of the clusters.json file used by aurora.")
+	clusterName := flag.String("cluster", "devcluster", "Name of cluster to run job on")
 	updateId := flag.String("updateId", "", "Update ID to operate on")
 	username := flag.String("username", "aurora", "Username to use for authorization")
 	password := flag.String("password", "secret", "Password to use for authorization")
@@ -42,7 +43,11 @@ func main() {
 			os.Exit(1)
 		}
 
-		cluster, _ := clusters["devcluster"]
+		cluster, ok := clusters[*clusterName];
+		if(!ok) {
+			fmt.Printf("Cluster %s chosen doesn't exist\n", *clusterName)
+			os.Exit(1)
+		}
 
 		*url, err = realis.LeaderFromZK(cluster)
 		if err != nil {
@@ -63,7 +68,7 @@ func main() {
 	r := realis.NewClient(config)
 	defer r.Close()
 
-	var job *realis.Job
+	var job realis.Job
 
 	switch *executor {
 	case "thermos":
@@ -141,7 +146,7 @@ func main() {
 		break
 	case "flexUp":
 		fmt.Println("Flexing up job")
-		response, err := r.AddInstances(&aurora.InstanceKey{job.JobKey(), 0}, 5)
+		response, err := r.AddInstances(aurora.InstanceKey{job.JobKey(), 0}, 5)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -150,8 +155,12 @@ func main() {
 		break
 	case "update":
 		fmt.Println("Updating a job with a new name")
-		updateJob := realis.NewUpdateJob(job)
-
+		taskConfig, err := r.FetchTaskConfig(aurora.InstanceKey{job.JobKey(), 0})
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		updateJob := realis.NewUpdateJob(taskConfig)
 		updateJob.InstanceCount(3).RAM(128)
 
 		resposne, err := r.StartJobUpdate(updateJob, "")
@@ -169,6 +178,15 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println(response.String())
+		break
+	case "taskConfig":
+		fmt.Println("Getting job info")
+		config, err := r.FetchTaskConfig(aurora.InstanceKey{job.JobKey(), 0})
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		print(config.String())
 		break
 	default:
 		fmt.Println("Only create, kill, restart, flexUp, update, and abortUpdate are supported now")

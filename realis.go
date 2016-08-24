@@ -29,8 +29,10 @@ import (
 
 type Realis interface {
 	AbortJobUpdate(key *aurora.JobKey, updateId string, message string) (*aurora.Response, error)
-	AddInstances(instKey *aurora.InstanceKey, count int32) (*aurora.Response, error)
-	CreateJob(auroraJob *Job) (*aurora.Response, error)
+	AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error)
+	ConfigSummary(instKey aurora.InstanceKey) (*aurora.TaskConfig, error)
+	CreateJob(auroraJob Job) (*aurora.Response, error)
+	FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error)
 	KillJob(key *aurora.JobKey) (*aurora.Response, error)
 	KillInstance(key *aurora.JobKey, instanceId int32) (*aurora.Response, error)
 	RestartJob(key *aurora.JobKey) (*aurora.Response, error)
@@ -158,8 +160,8 @@ func (r realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 }
 
 // Sends a create job message to the scheduler with a specific job configuration.
-func (r realisClient) CreateJob(auroraJob *Job) (*aurora.Response, error) {
-	response, err := r.client.CreateJob(auroraJob.jobConfig)
+func (r realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
+	response, err := r.client.CreateJob(auroraJob.JobConfig())
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Error sending Create command to Aurora Scheduler")
@@ -218,13 +220,42 @@ func (r realisClient) AbortJobUpdate(
 
 // Scale up the number of instances under a job configuration using the configuration for specific
 // instance to scale up.
-func (r realisClient) AddInstances(instKey *aurora.InstanceKey, count int32) (*aurora.Response, error) {
+func (r realisClient) AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error) {
 
-	response, err := r.client.AddInstances(instKey, count)
+	response, err := r.client.AddInstances(&instKey, count)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Error sending AddInstances command to Aurora Scheduler")
 	}
 
 	return response, nil
+}
+
+func (r realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error) {
+
+	ids := make(map[int32]bool)
+
+	ids[instKey.InstanceId] = true
+	taskQ := &aurora.TaskQuery{Role: instKey.JobKey.Role,
+		Environment: instKey.JobKey.Environment,
+		JobName:     instKey.JobKey.Name,
+		InstanceIds: ids, }
+
+	response, err := r.client.GetTasksStatus(taskQ)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error querying Aurora Scheduler for task configuration")
+	}
+
+
+	tasks := response.GetResult_().GetScheduleStatusResult_().GetTasks()
+
+	if(len(tasks) == 0) {
+		return nil, errors.Errorf("Instance %d for jobkey %s/%s/%s doesn't exist",
+			instKey.InstanceId,
+			instKey.JobKey.Environment,
+			instKey.JobKey.Role,
+			instKey.JobKey.Name)
+	}
+
+	return tasks[0].AssignedTask.Task, nil
 }
