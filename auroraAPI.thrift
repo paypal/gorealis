@@ -325,6 +325,7 @@ struct JobConfiguration {
   7: Identity owner
   /**
    * If present, the job will be handled as a cron job with this crontab-syntax schedule.
+   * This currently differs from the thrift API found in the main repo where it is not optional
    */
   4: optional string cronSchedule
   /** Collision policy to use when handling overlapping cron runs.  Default is KILL_EXISTING. */
