@@ -30,7 +30,6 @@ import (
 type Realis interface {
 	AbortJobUpdate(key *aurora.JobKey, updateId string, message string) (*aurora.Response, error)
 	AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error)
-	ConfigSummary(instKey aurora.InstanceKey) (*aurora.TaskConfig, error)
 	CreateJob(auroraJob Job) (*aurora.Response, error)
 	FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error)
 	KillJob(key *aurora.JobKey) (*aurora.Response, error)
