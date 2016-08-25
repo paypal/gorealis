@@ -238,17 +238,17 @@ func (r realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskC
 	taskQ := &aurora.TaskQuery{Role: instKey.JobKey.Role,
 		Environment: instKey.JobKey.Environment,
 		JobName:     instKey.JobKey.Name,
-		InstanceIds: ids, }
+		InstanceIds: ids,
+		Statuses:    aurora.ACTIVE_STATES}
 
 	response, err := r.client.GetTasksStatus(taskQ)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error querying Aurora Scheduler for task configuration")
 	}
 
-
 	tasks := response.GetResult_().GetScheduleStatusResult_().GetTasks()
 
-	if(len(tasks) == 0) {
+	if len(tasks) == 0 {
 		return nil, errors.Errorf("Instance %d for jobkey %s/%s/%s doesn't exist",
 			instKey.InstanceId,
 			instKey.JobKey.Environment,

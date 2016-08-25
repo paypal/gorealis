@@ -21,7 +21,7 @@ import (
 // Structure to collect all information required to create job update
 type UpdateJob struct {
 	Job // SetInstanceCount for job is hidden, access via full qualifier
-	req  *aurora.JobUpdateRequest
+	req *aurora.JobUpdateRequest
 }
 
 // Create a default UpdateJob object.
@@ -36,17 +36,17 @@ func NewUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 
 	// Rebuild resource map from TaskConfig
 	for ptr := range config.Resources {
-		if(ptr.NumCpus != nil){
+		if ptr.NumCpus != nil {
 			job.resources["cpu"].NumCpus = ptr.NumCpus
 			continue // Guard against Union violations that Go won't enforce
 		}
 
-		if(ptr.RamMb != nil){
+		if ptr.RamMb != nil {
 			job.resources["ram"].RamMb = ptr.RamMb
 			continue
 		}
 
-		if(ptr.DiskMb != nil){
+		if ptr.DiskMb != nil {
 			job.resources["disk"].DiskMb = ptr.DiskMb
 			continue
 		}

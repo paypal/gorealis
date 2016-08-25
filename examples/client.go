@@ -43,8 +43,8 @@ func main() {
 			os.Exit(1)
 		}
 
-		cluster, ok := clusters[*clusterName];
-		if(!ok) {
+		cluster, ok := clusters[*clusterName]
+		if !ok {
 			fmt.Printf("Cluster %s chosen doesn't exist\n", *clusterName)
 			os.Exit(1)
 		}
