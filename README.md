@@ -1,6 +1,6 @@
 # gorealis [![GoDoc](https://godoc.org/github.com/rdelval/gorealis?status.svg)](https://godoc.org/github.com/rdelval/gorealis)
 
-Go library for communicating with Apache Aurora.
+Go library for communicating with [Apache Aurora](https://github.com/apache/aurora).
 Named after the northern lights (Aurora Borealis).
 
 ### Aurora version compatibility
