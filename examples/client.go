@@ -21,6 +21,7 @@ import (
 	"github.com/rdelval/gorealis"
 	"io/ioutil"
 	"os"
+	"github.com/rdelval/gorealis/response"
 )
 
 func main() {
@@ -115,46 +116,46 @@ func main() {
 	switch *cmd {
 	case "create":
 		fmt.Println("Creating job")
-		response, err := r.CreateJob(job)
+		resp, err := r.CreateJob(job)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 
-		fmt.Println(response.String())
+		fmt.Println(resp.String())
 		break
 	case "kill":
 		fmt.Println("Killing job")
 
-		response, err := r.KillJob(job.JobKey())
+		resp, err := r.KillJob(job.JobKey())
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 
-		fmt.Println(response.String())
+		fmt.Println(resp.String())
 		break
 	case "restart":
 		fmt.Println("Restarting job")
-		response, err := r.RestartJob(job.JobKey())
+		resp, err := r.RestartJob(job.JobKey())
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 
-		fmt.Println(response.String())
+		fmt.Println(resp.String())
 		break
 	case "flexUp":
 		fmt.Println("Flexing up job")
-		response, err := r.AddInstances(aurora.InstanceKey{job.JobKey(), 0}, 5)
+		resp, err := r.AddInstances(aurora.InstanceKey{job.JobKey(), 0}, 5)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		fmt.Println(response.String())
+		fmt.Println(resp.String())
 		break
 	case "update":
-		fmt.Println("Updating a job with a new name")
+		fmt.Println("Updating a job with with more RAM and to 3 instances")
 		taskConfig, err := r.FetchTaskConfig(aurora.InstanceKey{job.JobKey(), 0})
 		if err != nil {
 			fmt.Println(err)
@@ -163,21 +164,32 @@ func main() {
 		updateJob := realis.NewUpdateJob(taskConfig)
 		updateJob.InstanceCount(3).RAM(128)
 
-		resposne, err := r.StartJobUpdate(updateJob, "")
+		resp, err := r.StartJobUpdate(updateJob, "")
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		fmt.Println(resposne.String())
+
+		jobUpdateKey := response.JobUpdateKey(resp)
+		r.MonitorJobUpdate(*jobUpdateKey, 5, 100)
+
+		break
+	case "updateDetails":
+		resp, err := r.JobUpdateDetails(aurora.JobUpdateKey{job.JobKey(), *updateId})
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		response.JobUpdateDetails(resp)
 		break
 	case "abortUpdate":
 		fmt.Println("Abort update")
-		response, err := r.AbortJobUpdate(job.JobKey(), *updateId, "")
+		resp, err := r.AbortJobUpdate(aurora.JobUpdateKey{job.JobKey(), *updateId}, "")
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		fmt.Println(response.String())
+		fmt.Println(resp.String())
 		break
 	case "taskConfig":
 		fmt.Println("Getting job info")
@@ -189,7 +201,7 @@ func main() {
 		print(config.String())
 		break
 	default:
-		fmt.Println("Only create, kill, restart, flexUp, update, and abortUpdate are supported now")
+		fmt.Println("Command not supported")
 		os.Exit(1)
 	}
 }

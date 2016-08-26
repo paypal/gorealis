@@ -24,6 +24,7 @@ These commands are set to run on a vagrant box. To be able to runt he docker com
 executor examples, the vagrant box must be configured properly to use the docker compose executor.
 
 ### Thermos
+
 #### Creating a Thermos job
 ```
 $ cd $GOPATH/src/github.com/rdelval/gorealis
@@ -35,11 +36,12 @@ $ go run $GOPATH/src/github.com/rdelval/gorealis.git/examples/client.go -executo
 ```
 
 ### Docker Compose executor (custom executor)
+
 #### Creating Docker Compose executor job
 ```
 $ go run $GOPATH/src/github.com/rdelval/gorealis/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=create
 ```
 #### Kill a Docker Compose executor job
 ```
-$ go run $GOPATH/src/github.com/rdelval/gorealis.git/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=kill
+$ go run $GOPATH/src/github.com/rdelval/gorealis/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=kill
 ```

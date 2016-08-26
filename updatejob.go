@@ -98,14 +98,12 @@ func (u *UpdateJob) MaxPerInstanceFailures(inst int32) *UpdateJob {
 
 // Max number of FAILED instances to tolerate before terminating the update.
 func (u *UpdateJob) MaxFailedInstances(inst int32) *UpdateJob {
-
 	u.req.Settings.MaxFailedInstances = inst
 	return u
 }
 
 // When False, prevents auto rollback of a failed update.
 func (u *UpdateJob) RollbackOnFail(rollback bool) *UpdateJob {
-
 	u.req.Settings.RollbackOnFailure = rollback
 	return u
 }

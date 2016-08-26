@@ -28,12 +28,15 @@ import (
 )
 
 type Realis interface {
-	AbortJobUpdate(key *aurora.JobKey, updateId string, message string) (*aurora.Response, error)
+	AbortJobUpdate(updateKey aurora.JobUpdateKey, message string) (*aurora.Response, error)
 	AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error)
 	CreateJob(auroraJob Job) (*aurora.Response, error)
 	FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error)
+	JobUpdateDetails(updateKey aurora.JobUpdateKey) (*aurora.Response, error)
 	KillJob(key *aurora.JobKey) (*aurora.Response, error)
-	KillInstance(key *aurora.JobKey, instanceId int32) (*aurora.Response, error)
+	KillInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error)
+	MonitorJobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout int) bool
+	RestartInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error)
 	RestartJob(key *aurora.JobKey) (*aurora.Response, error)
 	StartJobUpdate(updateJob *UpdateJob, message string) (*aurora.Response, error)
 	Close()
@@ -56,7 +59,8 @@ func NewClient(config RealisConfig) Realis {
 
 	protocolFactory := thrift.NewTJSONProtocolFactory()
 
-	return realisClient{client: aurora.NewAuroraSchedulerManagerClientFactory(config.transport, protocolFactory)}
+	return realisClient{
+		client: aurora.NewAuroraSchedulerManagerClientFactory(config.transport, protocolFactory)}
 }
 
 // Create a default configuration of the transport layer, requires a URL to test connection with.
@@ -122,14 +126,16 @@ func (r realisClient) getActiveInstanceIds(key *aurora.JobKey) (map[int32]bool, 
 	return jobInstanceIds, nil
 }
 
-// Kill a specific instance of a job.
-func (r realisClient) KillInstance(key *aurora.JobKey, instanceId int32) (*aurora.Response, error) {
+// Kill specific instances of a job.
+func (r realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error) {
 
 	instanceIds := make(map[int32]bool)
-	instanceIds[instanceId] = true
+
+	for _, instId := range instances {
+		instanceIds[instId] = true
+	}
 
 	response, err := r.client.KillTasks(key, instanceIds)
-
 	if err != nil {
 		return nil, errors.Wrap(err, "Error sending Kill command to Aurora Scheduler")
 	}
@@ -164,6 +170,22 @@ func (r realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Error sending Create command to Aurora Scheduler")
+	}
+
+	return response, nil
+}
+
+// Restarts specific instances specified
+func (r realisClient) RestartInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error) {
+	instanceIds := make(map[int32]bool)
+
+	for _, instId := range instances {
+		instanceIds[instId] = true
+	}
+
+	response, err := r.client.RestartShards(key, instanceIds)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error sending Restart command to Aurora Scheduler")
 	}
 
 	return response, nil
@@ -204,11 +226,10 @@ func (r realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*aur
 
 // Abort Job Update on Aurora. Requires the updateId which can be obtained on the Aurora web UI.
 func (r realisClient) AbortJobUpdate(
-	key *aurora.JobKey,
-	updateId string,
+	updateKey aurora.JobUpdateKey,
 	message string) (*aurora.Response, error) {
 
-	response, err := r.client.AbortJobUpdate(&aurora.JobUpdateKey{key, updateId}, message)
+	response, err := r.client.AbortJobUpdate(&updateKey, message)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Error sending AbortJobUpdate command to Aurora Scheduler")
@@ -257,4 +278,14 @@ func (r realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskC
 	}
 
 	return tasks[0].AssignedTask.Task, nil
+}
+
+func (r realisClient) JobUpdateDetails(updateKey aurora.JobUpdateKey) (*aurora.Response, error) {
+
+	resp, err := r.client.GetJobUpdateDetails(&updateKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to get job update details")
+	}
+
+	return resp,nil
 }
