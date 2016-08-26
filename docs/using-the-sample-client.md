@@ -2,7 +2,9 @@
 
 ## Usage: 
 ```
-Usage of client:
+Usage of ./client:
+  -cluster string
+        Name of cluster to run job on (default "devcluster")
   -clusters string
         Location of the clusters.json file used by aurora.
   -cmd string

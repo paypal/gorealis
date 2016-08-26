@@ -181,7 +181,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		fmt.Println("Number of live instances: ", live)
+		fmt.Println("Number of live instances: ", len(live))
 		break
 	case "flexUp":
 		fmt.Println("Flexing up job")
