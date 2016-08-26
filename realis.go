@@ -32,10 +32,10 @@ type Realis interface {
 	AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error)
 	CreateJob(auroraJob Job) (*aurora.Response, error)
 	FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error)
+    GetInstanceIds(key *aurora.JobKey, states map[aurora.ScheduleStatus]bool) (map[int32]bool, error)
 	JobUpdateDetails(updateKey aurora.JobUpdateKey) (*aurora.Response, error)
 	KillJob(key *aurora.JobKey) (*aurora.Response, error)
 	KillInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error)
-	MonitorJobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout int) bool
 	RestartInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error)
 	RestartJob(key *aurora.JobKey) (*aurora.Response, error)
 	StartJobUpdate(updateJob *UpdateJob, message string) (*aurora.Response, error)
@@ -105,11 +105,11 @@ func (r realisClient) Close() {
 }
 
 // Uses predefined set of states to retrieve a set of active jobs in Apache Aurora.
-func (r realisClient) getActiveInstanceIds(key *aurora.JobKey) (map[int32]bool, error) {
+func (r realisClient) GetInstanceIds(key *aurora.JobKey, states map[aurora.ScheduleStatus]bool) (map[int32]bool, error) {
 	taskQ := &aurora.TaskQuery{Role: key.Role,
 		Environment: key.Environment,
 		JobName:     key.Name,
-		Statuses:    aurora.ACTIVE_STATES}
+		Statuses:    states}
 
 	response, err := r.client.GetTasksWithoutConfigs(taskQ)
 	if err != nil {
@@ -146,7 +146,7 @@ func (r realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*au
 // Sends a kill message to the scheduler for all active tasks under a job.
 func (r realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 
-	instanceIds, err := r.getActiveInstanceIds(key)
+	instanceIds, err := r.GetInstanceIds(key, aurora.ACTIVE_STATES)
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not retrieve relevant task instance IDs")
 	}
@@ -194,7 +194,7 @@ func (r realisClient) RestartInstances(key *aurora.JobKey, instances ...int32) (
 // Restarts all active tasks under a job configuration.
 func (r realisClient) RestartJob(key *aurora.JobKey) (*aurora.Response, error) {
 
-	instanceIds, err := r.getActiveInstanceIds(key)
+	instanceIds, err := r.GetInstanceIds(key, aurora.ACTIVE_STATES)
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not retrieve relevant task instance IDs")
 	}

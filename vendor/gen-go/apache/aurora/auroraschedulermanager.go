@@ -90,6 +90,12 @@ type AuroraSchedulerManager interface {
 	//  - Key: The update to abort.
 	//  - Message: A user-specified message to include with the induced job update state change.
 	AbortJobUpdate(key *JobUpdateKey, message string) (r *Response, err error)
+	// Rollbacks the specified active job update to the initial state.
+	//
+	// Parameters:
+	//  - Key: The update to rollback.
+	//  - Message: A user-specified message to include with the induced job update state change.
+	RollbackJobUpdate(key *JobUpdateKey, message string) (r *Response, err error)
 	// Allows progress of the job update in case blockIfNoPulsesAfterMs is specified in
 	// JobUpdateSettings. Unblocks progress if the update was previously blocked.
 	// Responds with ResponseCode.INVALID_REQUEST in case an unknown update key is specified.
@@ -1079,6 +1085,87 @@ func (p *AuroraSchedulerManagerClient) recvAbortJobUpdate() (value *Response, er
 	return
 }
 
+// Rollbacks the specified active job update to the initial state.
+//
+// Parameters:
+//  - Key: The update to rollback.
+//  - Message: A user-specified message to include with the induced job update state change.
+func (p *AuroraSchedulerManagerClient) RollbackJobUpdate(key *JobUpdateKey, message string) (r *Response, err error) {
+	if err = p.sendRollbackJobUpdate(key, message); err != nil {
+		return
+	}
+	return p.recvRollbackJobUpdate()
+}
+
+func (p *AuroraSchedulerManagerClient) sendRollbackJobUpdate(key *JobUpdateKey, message string) (err error) {
+	oprot := p.OutputProtocol
+	if oprot == nil {
+		oprot = p.ProtocolFactory.GetProtocol(p.Transport)
+		p.OutputProtocol = oprot
+	}
+	p.SeqId++
+	if err = oprot.WriteMessageBegin("rollbackJobUpdate", thrift.CALL, p.SeqId); err != nil {
+		return
+	}
+	args := AuroraSchedulerManagerRollbackJobUpdateArgs{
+		Key:     key,
+		Message: message,
+	}
+	if err = args.Write(oprot); err != nil {
+		return
+	}
+	if err = oprot.WriteMessageEnd(); err != nil {
+		return
+	}
+	return oprot.Flush()
+}
+
+func (p *AuroraSchedulerManagerClient) recvRollbackJobUpdate() (value *Response, err error) {
+	iprot := p.InputProtocol
+	if iprot == nil {
+		iprot = p.ProtocolFactory.GetProtocol(p.Transport)
+		p.InputProtocol = iprot
+	}
+	method, mTypeId, seqId, err := iprot.ReadMessageBegin()
+	if err != nil {
+		return
+	}
+	if method != "rollbackJobUpdate" {
+		err = thrift.NewTApplicationException(thrift.WRONG_METHOD_NAME, "rollbackJobUpdate failed: wrong method name")
+		return
+	}
+	if p.SeqId != seqId {
+		err = thrift.NewTApplicationException(thrift.BAD_SEQUENCE_ID, "rollbackJobUpdate failed: out of sequence response")
+		return
+	}
+	if mTypeId == thrift.EXCEPTION {
+		error153 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error154 error
+		error154, err = error153.Read(iprot)
+		if err != nil {
+			return
+		}
+		if err = iprot.ReadMessageEnd(); err != nil {
+			return
+		}
+		err = error154
+		return
+	}
+	if mTypeId != thrift.REPLY {
+		err = thrift.NewTApplicationException(thrift.INVALID_MESSAGE_TYPE_EXCEPTION, "rollbackJobUpdate failed: invalid message type")
+		return
+	}
+	result := AuroraSchedulerManagerRollbackJobUpdateResult{}
+	if err = result.Read(iprot); err != nil {
+		return
+	}
+	if err = iprot.ReadMessageEnd(); err != nil {
+		return
+	}
+	value = result.GetSuccess()
+	return
+}
+
 // Allows progress of the job update in case blockIfNoPulsesAfterMs is specified in
 // JobUpdateSettings. Unblocks progress if the update was previously blocked.
 // Responds with ResponseCode.INVALID_REQUEST in case an unknown update key is specified.
@@ -1133,16 +1220,16 @@ func (p *AuroraSchedulerManagerClient) recvPulseJobUpdate() (value *Response, er
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error153 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error154 error
-		error154, err = error153.Read(iprot)
+		error155 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error156 error
+		error156, err = error155.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error154
+		err = error156
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1165,21 +1252,22 @@ type AuroraSchedulerManagerProcessor struct {
 }
 
 func NewAuroraSchedulerManagerProcessor(handler AuroraSchedulerManager) *AuroraSchedulerManagerProcessor {
-	self155 := &AuroraSchedulerManagerProcessor{NewReadOnlySchedulerProcessor(handler)}
-	self155.AddToProcessorMap("createJob", &auroraSchedulerManagerProcessorCreateJob{handler: handler})
-	self155.AddToProcessorMap("scheduleCronJob", &auroraSchedulerManagerProcessorScheduleCronJob{handler: handler})
-	self155.AddToProcessorMap("descheduleCronJob", &auroraSchedulerManagerProcessorDescheduleCronJob{handler: handler})
-	self155.AddToProcessorMap("startCronJob", &auroraSchedulerManagerProcessorStartCronJob{handler: handler})
-	self155.AddToProcessorMap("restartShards", &auroraSchedulerManagerProcessorRestartShards{handler: handler})
-	self155.AddToProcessorMap("killTasks", &auroraSchedulerManagerProcessorKillTasks{handler: handler})
-	self155.AddToProcessorMap("addInstances", &auroraSchedulerManagerProcessorAddInstances{handler: handler})
-	self155.AddToProcessorMap("replaceCronTemplate", &auroraSchedulerManagerProcessorReplaceCronTemplate{handler: handler})
-	self155.AddToProcessorMap("startJobUpdate", &auroraSchedulerManagerProcessorStartJobUpdate{handler: handler})
-	self155.AddToProcessorMap("pauseJobUpdate", &auroraSchedulerManagerProcessorPauseJobUpdate{handler: handler})
-	self155.AddToProcessorMap("resumeJobUpdate", &auroraSchedulerManagerProcessorResumeJobUpdate{handler: handler})
-	self155.AddToProcessorMap("abortJobUpdate", &auroraSchedulerManagerProcessorAbortJobUpdate{handler: handler})
-	self155.AddToProcessorMap("pulseJobUpdate", &auroraSchedulerManagerProcessorPulseJobUpdate{handler: handler})
-	return self155
+	self157 := &AuroraSchedulerManagerProcessor{NewReadOnlySchedulerProcessor(handler)}
+	self157.AddToProcessorMap("createJob", &auroraSchedulerManagerProcessorCreateJob{handler: handler})
+	self157.AddToProcessorMap("scheduleCronJob", &auroraSchedulerManagerProcessorScheduleCronJob{handler: handler})
+	self157.AddToProcessorMap("descheduleCronJob", &auroraSchedulerManagerProcessorDescheduleCronJob{handler: handler})
+	self157.AddToProcessorMap("startCronJob", &auroraSchedulerManagerProcessorStartCronJob{handler: handler})
+	self157.AddToProcessorMap("restartShards", &auroraSchedulerManagerProcessorRestartShards{handler: handler})
+	self157.AddToProcessorMap("killTasks", &auroraSchedulerManagerProcessorKillTasks{handler: handler})
+	self157.AddToProcessorMap("addInstances", &auroraSchedulerManagerProcessorAddInstances{handler: handler})
+	self157.AddToProcessorMap("replaceCronTemplate", &auroraSchedulerManagerProcessorReplaceCronTemplate{handler: handler})
+	self157.AddToProcessorMap("startJobUpdate", &auroraSchedulerManagerProcessorStartJobUpdate{handler: handler})
+	self157.AddToProcessorMap("pauseJobUpdate", &auroraSchedulerManagerProcessorPauseJobUpdate{handler: handler})
+	self157.AddToProcessorMap("resumeJobUpdate", &auroraSchedulerManagerProcessorResumeJobUpdate{handler: handler})
+	self157.AddToProcessorMap("abortJobUpdate", &auroraSchedulerManagerProcessorAbortJobUpdate{handler: handler})
+	self157.AddToProcessorMap("rollbackJobUpdate", &auroraSchedulerManagerProcessorRollbackJobUpdate{handler: handler})
+	self157.AddToProcessorMap("pulseJobUpdate", &auroraSchedulerManagerProcessorPulseJobUpdate{handler: handler})
+	return self157
 }
 
 type auroraSchedulerManagerProcessorCreateJob struct {
@@ -1741,6 +1829,54 @@ func (p *auroraSchedulerManagerProcessorAbortJobUpdate) Process(seqId int32, ipr
 		result.Success = retval
 	}
 	if err2 = oprot.WriteMessageBegin("abortJobUpdate", thrift.REPLY, seqId); err2 != nil {
+		err = err2
+	}
+	if err2 = result.Write(oprot); err == nil && err2 != nil {
+		err = err2
+	}
+	if err2 = oprot.WriteMessageEnd(); err == nil && err2 != nil {
+		err = err2
+	}
+	if err2 = oprot.Flush(); err == nil && err2 != nil {
+		err = err2
+	}
+	if err != nil {
+		return
+	}
+	return true, err
+}
+
+type auroraSchedulerManagerProcessorRollbackJobUpdate struct {
+	handler AuroraSchedulerManager
+}
+
+func (p *auroraSchedulerManagerProcessorRollbackJobUpdate) Process(seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := AuroraSchedulerManagerRollbackJobUpdateArgs{}
+	if err = args.Read(iprot); err != nil {
+		iprot.ReadMessageEnd()
+		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
+		oprot.WriteMessageBegin("rollbackJobUpdate", thrift.EXCEPTION, seqId)
+		x.Write(oprot)
+		oprot.WriteMessageEnd()
+		oprot.Flush()
+		return false, err
+	}
+
+	iprot.ReadMessageEnd()
+	result := AuroraSchedulerManagerRollbackJobUpdateResult{}
+	var retval *Response
+	var err2 error
+	if retval, err2 = p.handler.RollbackJobUpdate(args.Key, args.Message); err2 != nil {
+		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing rollbackJobUpdate: "+err2.Error())
+		oprot.WriteMessageBegin("rollbackJobUpdate", thrift.EXCEPTION, seqId)
+		x.Write(oprot)
+		oprot.WriteMessageEnd()
+		oprot.Flush()
+		return true, err2
+	} else {
+		result.Success = retval
+	}
+	if err2 = oprot.WriteMessageBegin("rollbackJobUpdate", thrift.REPLY, seqId); err2 != nil {
 		err = err2
 	}
 	if err2 = result.Write(oprot); err == nil && err2 != nil {
@@ -2693,13 +2829,13 @@ func (p *AuroraSchedulerManagerRestartShardsArgs) readField3(iprot thrift.TProto
 	tSet := make(map[int32]bool, size)
 	p.ShardIds = tSet
 	for i := 0; i < size; i++ {
-		var _elem156 int32
+		var _elem158 int32
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			_elem156 = v
+			_elem158 = v
 		}
-		p.ShardIds[_elem156] = true
+		p.ShardIds[_elem158] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -2950,13 +3086,13 @@ func (p *AuroraSchedulerManagerKillTasksArgs) readField5(iprot thrift.TProtocol)
 	tSet := make(map[int32]bool, size)
 	p.Instances = tSet
 	for i := 0; i < size; i++ {
-		var _elem157 int32
+		var _elem159 int32
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			_elem157 = v
+			_elem159 = v
 		}
-		p.Instances[_elem157] = true
+		p.Instances[_elem159] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -4503,6 +4639,241 @@ func (p *AuroraSchedulerManagerAbortJobUpdateResult) String() string {
 		return "<nil>"
 	}
 	return fmt.Sprintf("AuroraSchedulerManagerAbortJobUpdateResult(%+v)", *p)
+}
+
+// Attributes:
+//  - Key: The update to rollback.
+//  - Message: A user-specified message to include with the induced job update state change.
+type AuroraSchedulerManagerRollbackJobUpdateArgs struct {
+	Key     *JobUpdateKey `thrift:"key,1" json:"key"`
+	Message string        `thrift:"message,2" json:"message"`
+}
+
+func NewAuroraSchedulerManagerRollbackJobUpdateArgs() *AuroraSchedulerManagerRollbackJobUpdateArgs {
+	return &AuroraSchedulerManagerRollbackJobUpdateArgs{}
+}
+
+var AuroraSchedulerManagerRollbackJobUpdateArgs_Key_DEFAULT *JobUpdateKey
+
+func (p *AuroraSchedulerManagerRollbackJobUpdateArgs) GetKey() *JobUpdateKey {
+	if !p.IsSetKey() {
+		return AuroraSchedulerManagerRollbackJobUpdateArgs_Key_DEFAULT
+	}
+	return p.Key
+}
+
+func (p *AuroraSchedulerManagerRollbackJobUpdateArgs) GetMessage() string {
+	return p.Message
+}
+func (p *AuroraSchedulerManagerRollbackJobUpdateArgs) IsSetKey() bool {
+	return p.Key != nil
+}
+
+func (p *AuroraSchedulerManagerRollbackJobUpdateArgs) Read(iprot thrift.TProtocol) error {
+	if _, err := iprot.ReadStructBegin(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+		if err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T field %d read error: ", p, fieldId), err)
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+		switch fieldId {
+		case 1:
+			if err := p.readField1(iprot); err != nil {
+				return err
+			}
+		case 2:
+			if err := p.readField2(iprot); err != nil {
+				return err
+			}
+		default:
+			if err := iprot.Skip(fieldTypeId); err != nil {
+				return err
+			}
+		}
+		if err := iprot.ReadFieldEnd(); err != nil {
+			return err
+		}
+	}
+	if err := iprot.ReadStructEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+	}
+	return nil
+}
+
+func (p *AuroraSchedulerManagerRollbackJobUpdateArgs) readField1(iprot thrift.TProtocol) error {
+	p.Key = &JobUpdateKey{}
+	if err := p.Key.Read(iprot); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", p.Key), err)
+	}
+	return nil
+}
+
+func (p *AuroraSchedulerManagerRollbackJobUpdateArgs) readField2(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadString(); err != nil {
+		return thrift.PrependError("error reading field 2: ", err)
+	} else {
+		p.Message = v
+	}
+	return nil
+}
+
+func (p *AuroraSchedulerManagerRollbackJobUpdateArgs) Write(oprot thrift.TProtocol) error {
+	if err := oprot.WriteStructBegin("rollbackJobUpdate_args"); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+	}
+	if err := p.writeField1(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField2(oprot); err != nil {
+		return err
+	}
+	if err := oprot.WriteFieldStop(); err != nil {
+		return thrift.PrependError("write field stop error: ", err)
+	}
+	if err := oprot.WriteStructEnd(); err != nil {
+		return thrift.PrependError("write struct stop error: ", err)
+	}
+	return nil
+}
+
+func (p *AuroraSchedulerManagerRollbackJobUpdateArgs) writeField1(oprot thrift.TProtocol) (err error) {
+	if err := oprot.WriteFieldBegin("key", thrift.STRUCT, 1); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:key: ", p), err)
+	}
+	if err := p.Key.Write(oprot); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.Key), err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 1:key: ", p), err)
+	}
+	return err
+}
+
+func (p *AuroraSchedulerManagerRollbackJobUpdateArgs) writeField2(oprot thrift.TProtocol) (err error) {
+	if err := oprot.WriteFieldBegin("message", thrift.STRING, 2); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:message: ", p), err)
+	}
+	if err := oprot.WriteString(string(p.Message)); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T.message (2) field write error: ", p), err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 2:message: ", p), err)
+	}
+	return err
+}
+
+func (p *AuroraSchedulerManagerRollbackJobUpdateArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("AuroraSchedulerManagerRollbackJobUpdateArgs(%+v)", *p)
+}
+
+// Attributes:
+//  - Success
+type AuroraSchedulerManagerRollbackJobUpdateResult struct {
+	Success *Response `thrift:"success,0" json:"success,omitempty"`
+}
+
+func NewAuroraSchedulerManagerRollbackJobUpdateResult() *AuroraSchedulerManagerRollbackJobUpdateResult {
+	return &AuroraSchedulerManagerRollbackJobUpdateResult{}
+}
+
+var AuroraSchedulerManagerRollbackJobUpdateResult_Success_DEFAULT *Response
+
+func (p *AuroraSchedulerManagerRollbackJobUpdateResult) GetSuccess() *Response {
+	if !p.IsSetSuccess() {
+		return AuroraSchedulerManagerRollbackJobUpdateResult_Success_DEFAULT
+	}
+	return p.Success
+}
+func (p *AuroraSchedulerManagerRollbackJobUpdateResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *AuroraSchedulerManagerRollbackJobUpdateResult) Read(iprot thrift.TProtocol) error {
+	if _, err := iprot.ReadStructBegin(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+		if err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T field %d read error: ", p, fieldId), err)
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+		switch fieldId {
+		case 0:
+			if err := p.readField0(iprot); err != nil {
+				return err
+			}
+		default:
+			if err := iprot.Skip(fieldTypeId); err != nil {
+				return err
+			}
+		}
+		if err := iprot.ReadFieldEnd(); err != nil {
+			return err
+		}
+	}
+	if err := iprot.ReadStructEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+	}
+	return nil
+}
+
+func (p *AuroraSchedulerManagerRollbackJobUpdateResult) readField0(iprot thrift.TProtocol) error {
+	p.Success = &Response{}
+	if err := p.Success.Read(iprot); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", p.Success), err)
+	}
+	return nil
+}
+
+func (p *AuroraSchedulerManagerRollbackJobUpdateResult) Write(oprot thrift.TProtocol) error {
+	if err := oprot.WriteStructBegin("rollbackJobUpdate_result"); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+	}
+	if err := p.writeField0(oprot); err != nil {
+		return err
+	}
+	if err := oprot.WriteFieldStop(); err != nil {
+		return thrift.PrependError("write field stop error: ", err)
+	}
+	if err := oprot.WriteStructEnd(); err != nil {
+		return thrift.PrependError("write struct stop error: ", err)
+	}
+	return nil
+}
+
+func (p *AuroraSchedulerManagerRollbackJobUpdateResult) writeField0(oprot thrift.TProtocol) (err error) {
+	if p.IsSetSuccess() {
+		if err := oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 0:success: ", p), err)
+		}
+		if err := p.Success.Write(oprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.Success), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 0:success: ", p), err)
+		}
+	}
+	return err
+}
+
+func (p *AuroraSchedulerManagerRollbackJobUpdateResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("AuroraSchedulerManagerRollbackJobUpdateResult(%+v)", *p)
 }
 
 // Attributes:

@@ -14,7 +14,6 @@
 
 namespace java org.apache.aurora.gen
 namespace py gen.apache.aurora.api
-namespace go gen.apache.aurora
 
 // Thrift interface definition for the aurora scheduler.
 
@@ -260,12 +259,12 @@ struct TaskConfig {
  30: optional string tier
  /** All resources required to run a task. */
  32: set<Resource> resources
- /** Resources to retrieve with Mesos Fetcher */
- 33: optional set<MesosFetcherURI> mesosFetcherUris
 
  20: set<Constraint> constraints
  /** a list of named ports this task requests */
  21: set<string> requestedPorts
+ /** Resources to retrieve with Mesos Fetcher */
+ 33: optional set<MesosFetcherURI> mesosFetcherUris
  /**
   * Custom links to include when displaying this task on the scheduler dashboard. Keys are anchor
   * text, values are URLs. Wildcards are supported for dynamic link crafting based on host, ports,
@@ -1108,6 +1107,15 @@ service AuroraSchedulerManager extends ReadOnlyScheduler {
       3: string message)
 
   /**
+   * Rollbacks the specified active job update to the initial state.
+   */
+  Response rollbackJobUpdate(
+      /** The update to rollback. */
+      1: JobUpdateKey key,
+      /** A user-specified message to include with the induced job update state change. */
+      2: string message)
+
+  /**
    * Allows progress of the job update in case blockIfNoPulsesAfterMs is specified in
    * JobUpdateSettings. Unblocks progress if the update was previously blocked.
    * Responds with ResponseCode.INVALID_REQUEST in case an unknown update key is specified.
@@ -1203,3 +1211,7 @@ service AuroraAdmin extends AuroraSchedulerManager {
 
 // The name of the header that should be sent to bypass leader redirection in the Scheduler.
 const string BYPASS_LEADER_REDIRECT_HEADER_NAME = 'Bypass-Leader-Redirect'
+
+// The path under which a task's filesystem should be mounted when using images and the Mesos
+// unified containerizer.
+const string TASK_FILESYSTEM_MOUNT_POINT = 'taskfs'

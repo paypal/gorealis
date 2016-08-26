@@ -16,18 +16,22 @@
 package realis
 
 import (
-	"gen-go/apache/aurora"
 	"fmt"
-	"os"
+	"gen-go/apache/aurora"
 	"github.com/rdelval/gorealis/response"
+	"os"
 	"time"
 )
 
-// Polls the scheduler every certain amount of time to see if the update has succeeded
-func (r realisClient) MonitorJobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout int) bool {
+type Monitor struct {
+	Client Realis
+}
 
-	for i:= 0; i*interval <= timeout; i++ {
-		respDetail, err := r.JobUpdateDetails(updateKey)
+// Polls the scheduler every certain amount of time to see if the update has succeeded
+func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout int) bool {
+
+	for i := 0; i*interval <= timeout; i++ {
+		respDetail, err := m.Client.JobUpdateDetails(updateKey)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -35,19 +39,18 @@ func (r realisClient) MonitorJobUpdate(updateKey aurora.JobUpdateKey, interval i
 
 		updateDetail := response.JobUpdateDetails(respDetail)
 
-		// Iterate through the history of the events available
-		for _, detail := range updateDetail.UpdateEvents {
-			if _, ok := aurora.ACTIVE_JOB_UPDATE_STATES[detail.Status]; !ok {
+		status := updateDetail.Update.Summary.State.Status
 
-				// Rolled forward is the only state in which an update has been successfully updated
-				// if we encounter an inactive state and it is not at rolled forward, update failed
-				if detail.Status == aurora.JobUpdateStatus_ROLLED_FORWARD {
-					fmt.Println("Update succeded")
-					return true
-				} else {
-					fmt.Println("Update failed")
-					return false
-				}
+		if _, ok := aurora.ACTIVE_JOB_UPDATE_STATES[status]; !ok {
+
+			// Rolled forward is the only state in which an update has been successfully updated
+			// if we encounter an inactive state and it is not at rolled forward, update failed
+			if status == aurora.JobUpdateStatus_ROLLED_FORWARD {
+				fmt.Println("Update succeded")
+				return true
+			} else {
+				fmt.Println("Update failed")
+				return false
 			}
 		}
 
@@ -55,6 +58,29 @@ func (r realisClient) MonitorJobUpdate(updateKey aurora.JobUpdateKey, interval i
 		time.Sleep(time.Duration(interval) * time.Second)
 	}
 
+	fmt.Println("Timed out")
+	return false
+}
+
+
+func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval int, timeout int) bool {
+
+	for i := 0; i*interval <= timeout; i++ {
+
+		live, err := m.Client.GetInstanceIds(key, aurora.LIVE_STATES)
+
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		if(len(live) == int(instances)){
+			return true
+		}
+
+		fmt.Println("Polling, instances running: ", len(live))
+		time.Sleep(time.Duration(interval) * time.Second)
+	}
 
 	fmt.Println("Timed out")
 	return false

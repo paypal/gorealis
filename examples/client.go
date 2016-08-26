@@ -24,8 +24,8 @@ import (
 	"github.com/rdelval/gorealis/response"
 )
 
-func main() {
 
+func main() {
 	cmd := flag.String("cmd", "", "Job request type to send to Aurora Scheduler")
 	executor := flag.String("executor", "thermos", "Executor to use")
 	url := flag.String("url", "", "URL at which the Aurora Scheduler exists as [url]:[port]")
@@ -69,6 +69,7 @@ func main() {
 	r := realis.NewClient(config)
 	defer r.Close()
 
+	monitor := &realis.Monitor{r}
 	var job realis.Job
 
 	switch *executor {
@@ -121,8 +122,17 @@ func main() {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-
 		fmt.Println(resp.String())
+
+		if(resp.ResponseCode == aurora.ResponseCode_OK) {
+			if(!monitor.Instances(job.JobKey(), job.GetInstanceCount(), 5, 10)) {
+				_, err := r.KillJob(job.JobKey())
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+			}
+		}
 		break
 	case "kill":
 		fmt.Println("Killing job")
@@ -133,6 +143,12 @@ func main() {
 			os.Exit(1)
 		}
 
+		if(resp.ResponseCode == aurora.ResponseCode_OK) {
+			if(!monitor.Instances(job.JobKey(), 0, 5, 10)) {
+				fmt.Println("Unable to kill all instances of job")
+				os.Exit(1)
+			}
+		}
 		fmt.Println(resp.String())
 		break
 	case "restart":
@@ -145,12 +161,42 @@ func main() {
 
 		fmt.Println(resp.String())
 		break
-	case "flexUp":
-		fmt.Println("Flexing up job")
-		resp, err := r.AddInstances(aurora.InstanceKey{job.JobKey(), 0}, 5)
+	case "liveCount":
+		fmt.Println("Getting instance count")
+
+		live, err := r.GetInstanceIds(job.JobKey(), aurora.LIVE_STATES)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
+		}
+
+		fmt.Println("Number of live instances: ", len(live))
+		break
+	case "activeCount":
+		fmt.Println("Getting instance count")
+
+		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		fmt.Println("Number of live instances: ", live)
+		break
+	case "flexUp":
+		fmt.Println("Flexing up job")
+
+		numOfInstances := int32(5)
+		resp, err := r.AddInstances(aurora.InstanceKey{job.JobKey(), 0}, numOfInstances)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		if(resp.ResponseCode == aurora.ResponseCode_OK) {
+			if(!monitor.Instances(job.JobKey(), job.GetInstanceCount()+numOfInstances, 5, 10)) {
+				fmt.Println("Flexing up failed")
+			}
 		}
 		fmt.Println(resp.String())
 		break
@@ -162,7 +208,7 @@ func main() {
 			os.Exit(1)
 		}
 		updateJob := realis.NewUpdateJob(taskConfig)
-		updateJob.InstanceCount(3).RAM(128)
+		updateJob.InstanceCount(5).RAM(128)
 
 		resp, err := r.StartJobUpdate(updateJob, "")
 		if err != nil {
@@ -171,7 +217,7 @@ func main() {
 		}
 
 		jobUpdateKey := response.JobUpdateKey(resp)
-		r.MonitorJobUpdate(*jobUpdateKey, 5, 100)
+		monitor.JobUpdate(*jobUpdateKey, 5, 100)
 
 		break
 	case "updateDetails":

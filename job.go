@@ -40,6 +40,7 @@ type Job interface {
 	TaskConfig() *aurora.TaskConfig
 	IsService(isService bool) Job
 	InstanceCount(instCount int32) Job
+	GetInstanceCount() int32
 	MaxFailure(maxFail int32) Job
 }
 
@@ -153,6 +154,11 @@ func (j AuroraJob) MaxFailure(maxFail int32) Job {
 func (j AuroraJob) InstanceCount(instCount int32) Job {
 	j.jobConfig.InstanceCount = instCount
 	return j
+}
+
+// How many instances of the job to run
+func (j AuroraJob) GetInstanceCount() int32 {
+	return j.jobConfig.InstanceCount
 }
 
 // Restart the job's tasks if they fail

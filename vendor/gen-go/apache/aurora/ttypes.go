@@ -4271,9 +4271,9 @@ func (p *Resource) String() string {
 //  - Production: Whether this is a production task, which can preempt.
 //  - Tier: Task tier type.
 //  - Resources: All resources required to run a task.
-//  - MesosFetcherUris: Resources to retrieve with Mesos Fetcher
 //  - Constraints
 //  - RequestedPorts: a list of named ports this task requests
+//  - MesosFetcherUris: Resources to retrieve with Mesos Fetcher
 //  - TaskLinks: Custom links to include when displaying this task on the scheduler dashboard. Keys are anchor
 // text, values are URLs. Wildcards are supported for dynamic link crafting based on host, ports,
 // instance, etc.
@@ -4378,18 +4378,18 @@ func (p *TaskConfig) GetResources() map[*Resource]bool {
 	return p.Resources
 }
 
-var TaskConfig_MesosFetcherUris_DEFAULT map[*MesosFetcherURI]bool
-
-func (p *TaskConfig) GetMesosFetcherUris() map[*MesosFetcherURI]bool {
-	return p.MesosFetcherUris
-}
-
 func (p *TaskConfig) GetConstraints() map[*Constraint]bool {
 	return p.Constraints
 }
 
 func (p *TaskConfig) GetRequestedPorts() map[string]bool {
 	return p.RequestedPorts
+}
+
+var TaskConfig_MesosFetcherUris_DEFAULT map[*MesosFetcherURI]bool
+
+func (p *TaskConfig) GetMesosFetcherUris() map[*MesosFetcherURI]bool {
+	return p.MesosFetcherUris
 }
 
 var TaskConfig_TaskLinks_DEFAULT map[string]string
@@ -4530,16 +4530,16 @@ func (p *TaskConfig) Read(iprot thrift.TProtocol) error {
 			if err := p.readField32(iprot); err != nil {
 				return err
 			}
-		case 33:
-			if err := p.readField33(iprot); err != nil {
-				return err
-			}
 		case 20:
 			if err := p.readField20(iprot); err != nil {
 				return err
 			}
 		case 21:
 			if err := p.readField21(iprot); err != nil {
+				return err
+			}
+		case 33:
+			if err := p.readField33(iprot); err != nil {
 				return err
 			}
 		case 22:
@@ -4685,26 +4685,6 @@ func (p *TaskConfig) readField32(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *TaskConfig) readField33(iprot thrift.TProtocol) error {
-	_, size, err := iprot.ReadSetBegin()
-	if err != nil {
-		return thrift.PrependError("error reading set begin: ", err)
-	}
-	tSet := make(map[*MesosFetcherURI]bool, size)
-	p.MesosFetcherUris = tSet
-	for i := 0; i < size; i++ {
-		_elem5 := &MesosFetcherURI{}
-		if err := _elem5.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem5), err)
-		}
-		p.MesosFetcherUris[_elem5] = true
-	}
-	if err := iprot.ReadSetEnd(); err != nil {
-		return thrift.PrependError("error reading set end: ", err)
-	}
-	return nil
-}
-
 func (p *TaskConfig) readField20(iprot thrift.TProtocol) error {
 	_, size, err := iprot.ReadSetBegin()
 	if err != nil {
@@ -4713,11 +4693,11 @@ func (p *TaskConfig) readField20(iprot thrift.TProtocol) error {
 	tSet := make(map[*Constraint]bool, size)
 	p.Constraints = tSet
 	for i := 0; i < size; i++ {
-		_elem6 := &Constraint{}
-		if err := _elem6.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem6), err)
+		_elem5 := &Constraint{}
+		if err := _elem5.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem5), err)
 		}
-		p.Constraints[_elem6] = true
+		p.Constraints[_elem5] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -4733,13 +4713,33 @@ func (p *TaskConfig) readField21(iprot thrift.TProtocol) error {
 	tSet := make(map[string]bool, size)
 	p.RequestedPorts = tSet
 	for i := 0; i < size; i++ {
-		var _elem7 string
+		var _elem6 string
 		if v, err := iprot.ReadString(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			_elem7 = v
+			_elem6 = v
 		}
-		p.RequestedPorts[_elem7] = true
+		p.RequestedPorts[_elem6] = true
+	}
+	if err := iprot.ReadSetEnd(); err != nil {
+		return thrift.PrependError("error reading set end: ", err)
+	}
+	return nil
+}
+
+func (p *TaskConfig) readField33(iprot thrift.TProtocol) error {
+	_, size, err := iprot.ReadSetBegin()
+	if err != nil {
+		return thrift.PrependError("error reading set begin: ", err)
+	}
+	tSet := make(map[*MesosFetcherURI]bool, size)
+	p.MesosFetcherUris = tSet
+	for i := 0; i < size; i++ {
+		_elem7 := &MesosFetcherURI{}
+		if err := _elem7.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem7), err)
+		}
+		p.MesosFetcherUris[_elem7] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -5431,6 +5431,7 @@ func (p *ResourceAggregate) String() string {
 // used to construct it server-side.
 //  - Owner: Owner of this job.
 //  - CronSchedule: If present, the job will be handled as a cron job with this crontab-syntax schedule.
+// This currently differs from the thrift API found in the main repo where it is not optional
 //  - CronCollisionPolicy: Collision policy to use when handling overlapping cron runs.  Default is KILL_EXISTING.
 //  - TaskConfig: Task configuration for this job.
 //  - InstanceCount: The number of instances in the job. Generated instance IDs for tasks will be in the range
