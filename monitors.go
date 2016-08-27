@@ -65,7 +65,7 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 
 func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval int, timeout int) bool {
 
-	for i := 0; i*interval <= timeout; i++ {
+	for i := 0; i*interval < timeout; i++ {
 
 		live, err := m.Client.GetInstanceIds(key, aurora.LIVE_STATES)
 
