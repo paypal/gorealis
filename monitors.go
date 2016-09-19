@@ -17,7 +17,7 @@ package realis
 
 import (
 	"fmt"
-	"gen-go/apache/aurora"
+	"github.com/rdelval/gorealis/gen-go/apache/aurora"
 	"github.com/rdelval/gorealis/response"
 	"os"
 	"time"
@@ -62,7 +62,6 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 	return false
 }
 
-
 func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval int, timeout int) bool {
 
 	for i := 0; i*interval < timeout; i++ {
@@ -74,7 +73,7 @@ func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval int, t
 			os.Exit(1)
 		}
 
-		if(len(live) == int(instances)){
+		if len(live) == int(instances) {
 			return true
 		}
 

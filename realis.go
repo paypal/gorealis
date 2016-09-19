@@ -18,9 +18,9 @@ package realis
 import (
 	"encoding/base64"
 	"fmt"
-	"gen-go/apache/aurora"
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/pkg/errors"
+	"github.com/rdelval/gorealis/gen-go/apache/aurora"
 	"net/http"
 	"net/http/cookiejar"
 	"os"
@@ -32,7 +32,7 @@ type Realis interface {
 	AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error)
 	CreateJob(auroraJob Job) (*aurora.Response, error)
 	FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error)
-    GetInstanceIds(key *aurora.JobKey, states map[aurora.ScheduleStatus]bool) (map[int32]bool, error)
+	GetInstanceIds(key *aurora.JobKey, states map[aurora.ScheduleStatus]bool) (map[int32]bool, error)
 	JobUpdateDetails(updateKey aurora.JobUpdateKey) (*aurora.Response, error)
 	KillJob(key *aurora.JobKey) (*aurora.Response, error)
 	KillInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error)
@@ -287,5 +287,5 @@ func (r realisClient) JobUpdateDetails(updateKey aurora.JobUpdateKey) (*aurora.R
 		return nil, errors.Wrap(err, "Unable to get job update details")
 	}
 
-	return resp,nil
+	return resp, nil
 }

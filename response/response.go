@@ -16,7 +16,7 @@
 package response
 
 import (
-	"gen-go/apache/aurora"
+	"github.com/rdelval/gorealis/gen-go/apache/aurora"
 )
 
 // Get key from a response created by a StartJobUpdate call

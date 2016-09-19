@@ -17,13 +17,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"gen-go/apache/aurora"
 	"github.com/rdelval/gorealis"
+	"github.com/rdelval/gorealis/gen-go/apache/aurora"
+	"github.com/rdelval/gorealis/response"
 	"io/ioutil"
 	"os"
-	"github.com/rdelval/gorealis/response"
 )
-
 
 func main() {
 	cmd := flag.String("cmd", "", "Job request type to send to Aurora Scheduler")
@@ -124,8 +123,8 @@ func main() {
 		}
 		fmt.Println(resp.String())
 
-		if(resp.ResponseCode == aurora.ResponseCode_OK) {
-			if(!monitor.Instances(job.JobKey(), job.GetInstanceCount(), 5, 50)) {
+		if resp.ResponseCode == aurora.ResponseCode_OK {
+			if !monitor.Instances(job.JobKey(), job.GetInstanceCount(), 5, 50) {
 				_, err := r.KillJob(job.JobKey())
 				if err != nil {
 					fmt.Println(err)
@@ -143,8 +142,8 @@ func main() {
 			os.Exit(1)
 		}
 
-		if(resp.ResponseCode == aurora.ResponseCode_OK) {
-			if(!monitor.Instances(job.JobKey(), 0, 5, 50)) {
+		if resp.ResponseCode == aurora.ResponseCode_OK {
+			if !monitor.Instances(job.JobKey(), 0, 5, 50) {
 				fmt.Println("Unable to kill all instances of job")
 				os.Exit(1)
 			}
@@ -193,8 +192,8 @@ func main() {
 			os.Exit(1)
 		}
 
-		if(resp.ResponseCode == aurora.ResponseCode_OK) {
-			if(!monitor.Instances(job.JobKey(), job.GetInstanceCount()+numOfInstances, 5, 50)) {
+		if resp.ResponseCode == aurora.ResponseCode_OK {
+			if !monitor.Instances(job.JobKey(), job.GetInstanceCount()+numOfInstances, 5, 50) {
 				fmt.Println("Flexing up failed")
 			}
 		}
