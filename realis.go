@@ -38,6 +38,7 @@ type Realis interface {
 	KillInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error)
 	RestartInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error)
 	RestartJob(key *aurora.JobKey) (*aurora.Response, error)
+	RollbackJobUpdate(key aurora.JobUpdateKey, message string) (*aurora.Response, error)
 	StartJobUpdate(updateJob *UpdateJob, message string) (*aurora.Response, error)
 	Close()
 }
@@ -285,6 +286,15 @@ func (r realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*auro
 	resp, err := r.client.GetJobUpdateDetails(&updateQuery)
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to get job update details")
+	}
+
+	return resp, nil
+}
+func (r realisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string) (*aurora.Response, error) {
+
+	resp, err := r.client.RollbackJobUpdate(&key, message)
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to roll back job update")
 	}
 
 	return resp, nil

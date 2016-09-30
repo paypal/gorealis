@@ -238,6 +238,15 @@ func main() {
 		}
 		fmt.Println(resp.String())
 		break
+	case "rollbackUpdate":
+		fmt.Println("Abort update")
+		resp, err := r.RollbackJobUpdate(aurora.JobUpdateKey{job.JobKey(), *updateId}, "")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		fmt.Println(resp.String())
+		break
 	case "taskConfig":
 		fmt.Println("Getting job info")
 		config, err := r.FetchTaskConfig(aurora.InstanceKey{job.JobKey(), 0})
