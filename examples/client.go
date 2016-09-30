@@ -133,6 +133,39 @@ func main() {
 			}
 		}
 		break
+	case "scheduleCron":
+		fmt.Println("Scheduling a Cron job")
+		// Cron config
+		job.CronSchedule("* * * * *")
+		job.IsService(false)
+		resp, err := r.ScheduleCronJob(job)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		fmt.Println(resp.String())
+
+		break
+	case "startCron":
+		fmt.Println("Starting a Cron job")
+		resp, err := r.StartCronJob(job.JobKey())
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		fmt.Println(resp.String())
+
+		break
+	case "descheduleCron":
+		fmt.Println("Descheduling a Cron job")
+		resp, err := r.DescheduleCronJob(job.JobKey())
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		fmt.Println(resp.String())
+
+		break
 	case "kill":
 		fmt.Println("Killing job")
 

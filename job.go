@@ -25,6 +25,8 @@ type Job interface {
 	Role(role string) Job
 	Name(name string) Job
 	CPU(cpus float64) Job
+    CronSchedule(cron string) Job
+    CronCollisionPolicy(policy aurora.CronCollisionPolicy) Job
 	Disk(disk int64) Job
 	RAM(ram int64) Job
 	ExecutorName(name string) Job
@@ -153,6 +155,16 @@ func (j AuroraJob) MaxFailure(maxFail int32) Job {
 // How many instances of the job to run
 func (j AuroraJob) InstanceCount(instCount int32) Job {
 	j.jobConfig.InstanceCount = instCount
+	return j
+}
+
+func (j AuroraJob) CronSchedule(cron string) Job {
+	j.jobConfig.CronSchedule = &cron
+	return j
+}
+
+func (j AuroraJob) CronCollisionPolicy(policy aurora.CronCollisionPolicy) Job {
+	j.jobConfig.CronCollisionPolicy = policy
 	return j
 }
 

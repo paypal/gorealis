@@ -25,12 +25,14 @@ import (
 	"net/http/cookiejar"
 	"os"
 	"time"
+	"github.com/rdelval/gorealis/response"
 )
 
 type Realis interface {
 	AbortJobUpdate(updateKey aurora.JobUpdateKey, message string) (*aurora.Response, error)
 	AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error)
 	CreateJob(auroraJob Job) (*aurora.Response, error)
+	DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, error)
 	FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error)
 	GetInstanceIds(key *aurora.JobKey, states map[aurora.ScheduleStatus]bool) (map[int32]bool, error)
 	JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aurora.Response, error)
@@ -39,7 +41,9 @@ type Realis interface {
 	RestartInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error)
 	RestartJob(key *aurora.JobKey) (*aurora.Response, error)
 	RollbackJobUpdate(key aurora.JobUpdateKey, message string) (*aurora.Response, error)
+	ScheduleCronJob(auroraJob Job) (*aurora.Response, error)
 	StartJobUpdate(updateJob *UpdateJob, message string) (*aurora.Response, error)
+	StartCronJob(key *aurora.JobKey) (*aurora.Response, error)
 	Close()
 }
 
@@ -112,12 +116,12 @@ func (r realisClient) GetInstanceIds(key *aurora.JobKey, states map[aurora.Sched
 		JobName:     key.Name,
 		Statuses:    states}
 
-	response, err := r.client.GetTasksWithoutConfigs(taskQ)
+	resp, err := r.client.GetTasksWithoutConfigs(taskQ)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error querying Aurora Scheduler for active IDs")
 	}
 
-	tasks := response.GetResult_().GetScheduleStatusResult_().GetTasks()
+	tasks := response.ScheduleStatusResult(resp).GetTasks()
 
 	jobInstanceIds := make(map[int32]bool)
 	for _, task := range tasks {
@@ -171,6 +175,36 @@ func (r realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Error sending Create command to Aurora Scheduler")
+	}
+
+	return response, nil
+}
+
+func (r realisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) {
+	response, err := r.client.ScheduleCronJob(auroraJob.JobConfig())
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Error sending Cron Job Schedule message to Aurora Scheduler")
+	}
+
+	return response, nil
+}
+
+func (r realisClient) DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, error) {
+	response, err := r.client.DescheduleCronJob(key)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Error sending Cron Job De-schedule message to Aurora Scheduler")
+	}
+
+	return response, nil
+}
+
+func (r realisClient) StartCronJob(key *aurora.JobKey) (*aurora.Response, error) {
+	response, err := r.client.StartCronJob(key)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Error sending Start Cron Job  message to Aurora Scheduler")
 	}
 
 	return response, nil
@@ -263,12 +297,12 @@ func (r realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskC
 		InstanceIds: ids,
 		Statuses:    aurora.ACTIVE_STATES}
 
-	response, err := r.client.GetTasksStatus(taskQ)
+	resp, err := r.client.GetTasksStatus(taskQ)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error querying Aurora Scheduler for task configuration")
 	}
 
-	tasks := response.GetResult_().GetScheduleStatusResult_().GetTasks()
+	tasks := response.ScheduleStatusResult(resp).GetTasks()
 
 	if len(tasks) == 0 {
 		return nil, errors.Errorf("Instance %d for jobkey %s/%s/%s doesn't exist",

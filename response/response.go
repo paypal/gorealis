@@ -27,3 +27,7 @@ func JobUpdateKey(resp *aurora.Response) *aurora.JobUpdateKey {
 func JobUpdateDetails(resp *aurora.Response) []*aurora.JobUpdateDetails {
 	return resp.Result_.GetJobUpdateDetailsResult_.DetailsList
 }
+
+func ScheduleStatusResult(resp *aurora.Response) *aurora.ScheduleStatusResult_ {
+	return resp.GetResult_().GetScheduleStatusResult_()
+}

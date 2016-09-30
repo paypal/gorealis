@@ -17,5 +17,8 @@ library has been tested. Vendoring a working version of this library is highly r
 * Create or import a custom transport that uses https://github.com/jmcvetta/napping to improve efficiency
 * End to end testing with Vagrant setup
 
+## Importing
+We suggest using http://labix.org/gopkg.in for any imports of packages in this library
+
 ## Contributions
 Contributions are very much welcome. Please raise an issue so that the contribution may be discussed before it's made.
