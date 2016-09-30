@@ -33,7 +33,7 @@ type Realis interface {
 	CreateJob(auroraJob Job) (*aurora.Response, error)
 	FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error)
 	GetInstanceIds(key *aurora.JobKey, states map[aurora.ScheduleStatus]bool) (map[int32]bool, error)
-	JobUpdateDetails(updateKey aurora.JobUpdateKey) (*aurora.Response, error)
+	JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aurora.Response, error)
 	KillJob(key *aurora.JobKey) (*aurora.Response, error)
 	KillInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error)
 	RestartInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error)
@@ -280,9 +280,9 @@ func (r realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskC
 	return tasks[0].AssignedTask.Task, nil
 }
 
-func (r realisClient) JobUpdateDetails(updateKey aurora.JobUpdateKey) (*aurora.Response, error) {
+func (r realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aurora.Response, error) {
 
-	resp, err := r.client.GetJobUpdateDetails(&updateKey)
+	resp, err := r.client.GetJobUpdateDetails(&updateQuery)
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to get job update details")
 	}

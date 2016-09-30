@@ -29,8 +29,8 @@ executor examples, the vagrant box must be configured properly to use the docker
 
 #### Creating a Thermos job
 ```
-$ cd $GOPATH/src/github.com/rdelval/gorealis
-$ go run examples/client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=create
+$ cd $GOPATH/src/github.com/rdelval/gorealis/examples
+$ go run client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=create
 ```
 #### Kill a Thermos job
 ```

@@ -12,7 +12,7 @@ you may use a pre-configured vagrant image and skip to the [Creating Aurora Jobs
 
 To take this path, start by cloning the following repository and checking out the DockerComposeExecutor branch:
 ```
-$  git clone -b DockerComposeExecutor git@github.com:rdelval/aurora.git
+$  git clone -b 0.16.0-DCE git@github.com:rdelval/aurora.git
 ```
 
 And bringing the vagrant box

@@ -30,8 +30,13 @@ type Monitor struct {
 // Polls the scheduler every certain amount of time to see if the update has succeeded
 func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout int) bool {
 
+	updateQ := aurora.JobUpdateQuery{
+		Key:   &updateKey,
+		Limit: 1,
+	}
+
 	for i := 0; i*interval <= timeout; i++ {
-		respDetail, err := m.Client.JobUpdateDetails(updateKey)
+		respDetail, err := m.Client.JobUpdateDetails(updateQ)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -39,7 +44,11 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 
 		updateDetail := response.JobUpdateDetails(respDetail)
 
-		status := updateDetail.Update.Summary.State.Status
+		if(len(updateDetail) == 0 ) {
+			fmt.Println("No update found")
+			return false
+		}
+		status := updateDetail[0].Update.Summary.State.Status
 
 		if _, ok := aurora.ACTIVE_JOB_UPDATE_STATES[status]; !ok {
 

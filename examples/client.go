@@ -73,7 +73,7 @@ func main() {
 
 	switch *executor {
 	case "thermos":
-		payload, err := ioutil.ReadFile("examples/thermos_payload.json")
+		payload, err := ioutil.ReadFile("thermos_payload.json")
 		if err != nil {
 			fmt.Println("Error reading json config file: ", err)
 			os.Exit(1)
@@ -220,12 +220,14 @@ func main() {
 
 		break
 	case "updateDetails":
-		resp, err := r.JobUpdateDetails(aurora.JobUpdateKey{job.JobKey(), *updateId})
+		resp, err := r.JobUpdateDetails(aurora.JobUpdateQuery{
+			Key: &aurora.JobUpdateKey{job.JobKey(), *updateId}, Limit: 1})
+
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		response.JobUpdateDetails(resp)
+		fmt.Println(response.JobUpdateDetails(resp))
 		break
 	case "abortUpdate":
 		fmt.Println("Abort update")

@@ -170,16 +170,16 @@ func (p *AuroraSchedulerManagerClient) recvCreateJob() (value *Response, err err
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error129 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error130 error
-		error130, err = error129.Read(iprot)
+		error132 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error133 error
+		error133, err = error132.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error130
+		err = error133
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -251,16 +251,16 @@ func (p *AuroraSchedulerManagerClient) recvScheduleCronJob() (value *Response, e
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error131 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error132 error
-		error132, err = error131.Read(iprot)
+		error134 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error135 error
+		error135, err = error134.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error132
+		err = error135
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -331,16 +331,16 @@ func (p *AuroraSchedulerManagerClient) recvDescheduleCronJob() (value *Response,
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error133 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error134 error
-		error134, err = error133.Read(iprot)
+		error136 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error137 error
+		error137, err = error136.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error134
+		err = error137
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -411,16 +411,16 @@ func (p *AuroraSchedulerManagerClient) recvStartCronJob() (value *Response, err 
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error135 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error136 error
-		error136, err = error135.Read(iprot)
+		error138 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error139 error
+		error139, err = error138.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error136
+		err = error139
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -492,16 +492,16 @@ func (p *AuroraSchedulerManagerClient) recvRestartShards() (value *Response, err
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error137 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error138 error
-		error138, err = error137.Read(iprot)
+		error140 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error141 error
+		error141, err = error140.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error138
+		err = error141
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -573,16 +573,16 @@ func (p *AuroraSchedulerManagerClient) recvKillTasks() (value *Response, err err
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error139 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error140 error
-		error140, err = error139.Read(iprot)
+		error142 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error143 error
+		error143, err = error142.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error140
+		err = error143
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -654,16 +654,16 @@ func (p *AuroraSchedulerManagerClient) recvAddInstances() (value *Response, err 
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error141 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error142 error
-		error142, err = error141.Read(iprot)
+		error144 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error145 error
+		error145, err = error144.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error142
+		err = error145
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -734,16 +734,16 @@ func (p *AuroraSchedulerManagerClient) recvReplaceCronTemplate() (value *Respons
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error143 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error144 error
-		error144, err = error143.Read(iprot)
+		error146 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error147 error
+		error147, err = error146.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error144
+		err = error147
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -815,16 +815,16 @@ func (p *AuroraSchedulerManagerClient) recvStartJobUpdate() (value *Response, er
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error145 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error146 error
-		error146, err = error145.Read(iprot)
+		error148 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error149 error
+		error149, err = error148.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error146
+		err = error149
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -896,16 +896,16 @@ func (p *AuroraSchedulerManagerClient) recvPauseJobUpdate() (value *Response, er
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error147 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error148 error
-		error148, err = error147.Read(iprot)
+		error150 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error151 error
+		error151, err = error150.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error148
+		err = error151
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -977,16 +977,16 @@ func (p *AuroraSchedulerManagerClient) recvResumeJobUpdate() (value *Response, e
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error149 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error150 error
-		error150, err = error149.Read(iprot)
+		error152 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error153 error
+		error153, err = error152.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error150
+		err = error153
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1058,16 +1058,16 @@ func (p *AuroraSchedulerManagerClient) recvAbortJobUpdate() (value *Response, er
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error151 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error152 error
-		error152, err = error151.Read(iprot)
+		error154 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error155 error
+		error155, err = error154.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error152
+		err = error155
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1139,16 +1139,16 @@ func (p *AuroraSchedulerManagerClient) recvRollbackJobUpdate() (value *Response,
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error153 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error154 error
-		error154, err = error153.Read(iprot)
+		error156 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error157 error
+		error157, err = error156.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error154
+		err = error157
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1220,16 +1220,16 @@ func (p *AuroraSchedulerManagerClient) recvPulseJobUpdate() (value *Response, er
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error155 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error156 error
-		error156, err = error155.Read(iprot)
+		error158 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error159 error
+		error159, err = error158.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error156
+		err = error159
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1252,22 +1252,22 @@ type AuroraSchedulerManagerProcessor struct {
 }
 
 func NewAuroraSchedulerManagerProcessor(handler AuroraSchedulerManager) *AuroraSchedulerManagerProcessor {
-	self157 := &AuroraSchedulerManagerProcessor{NewReadOnlySchedulerProcessor(handler)}
-	self157.AddToProcessorMap("createJob", &auroraSchedulerManagerProcessorCreateJob{handler: handler})
-	self157.AddToProcessorMap("scheduleCronJob", &auroraSchedulerManagerProcessorScheduleCronJob{handler: handler})
-	self157.AddToProcessorMap("descheduleCronJob", &auroraSchedulerManagerProcessorDescheduleCronJob{handler: handler})
-	self157.AddToProcessorMap("startCronJob", &auroraSchedulerManagerProcessorStartCronJob{handler: handler})
-	self157.AddToProcessorMap("restartShards", &auroraSchedulerManagerProcessorRestartShards{handler: handler})
-	self157.AddToProcessorMap("killTasks", &auroraSchedulerManagerProcessorKillTasks{handler: handler})
-	self157.AddToProcessorMap("addInstances", &auroraSchedulerManagerProcessorAddInstances{handler: handler})
-	self157.AddToProcessorMap("replaceCronTemplate", &auroraSchedulerManagerProcessorReplaceCronTemplate{handler: handler})
-	self157.AddToProcessorMap("startJobUpdate", &auroraSchedulerManagerProcessorStartJobUpdate{handler: handler})
-	self157.AddToProcessorMap("pauseJobUpdate", &auroraSchedulerManagerProcessorPauseJobUpdate{handler: handler})
-	self157.AddToProcessorMap("resumeJobUpdate", &auroraSchedulerManagerProcessorResumeJobUpdate{handler: handler})
-	self157.AddToProcessorMap("abortJobUpdate", &auroraSchedulerManagerProcessorAbortJobUpdate{handler: handler})
-	self157.AddToProcessorMap("rollbackJobUpdate", &auroraSchedulerManagerProcessorRollbackJobUpdate{handler: handler})
-	self157.AddToProcessorMap("pulseJobUpdate", &auroraSchedulerManagerProcessorPulseJobUpdate{handler: handler})
-	return self157
+	self160 := &AuroraSchedulerManagerProcessor{NewReadOnlySchedulerProcessor(handler)}
+	self160.AddToProcessorMap("createJob", &auroraSchedulerManagerProcessorCreateJob{handler: handler})
+	self160.AddToProcessorMap("scheduleCronJob", &auroraSchedulerManagerProcessorScheduleCronJob{handler: handler})
+	self160.AddToProcessorMap("descheduleCronJob", &auroraSchedulerManagerProcessorDescheduleCronJob{handler: handler})
+	self160.AddToProcessorMap("startCronJob", &auroraSchedulerManagerProcessorStartCronJob{handler: handler})
+	self160.AddToProcessorMap("restartShards", &auroraSchedulerManagerProcessorRestartShards{handler: handler})
+	self160.AddToProcessorMap("killTasks", &auroraSchedulerManagerProcessorKillTasks{handler: handler})
+	self160.AddToProcessorMap("addInstances", &auroraSchedulerManagerProcessorAddInstances{handler: handler})
+	self160.AddToProcessorMap("replaceCronTemplate", &auroraSchedulerManagerProcessorReplaceCronTemplate{handler: handler})
+	self160.AddToProcessorMap("startJobUpdate", &auroraSchedulerManagerProcessorStartJobUpdate{handler: handler})
+	self160.AddToProcessorMap("pauseJobUpdate", &auroraSchedulerManagerProcessorPauseJobUpdate{handler: handler})
+	self160.AddToProcessorMap("resumeJobUpdate", &auroraSchedulerManagerProcessorResumeJobUpdate{handler: handler})
+	self160.AddToProcessorMap("abortJobUpdate", &auroraSchedulerManagerProcessorAbortJobUpdate{handler: handler})
+	self160.AddToProcessorMap("rollbackJobUpdate", &auroraSchedulerManagerProcessorRollbackJobUpdate{handler: handler})
+	self160.AddToProcessorMap("pulseJobUpdate", &auroraSchedulerManagerProcessorPulseJobUpdate{handler: handler})
+	return self160
 }
 
 type auroraSchedulerManagerProcessorCreateJob struct {
@@ -2829,13 +2829,13 @@ func (p *AuroraSchedulerManagerRestartShardsArgs) readField3(iprot thrift.TProto
 	tSet := make(map[int32]bool, size)
 	p.ShardIds = tSet
 	for i := 0; i < size; i++ {
-		var _elem158 int32
+		var _elem161 int32
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			_elem158 = v
+			_elem161 = v
 		}
-		p.ShardIds[_elem158] = true
+		p.ShardIds[_elem161] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -3086,13 +3086,13 @@ func (p *AuroraSchedulerManagerKillTasksArgs) readField5(iprot thrift.TProtocol)
 	tSet := make(map[int32]bool, size)
 	p.Instances = tSet
 	for i := 0; i < size; i++ {
-		var _elem159 int32
+		var _elem162 int32
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			_elem159 = v
+			_elem162 = v
 		}
-		p.Instances[_elem159] = true
+		p.Instances[_elem162] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)

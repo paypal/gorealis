@@ -5431,7 +5431,6 @@ func (p *ResourceAggregate) String() string {
 // used to construct it server-side.
 //  - Owner: Owner of this job.
 //  - CronSchedule: If present, the job will be handled as a cron job with this crontab-syntax schedule.
-// This currently differs from the thrift API found in the main repo where it is not optional
 //  - CronCollisionPolicy: Collision policy to use when handling overlapping cron runs.  Default is KILL_EXISTING.
 //  - TaskConfig: Task configuration for this job.
 //  - InstanceCount: The number of instances in the job. Generated instance IDs for tasks will be in the range
@@ -10206,11 +10205,13 @@ func (p *JobUpdateState) String() string {
 //  - Key: Unique identifier for the update.
 //  - User: User initiated an update.
 //  - State: Current job update state.
+//  - Metadata: Update metadata supplied by the client.
 type JobUpdateSummary struct {
 	// unused fields # 1 to 2
-	User  string          `thrift:"user,3" json:"user"`
-	State *JobUpdateState `thrift:"state,4" json:"state"`
-	Key   *JobUpdateKey   `thrift:"key,5" json:"key"`
+	User     string             `thrift:"user,3" json:"user"`
+	State    *JobUpdateState    `thrift:"state,4" json:"state"`
+	Key      *JobUpdateKey      `thrift:"key,5" json:"key"`
+	Metadata map[*Metadata]bool `thrift:"metadata,6" json:"metadata,omitempty"`
 }
 
 func NewJobUpdateSummary() *JobUpdateSummary {
@@ -10238,12 +10239,22 @@ func (p *JobUpdateSummary) GetState() *JobUpdateState {
 	}
 	return p.State
 }
+
+var JobUpdateSummary_Metadata_DEFAULT map[*Metadata]bool
+
+func (p *JobUpdateSummary) GetMetadata() map[*Metadata]bool {
+	return p.Metadata
+}
 func (p *JobUpdateSummary) IsSetKey() bool {
 	return p.Key != nil
 }
 
 func (p *JobUpdateSummary) IsSetState() bool {
 	return p.State != nil
+}
+
+func (p *JobUpdateSummary) IsSetMetadata() bool {
+	return p.Metadata != nil
 }
 
 func (p *JobUpdateSummary) Read(iprot thrift.TProtocol) error {
@@ -10270,6 +10281,10 @@ func (p *JobUpdateSummary) Read(iprot thrift.TProtocol) error {
 			}
 		case 4:
 			if err := p.readField4(iprot); err != nil {
+				return err
+			}
+		case 6:
+			if err := p.readField6(iprot); err != nil {
 				return err
 			}
 		default:
@@ -10312,6 +10327,26 @@ func (p *JobUpdateSummary) readField4(iprot thrift.TProtocol) error {
 	return nil
 }
 
+func (p *JobUpdateSummary) readField6(iprot thrift.TProtocol) error {
+	_, size, err := iprot.ReadSetBegin()
+	if err != nil {
+		return thrift.PrependError("error reading set begin: ", err)
+	}
+	tSet := make(map[*Metadata]bool, size)
+	p.Metadata = tSet
+	for i := 0; i < size; i++ {
+		_elem27 := &Metadata{}
+		if err := _elem27.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem27), err)
+		}
+		p.Metadata[_elem27] = true
+	}
+	if err := iprot.ReadSetEnd(); err != nil {
+		return thrift.PrependError("error reading set end: ", err)
+	}
+	return nil
+}
+
 func (p *JobUpdateSummary) Write(oprot thrift.TProtocol) error {
 	if err := oprot.WriteStructBegin("JobUpdateSummary"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
@@ -10323,6 +10358,9 @@ func (p *JobUpdateSummary) Write(oprot thrift.TProtocol) error {
 		return err
 	}
 	if err := p.writeField5(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField6(oprot); err != nil {
 		return err
 	}
 	if err := oprot.WriteFieldStop(); err != nil {
@@ -10369,6 +10407,29 @@ func (p *JobUpdateSummary) writeField5(oprot thrift.TProtocol) (err error) {
 	}
 	if err := oprot.WriteFieldEnd(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field end error 5:key: ", p), err)
+	}
+	return err
+}
+
+func (p *JobUpdateSummary) writeField6(oprot thrift.TProtocol) (err error) {
+	if p.IsSetMetadata() {
+		if err := oprot.WriteFieldBegin("metadata", thrift.SET, 6); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 6:metadata: ", p), err)
+		}
+		if err := oprot.WriteSetBegin(thrift.STRUCT, len(p.Metadata)); err != nil {
+			return thrift.PrependError("error writing set begin: ", err)
+		}
+		for v, _ := range p.Metadata {
+			if err := v.Write(oprot); err != nil {
+				return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", v), err)
+			}
+		}
+		if err := oprot.WriteSetEnd(); err != nil {
+			return thrift.PrependError("error writing set end: ", err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 6:metadata: ", p), err)
+		}
 	}
 	return err
 }
@@ -10474,11 +10535,11 @@ func (p *JobUpdateInstructions) readField1(iprot thrift.TProtocol) error {
 	tSet := make(map[*InstanceTaskConfig]bool, size)
 	p.InitialState = tSet
 	for i := 0; i < size; i++ {
-		_elem27 := &InstanceTaskConfig{}
-		if err := _elem27.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem27), err)
+		_elem28 := &InstanceTaskConfig{}
+		if err := _elem28.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem28), err)
 		}
-		p.InitialState[_elem27] = true
+		p.InitialState[_elem28] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -10813,11 +10874,11 @@ func (p *JobUpdateDetails) readField2(iprot thrift.TProtocol) error {
 	tSlice := make([]*JobUpdateEvent, 0, size)
 	p.UpdateEvents = tSlice
 	for i := 0; i < size; i++ {
-		_elem28 := &JobUpdateEvent{}
-		if err := _elem28.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem28), err)
+		_elem29 := &JobUpdateEvent{}
+		if err := _elem29.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem29), err)
 		}
-		p.UpdateEvents = append(p.UpdateEvents, _elem28)
+		p.UpdateEvents = append(p.UpdateEvents, _elem29)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -10833,11 +10894,11 @@ func (p *JobUpdateDetails) readField3(iprot thrift.TProtocol) error {
 	tSlice := make([]*JobInstanceUpdateEvent, 0, size)
 	p.InstanceEvents = tSlice
 	for i := 0; i < size; i++ {
-		_elem29 := &JobInstanceUpdateEvent{}
-		if err := _elem29.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem29), err)
+		_elem30 := &JobInstanceUpdateEvent{}
+		if err := _elem30.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem30), err)
 		}
-		p.InstanceEvents = append(p.InstanceEvents, _elem29)
+		p.InstanceEvents = append(p.InstanceEvents, _elem30)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -10935,10 +10996,12 @@ func (p *JobUpdateDetails) String() string {
 //  - TaskConfig: Desired TaskConfig to apply.
 //  - InstanceCount: Desired number of instances of the task config.
 //  - Settings: Update settings and limits.
+//  - Metadata: Update metadata supplied by the client issuing the JobUpdateRequest.
 type JobUpdateRequest struct {
 	TaskConfig    *TaskConfig        `thrift:"taskConfig,1" json:"taskConfig"`
 	InstanceCount int32              `thrift:"instanceCount,2" json:"instanceCount"`
 	Settings      *JobUpdateSettings `thrift:"settings,3" json:"settings"`
+	Metadata      map[*Metadata]bool `thrift:"metadata,4" json:"metadata,omitempty"`
 }
 
 func NewJobUpdateRequest() *JobUpdateRequest {
@@ -10966,12 +11029,22 @@ func (p *JobUpdateRequest) GetSettings() *JobUpdateSettings {
 	}
 	return p.Settings
 }
+
+var JobUpdateRequest_Metadata_DEFAULT map[*Metadata]bool
+
+func (p *JobUpdateRequest) GetMetadata() map[*Metadata]bool {
+	return p.Metadata
+}
 func (p *JobUpdateRequest) IsSetTaskConfig() bool {
 	return p.TaskConfig != nil
 }
 
 func (p *JobUpdateRequest) IsSetSettings() bool {
 	return p.Settings != nil
+}
+
+func (p *JobUpdateRequest) IsSetMetadata() bool {
+	return p.Metadata != nil
 }
 
 func (p *JobUpdateRequest) Read(iprot thrift.TProtocol) error {
@@ -10998,6 +11071,10 @@ func (p *JobUpdateRequest) Read(iprot thrift.TProtocol) error {
 			}
 		case 3:
 			if err := p.readField3(iprot); err != nil {
+				return err
+			}
+		case 4:
+			if err := p.readField4(iprot); err != nil {
 				return err
 			}
 		default:
@@ -11040,6 +11117,26 @@ func (p *JobUpdateRequest) readField3(iprot thrift.TProtocol) error {
 	return nil
 }
 
+func (p *JobUpdateRequest) readField4(iprot thrift.TProtocol) error {
+	_, size, err := iprot.ReadSetBegin()
+	if err != nil {
+		return thrift.PrependError("error reading set begin: ", err)
+	}
+	tSet := make(map[*Metadata]bool, size)
+	p.Metadata = tSet
+	for i := 0; i < size; i++ {
+		_elem31 := &Metadata{}
+		if err := _elem31.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem31), err)
+		}
+		p.Metadata[_elem31] = true
+	}
+	if err := iprot.ReadSetEnd(); err != nil {
+		return thrift.PrependError("error reading set end: ", err)
+	}
+	return nil
+}
+
 func (p *JobUpdateRequest) Write(oprot thrift.TProtocol) error {
 	if err := oprot.WriteStructBegin("JobUpdateRequest"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
@@ -11051,6 +11148,9 @@ func (p *JobUpdateRequest) Write(oprot thrift.TProtocol) error {
 		return err
 	}
 	if err := p.writeField3(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField4(oprot); err != nil {
 		return err
 	}
 	if err := oprot.WriteFieldStop(); err != nil {
@@ -11101,6 +11201,29 @@ func (p *JobUpdateRequest) writeField3(oprot thrift.TProtocol) (err error) {
 	return err
 }
 
+func (p *JobUpdateRequest) writeField4(oprot thrift.TProtocol) (err error) {
+	if p.IsSetMetadata() {
+		if err := oprot.WriteFieldBegin("metadata", thrift.SET, 4); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 4:metadata: ", p), err)
+		}
+		if err := oprot.WriteSetBegin(thrift.STRUCT, len(p.Metadata)); err != nil {
+			return thrift.PrependError("error writing set begin: ", err)
+		}
+		for v, _ := range p.Metadata {
+			if err := v.Write(oprot); err != nil {
+				return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", v), err)
+			}
+		}
+		if err := oprot.WriteSetEnd(); err != nil {
+			return thrift.PrependError("error writing set end: ", err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 4:metadata: ", p), err)
+		}
+	}
+	return err
+}
+
 func (p *JobUpdateRequest) String() string {
 	if p == nil {
 		return "<nil>"
@@ -11121,21 +11244,26 @@ func (p *JobUpdateRequest) String() string {
 //  - Limit: Number or records to serve. Used by pagination.
 type JobUpdateQuery struct {
 	// unused field # 1
-	Role           string                   `thrift:"role,2" json:"role"`
-	JobKey         *JobKey                  `thrift:"jobKey,3" json:"jobKey"`
-	User           string                   `thrift:"user,4" json:"user"`
-	UpdateStatuses map[JobUpdateStatus]bool `thrift:"updateStatuses,5" json:"updateStatuses"`
+	Role           *string                  `thrift:"role,2" json:"role,omitempty"`
+	JobKey         *JobKey                  `thrift:"jobKey,3" json:"jobKey,omitempty"`
+	User           *string                  `thrift:"user,4" json:"user,omitempty"`
+	UpdateStatuses map[JobUpdateStatus]bool `thrift:"updateStatuses,5" json:"updateStatuses,omitempty"`
 	Offset         int32                    `thrift:"offset,6" json:"offset"`
 	Limit          int32                    `thrift:"limit,7" json:"limit"`
-	Key            *JobUpdateKey            `thrift:"key,8" json:"key"`
+	Key            *JobUpdateKey            `thrift:"key,8" json:"key,omitempty"`
 }
 
 func NewJobUpdateQuery() *JobUpdateQuery {
 	return &JobUpdateQuery{}
 }
 
+var JobUpdateQuery_Role_DEFAULT string
+
 func (p *JobUpdateQuery) GetRole() string {
-	return p.Role
+	if !p.IsSetRole() {
+		return JobUpdateQuery_Role_DEFAULT
+	}
+	return *p.Role
 }
 
 var JobUpdateQuery_Key_DEFAULT *JobUpdateKey
@@ -11156,9 +11284,16 @@ func (p *JobUpdateQuery) GetJobKey() *JobKey {
 	return p.JobKey
 }
 
+var JobUpdateQuery_User_DEFAULT string
+
 func (p *JobUpdateQuery) GetUser() string {
-	return p.User
+	if !p.IsSetUser() {
+		return JobUpdateQuery_User_DEFAULT
+	}
+	return *p.User
 }
+
+var JobUpdateQuery_UpdateStatuses_DEFAULT map[JobUpdateStatus]bool
 
 func (p *JobUpdateQuery) GetUpdateStatuses() map[JobUpdateStatus]bool {
 	return p.UpdateStatuses
@@ -11171,12 +11306,24 @@ func (p *JobUpdateQuery) GetOffset() int32 {
 func (p *JobUpdateQuery) GetLimit() int32 {
 	return p.Limit
 }
+func (p *JobUpdateQuery) IsSetRole() bool {
+	return p.Role != nil
+}
+
 func (p *JobUpdateQuery) IsSetKey() bool {
 	return p.Key != nil
 }
 
 func (p *JobUpdateQuery) IsSetJobKey() bool {
 	return p.JobKey != nil
+}
+
+func (p *JobUpdateQuery) IsSetUser() bool {
+	return p.User != nil
+}
+
+func (p *JobUpdateQuery) IsSetUpdateStatuses() bool {
+	return p.UpdateStatuses != nil
 }
 
 func (p *JobUpdateQuery) Read(iprot thrift.TProtocol) error {
@@ -11240,7 +11387,7 @@ func (p *JobUpdateQuery) readField2(iprot thrift.TProtocol) error {
 	if v, err := iprot.ReadString(); err != nil {
 		return thrift.PrependError("error reading field 2: ", err)
 	} else {
-		p.Role = v
+		p.Role = &v
 	}
 	return nil
 }
@@ -11265,7 +11412,7 @@ func (p *JobUpdateQuery) readField4(iprot thrift.TProtocol) error {
 	if v, err := iprot.ReadString(); err != nil {
 		return thrift.PrependError("error reading field 4: ", err)
 	} else {
-		p.User = v
+		p.User = &v
 	}
 	return nil
 }
@@ -11278,14 +11425,14 @@ func (p *JobUpdateQuery) readField5(iprot thrift.TProtocol) error {
 	tSet := make(map[JobUpdateStatus]bool, size)
 	p.UpdateStatuses = tSet
 	for i := 0; i < size; i++ {
-		var _elem30 JobUpdateStatus
+		var _elem32 JobUpdateStatus
 		if v, err := iprot.ReadI32(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
 			temp := JobUpdateStatus(v)
-			_elem30 = temp
+			_elem32 = temp
 		}
-		p.UpdateStatuses[_elem30] = true
+		p.UpdateStatuses[_elem32] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -11346,61 +11493,69 @@ func (p *JobUpdateQuery) Write(oprot thrift.TProtocol) error {
 }
 
 func (p *JobUpdateQuery) writeField2(oprot thrift.TProtocol) (err error) {
-	if err := oprot.WriteFieldBegin("role", thrift.STRING, 2); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:role: ", p), err)
-	}
-	if err := oprot.WriteString(string(p.Role)); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T.role (2) field write error: ", p), err)
-	}
-	if err := oprot.WriteFieldEnd(); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field end error 2:role: ", p), err)
+	if p.IsSetRole() {
+		if err := oprot.WriteFieldBegin("role", thrift.STRING, 2); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:role: ", p), err)
+		}
+		if err := oprot.WriteString(string(*p.Role)); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T.role (2) field write error: ", p), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 2:role: ", p), err)
+		}
 	}
 	return err
 }
 
 func (p *JobUpdateQuery) writeField3(oprot thrift.TProtocol) (err error) {
-	if err := oprot.WriteFieldBegin("jobKey", thrift.STRUCT, 3); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field begin error 3:jobKey: ", p), err)
-	}
-	if err := p.JobKey.Write(oprot); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.JobKey), err)
-	}
-	if err := oprot.WriteFieldEnd(); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field end error 3:jobKey: ", p), err)
+	if p.IsSetJobKey() {
+		if err := oprot.WriteFieldBegin("jobKey", thrift.STRUCT, 3); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 3:jobKey: ", p), err)
+		}
+		if err := p.JobKey.Write(oprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.JobKey), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 3:jobKey: ", p), err)
+		}
 	}
 	return err
 }
 
 func (p *JobUpdateQuery) writeField4(oprot thrift.TProtocol) (err error) {
-	if err := oprot.WriteFieldBegin("user", thrift.STRING, 4); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field begin error 4:user: ", p), err)
-	}
-	if err := oprot.WriteString(string(p.User)); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T.user (4) field write error: ", p), err)
-	}
-	if err := oprot.WriteFieldEnd(); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field end error 4:user: ", p), err)
+	if p.IsSetUser() {
+		if err := oprot.WriteFieldBegin("user", thrift.STRING, 4); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 4:user: ", p), err)
+		}
+		if err := oprot.WriteString(string(*p.User)); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T.user (4) field write error: ", p), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 4:user: ", p), err)
+		}
 	}
 	return err
 }
 
 func (p *JobUpdateQuery) writeField5(oprot thrift.TProtocol) (err error) {
-	if err := oprot.WriteFieldBegin("updateStatuses", thrift.SET, 5); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field begin error 5:updateStatuses: ", p), err)
-	}
-	if err := oprot.WriteSetBegin(thrift.I32, len(p.UpdateStatuses)); err != nil {
-		return thrift.PrependError("error writing set begin: ", err)
-	}
-	for v, _ := range p.UpdateStatuses {
-		if err := oprot.WriteI32(int32(v)); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+	if p.IsSetUpdateStatuses() {
+		if err := oprot.WriteFieldBegin("updateStatuses", thrift.SET, 5); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 5:updateStatuses: ", p), err)
 		}
-	}
-	if err := oprot.WriteSetEnd(); err != nil {
-		return thrift.PrependError("error writing set end: ", err)
-	}
-	if err := oprot.WriteFieldEnd(); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field end error 5:updateStatuses: ", p), err)
+		if err := oprot.WriteSetBegin(thrift.I32, len(p.UpdateStatuses)); err != nil {
+			return thrift.PrependError("error writing set begin: ", err)
+		}
+		for v, _ := range p.UpdateStatuses {
+			if err := oprot.WriteI32(int32(v)); err != nil {
+				return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+			}
+		}
+		if err := oprot.WriteSetEnd(); err != nil {
+			return thrift.PrependError("error writing set end: ", err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 5:updateStatuses: ", p), err)
+		}
 	}
 	return err
 }
@@ -11432,14 +11587,16 @@ func (p *JobUpdateQuery) writeField7(oprot thrift.TProtocol) (err error) {
 }
 
 func (p *JobUpdateQuery) writeField8(oprot thrift.TProtocol) (err error) {
-	if err := oprot.WriteFieldBegin("key", thrift.STRUCT, 8); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field begin error 8:key: ", p), err)
-	}
-	if err := p.Key.Write(oprot); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.Key), err)
-	}
-	if err := oprot.WriteFieldEnd(); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field end error 8:key: ", p), err)
+	if p.IsSetKey() {
+		if err := oprot.WriteFieldBegin("key", thrift.STRUCT, 8); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 8:key: ", p), err)
+		}
+		if err := p.Key.Write(oprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.Key), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 8:key: ", p), err)
+		}
 	}
 	return err
 }
@@ -11505,13 +11662,13 @@ func (p *ListBackupsResult_) readField1(iprot thrift.TProtocol) error {
 	tSet := make(map[string]bool, size)
 	p.Backups = tSet
 	for i := 0; i < size; i++ {
-		var _elem31 string
+		var _elem33 string
 		if v, err := iprot.ReadString(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			_elem31 = v
+			_elem33 = v
 		}
-		p.Backups[_elem31] = true
+		p.Backups[_elem33] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -11617,11 +11774,11 @@ func (p *StartMaintenanceResult_) readField1(iprot thrift.TProtocol) error {
 	tSet := make(map[*HostStatus]bool, size)
 	p.Statuses = tSet
 	for i := 0; i < size; i++ {
-		_elem32 := &HostStatus{}
-		if err := _elem32.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem32), err)
+		_elem34 := &HostStatus{}
+		if err := _elem34.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem34), err)
 		}
-		p.Statuses[_elem32] = true
+		p.Statuses[_elem34] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -11727,11 +11884,11 @@ func (p *DrainHostsResult_) readField1(iprot thrift.TProtocol) error {
 	tSet := make(map[*HostStatus]bool, size)
 	p.Statuses = tSet
 	for i := 0; i < size; i++ {
-		_elem33 := &HostStatus{}
-		if err := _elem33.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem33), err)
+		_elem35 := &HostStatus{}
+		if err := _elem35.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem35), err)
 		}
-		p.Statuses[_elem33] = true
+		p.Statuses[_elem35] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -11837,11 +11994,11 @@ func (p *QueryRecoveryResult_) readField1(iprot thrift.TProtocol) error {
 	tSet := make(map[*ScheduledTask]bool, size)
 	p.Tasks = tSet
 	for i := 0; i < size; i++ {
-		_elem34 := &ScheduledTask{}
-		if err := _elem34.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem34), err)
+		_elem36 := &ScheduledTask{}
+		if err := _elem36.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem36), err)
 		}
-		p.Tasks[_elem34] = true
+		p.Tasks[_elem36] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -11947,11 +12104,11 @@ func (p *MaintenanceStatusResult_) readField1(iprot thrift.TProtocol) error {
 	tSet := make(map[*HostStatus]bool, size)
 	p.Statuses = tSet
 	for i := 0; i < size; i++ {
-		_elem35 := &HostStatus{}
-		if err := _elem35.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem35), err)
+		_elem37 := &HostStatus{}
+		if err := _elem37.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem37), err)
 		}
-		p.Statuses[_elem35] = true
+		p.Statuses[_elem37] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -12057,11 +12214,11 @@ func (p *EndMaintenanceResult_) readField1(iprot thrift.TProtocol) error {
 	tSet := make(map[*HostStatus]bool, size)
 	p.Statuses = tSet
 	for i := 0; i < size; i++ {
-		_elem36 := &HostStatus{}
-		if err := _elem36.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem36), err)
+		_elem38 := &HostStatus{}
+		if err := _elem38.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem38), err)
 		}
-		p.Statuses[_elem36] = true
+		p.Statuses[_elem38] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -12167,11 +12324,11 @@ func (p *RoleSummaryResult_) readField1(iprot thrift.TProtocol) error {
 	tSet := make(map[*RoleSummary]bool, size)
 	p.Summaries = tSet
 	for i := 0; i < size; i++ {
-		_elem37 := &RoleSummary{}
-		if err := _elem37.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem37), err)
+		_elem39 := &RoleSummary{}
+		if err := _elem39.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem39), err)
 		}
-		p.Summaries[_elem37] = true
+		p.Summaries[_elem39] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -12277,11 +12434,11 @@ func (p *JobSummaryResult_) readField1(iprot thrift.TProtocol) error {
 	tSet := make(map[*JobSummary]bool, size)
 	p.Summaries = tSet
 	for i := 0; i < size; i++ {
-		_elem38 := &JobSummary{}
-		if err := _elem38.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem38), err)
+		_elem40 := &JobSummary{}
+		if err := _elem40.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem40), err)
 		}
-		p.Summaries[_elem38] = true
+		p.Summaries[_elem40] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -12486,11 +12643,11 @@ func (p *GetPendingReasonResult_) readField1(iprot thrift.TProtocol) error {
 	tSet := make(map[*PendingReason]bool, size)
 	p.Reasons = tSet
 	for i := 0; i < size; i++ {
-		_elem39 := &PendingReason{}
-		if err := _elem39.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem39), err)
+		_elem41 := &PendingReason{}
+		if err := _elem41.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem41), err)
 		}
-		p.Reasons[_elem39] = true
+		p.Reasons[_elem41] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -12546,8 +12703,10 @@ func (p *GetPendingReasonResult_) String() string {
 //
 // Attributes:
 //  - Key: Unique identifier for the job update.
+//  - UpdateSummary: Summary of the update that is in progress for the given JobKey.
 type StartJobUpdateResult_ struct {
-	Key *JobUpdateKey `thrift:"key,1" json:"key"`
+	Key           *JobUpdateKey     `thrift:"key,1" json:"key"`
+	UpdateSummary *JobUpdateSummary `thrift:"updateSummary,2" json:"updateSummary,omitempty"`
 }
 
 func NewStartJobUpdateResult_() *StartJobUpdateResult_ {
@@ -12562,8 +12721,21 @@ func (p *StartJobUpdateResult_) GetKey() *JobUpdateKey {
 	}
 	return p.Key
 }
+
+var StartJobUpdateResult__UpdateSummary_DEFAULT *JobUpdateSummary
+
+func (p *StartJobUpdateResult_) GetUpdateSummary() *JobUpdateSummary {
+	if !p.IsSetUpdateSummary() {
+		return StartJobUpdateResult__UpdateSummary_DEFAULT
+	}
+	return p.UpdateSummary
+}
 func (p *StartJobUpdateResult_) IsSetKey() bool {
 	return p.Key != nil
+}
+
+func (p *StartJobUpdateResult_) IsSetUpdateSummary() bool {
+	return p.UpdateSummary != nil
 }
 
 func (p *StartJobUpdateResult_) Read(iprot thrift.TProtocol) error {
@@ -12582,6 +12754,10 @@ func (p *StartJobUpdateResult_) Read(iprot thrift.TProtocol) error {
 		switch fieldId {
 		case 1:
 			if err := p.readField1(iprot); err != nil {
+				return err
+			}
+		case 2:
+			if err := p.readField2(iprot); err != nil {
 				return err
 			}
 		default:
@@ -12607,11 +12783,22 @@ func (p *StartJobUpdateResult_) readField1(iprot thrift.TProtocol) error {
 	return nil
 }
 
+func (p *StartJobUpdateResult_) readField2(iprot thrift.TProtocol) error {
+	p.UpdateSummary = &JobUpdateSummary{}
+	if err := p.UpdateSummary.Read(iprot); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", p.UpdateSummary), err)
+	}
+	return nil
+}
+
 func (p *StartJobUpdateResult_) Write(oprot thrift.TProtocol) error {
 	if err := oprot.WriteStructBegin("StartJobUpdateResult"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
 	}
 	if err := p.writeField1(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField2(oprot); err != nil {
 		return err
 	}
 	if err := oprot.WriteFieldStop(); err != nil {
@@ -12632,6 +12819,21 @@ func (p *StartJobUpdateResult_) writeField1(oprot thrift.TProtocol) (err error) 
 	}
 	if err := oprot.WriteFieldEnd(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field end error 1:key: ", p), err)
+	}
+	return err
+}
+
+func (p *StartJobUpdateResult_) writeField2(oprot thrift.TProtocol) (err error) {
+	if p.IsSetUpdateSummary() {
+		if err := oprot.WriteFieldBegin("updateSummary", thrift.STRUCT, 2); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:updateSummary: ", p), err)
+		}
+		if err := p.UpdateSummary.Write(oprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.UpdateSummary), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 2:updateSummary: ", p), err)
+		}
 	}
 	return err
 }
@@ -12699,11 +12901,11 @@ func (p *GetJobUpdateSummariesResult_) readField1(iprot thrift.TProtocol) error 
 	tSlice := make([]*JobUpdateSummary, 0, size)
 	p.UpdateSummaries = tSlice
 	for i := 0; i < size; i++ {
-		_elem40 := &JobUpdateSummary{}
-		if err := _elem40.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem40), err)
+		_elem42 := &JobUpdateSummary{}
+		if err := _elem42.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem42), err)
 		}
-		p.UpdateSummaries = append(p.UpdateSummaries, _elem40)
+		p.UpdateSummaries = append(p.UpdateSummaries, _elem42)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -12759,8 +12961,10 @@ func (p *GetJobUpdateSummariesResult_) String() string {
 //
 // Attributes:
 //  - Details
+//  - DetailsList
 type GetJobUpdateDetailsResult_ struct {
-	Details *JobUpdateDetails `thrift:"details,1" json:"details"`
+	Details     *JobUpdateDetails   `thrift:"details,1" json:"details"`
+	DetailsList []*JobUpdateDetails `thrift:"detailsList,2" json:"detailsList"`
 }
 
 func NewGetJobUpdateDetailsResult_() *GetJobUpdateDetailsResult_ {
@@ -12774,6 +12978,10 @@ func (p *GetJobUpdateDetailsResult_) GetDetails() *JobUpdateDetails {
 		return GetJobUpdateDetailsResult__Details_DEFAULT
 	}
 	return p.Details
+}
+
+func (p *GetJobUpdateDetailsResult_) GetDetailsList() []*JobUpdateDetails {
+	return p.DetailsList
 }
 func (p *GetJobUpdateDetailsResult_) IsSetDetails() bool {
 	return p.Details != nil
@@ -12795,6 +13003,10 @@ func (p *GetJobUpdateDetailsResult_) Read(iprot thrift.TProtocol) error {
 		switch fieldId {
 		case 1:
 			if err := p.readField1(iprot); err != nil {
+				return err
+			}
+		case 2:
+			if err := p.readField2(iprot); err != nil {
 				return err
 			}
 		default:
@@ -12820,11 +13032,34 @@ func (p *GetJobUpdateDetailsResult_) readField1(iprot thrift.TProtocol) error {
 	return nil
 }
 
+func (p *GetJobUpdateDetailsResult_) readField2(iprot thrift.TProtocol) error {
+	_, size, err := iprot.ReadListBegin()
+	if err != nil {
+		return thrift.PrependError("error reading list begin: ", err)
+	}
+	tSlice := make([]*JobUpdateDetails, 0, size)
+	p.DetailsList = tSlice
+	for i := 0; i < size; i++ {
+		_elem43 := &JobUpdateDetails{}
+		if err := _elem43.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem43), err)
+		}
+		p.DetailsList = append(p.DetailsList, _elem43)
+	}
+	if err := iprot.ReadListEnd(); err != nil {
+		return thrift.PrependError("error reading list end: ", err)
+	}
+	return nil
+}
+
 func (p *GetJobUpdateDetailsResult_) Write(oprot thrift.TProtocol) error {
 	if err := oprot.WriteStructBegin("GetJobUpdateDetailsResult"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
 	}
 	if err := p.writeField1(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField2(oprot); err != nil {
 		return err
 	}
 	if err := oprot.WriteFieldStop(); err != nil {
@@ -12845,6 +13080,27 @@ func (p *GetJobUpdateDetailsResult_) writeField1(oprot thrift.TProtocol) (err er
 	}
 	if err := oprot.WriteFieldEnd(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field end error 1:details: ", p), err)
+	}
+	return err
+}
+
+func (p *GetJobUpdateDetailsResult_) writeField2(oprot thrift.TProtocol) (err error) {
+	if err := oprot.WriteFieldBegin("detailsList", thrift.LIST, 2); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:detailsList: ", p), err)
+	}
+	if err := oprot.WriteListBegin(thrift.STRUCT, len(p.DetailsList)); err != nil {
+		return thrift.PrependError("error writing list begin: ", err)
+	}
+	for _, v := range p.DetailsList {
+		if err := v.Write(oprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", v), err)
+		}
+	}
+	if err := oprot.WriteListEnd(); err != nil {
+		return thrift.PrependError("error writing list end: ", err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 2:detailsList: ", p), err)
 	}
 	return err
 }
@@ -13034,11 +13290,11 @@ func (p *GetJobUpdateDiffResult_) readField1(iprot thrift.TProtocol) error {
 	tSet := make(map[*ConfigGroup]bool, size)
 	p.Add = tSet
 	for i := 0; i < size; i++ {
-		_elem41 := &ConfigGroup{}
-		if err := _elem41.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem41), err)
+		_elem44 := &ConfigGroup{}
+		if err := _elem44.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem44), err)
 		}
-		p.Add[_elem41] = true
+		p.Add[_elem44] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -13054,11 +13310,11 @@ func (p *GetJobUpdateDiffResult_) readField2(iprot thrift.TProtocol) error {
 	tSet := make(map[*ConfigGroup]bool, size)
 	p.Remove = tSet
 	for i := 0; i < size; i++ {
-		_elem42 := &ConfigGroup{}
-		if err := _elem42.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem42), err)
+		_elem45 := &ConfigGroup{}
+		if err := _elem45.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem45), err)
 		}
-		p.Remove[_elem42] = true
+		p.Remove[_elem45] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -13074,11 +13330,11 @@ func (p *GetJobUpdateDiffResult_) readField3(iprot thrift.TProtocol) error {
 	tSet := make(map[*ConfigGroup]bool, size)
 	p.Update = tSet
 	for i := 0; i < size; i++ {
-		_elem43 := &ConfigGroup{}
-		if err := _elem43.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem43), err)
+		_elem46 := &ConfigGroup{}
+		if err := _elem46.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem46), err)
 		}
-		p.Update[_elem43] = true
+		p.Update[_elem46] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -13094,11 +13350,11 @@ func (p *GetJobUpdateDiffResult_) readField4(iprot thrift.TProtocol) error {
 	tSet := make(map[*ConfigGroup]bool, size)
 	p.Unchanged = tSet
 	for i := 0; i < size; i++ {
-		_elem44 := &ConfigGroup{}
-		if err := _elem44.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem44), err)
+		_elem47 := &ConfigGroup{}
+		if err := _elem47.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem47), err)
 		}
-		p.Unchanged[_elem44] = true
+		p.Unchanged[_elem47] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -13297,19 +13553,19 @@ func (p *TierConfig) readField2(iprot thrift.TProtocol) error {
 	tMap := make(map[string]string, size)
 	p.Settings = tMap
 	for i := 0; i < size; i++ {
-		var _key45 string
+		var _key48 string
 		if v, err := iprot.ReadString(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			_key45 = v
+			_key48 = v
 		}
-		var _val46 string
+		var _val49 string
 		if v, err := iprot.ReadString(); err != nil {
 			return thrift.PrependError("error reading field 0: ", err)
 		} else {
-			_val46 = v
+			_val49 = v
 		}
-		p.Settings[_key45] = _val46
+		p.Settings[_key48] = _val49
 	}
 	if err := iprot.ReadMapEnd(); err != nil {
 		return thrift.PrependError("error reading map end: ", err)
@@ -13455,11 +13711,11 @@ func (p *GetTierConfigResult_) readField2(iprot thrift.TProtocol) error {
 	tSet := make(map[*TierConfig]bool, size)
 	p.Tiers = tSet
 	for i := 0; i < size; i++ {
-		_elem47 := &TierConfig{}
-		if err := _elem47.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem47), err)
+		_elem50 := &TierConfig{}
+		if err := _elem50.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem50), err)
 		}
-		p.Tiers[_elem47] = true
+		p.Tiers[_elem50] = true
 	}
 	if err := iprot.ReadSetEnd(); err != nil {
 		return thrift.PrependError("error reading set end: ", err)
@@ -14906,11 +15162,11 @@ func (p *Response) readField6(iprot thrift.TProtocol) error {
 	tSlice := make([]*ResponseDetail, 0, size)
 	p.Details = tSlice
 	for i := 0; i < size; i++ {
-		_elem48 := &ResponseDetail{}
-		if err := _elem48.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem48), err)
+		_elem51 := &ResponseDetail{}
+		if err := _elem51.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem51), err)
 		}
-		p.Details = append(p.Details, _elem48)
+		p.Details = append(p.Details, _elem51)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -15554,11 +15810,11 @@ func (p *RewriteConfigsRequest) readField1(iprot thrift.TProtocol) error {
 	tSlice := make([]*ConfigRewrite, 0, size)
 	p.RewriteCommands = tSlice
 	for i := 0; i < size; i++ {
-		_elem49 := &ConfigRewrite{}
-		if err := _elem49.Read(iprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem49), err)
+		_elem52 := &ConfigRewrite{}
+		if err := _elem52.Read(iprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem52), err)
 		}
-		p.RewriteCommands = append(p.RewriteCommands, _elem49)
+		p.RewriteCommands = append(p.RewriteCommands, _elem52)
 	}
 	if err := iprot.ReadListEnd(); err != nil {
 		return thrift.PrependError("error reading list end: ", err)
@@ -15608,4 +15864,106 @@ func (p *RewriteConfigsRequest) String() string {
 		return "<nil>"
 	}
 	return fmt.Sprintf("RewriteConfigsRequest(%+v)", *p)
+}
+
+// Attributes:
+//  - BatchSize
+type ExplicitReconciliationSettings struct {
+	BatchSize *int32 `thrift:"batchSize,1" json:"batchSize,omitempty"`
+}
+
+func NewExplicitReconciliationSettings() *ExplicitReconciliationSettings {
+	return &ExplicitReconciliationSettings{}
+}
+
+var ExplicitReconciliationSettings_BatchSize_DEFAULT int32
+
+func (p *ExplicitReconciliationSettings) GetBatchSize() int32 {
+	if !p.IsSetBatchSize() {
+		return ExplicitReconciliationSettings_BatchSize_DEFAULT
+	}
+	return *p.BatchSize
+}
+func (p *ExplicitReconciliationSettings) IsSetBatchSize() bool {
+	return p.BatchSize != nil
+}
+
+func (p *ExplicitReconciliationSettings) Read(iprot thrift.TProtocol) error {
+	if _, err := iprot.ReadStructBegin(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+		if err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T field %d read error: ", p, fieldId), err)
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+		switch fieldId {
+		case 1:
+			if err := p.readField1(iprot); err != nil {
+				return err
+			}
+		default:
+			if err := iprot.Skip(fieldTypeId); err != nil {
+				return err
+			}
+		}
+		if err := iprot.ReadFieldEnd(); err != nil {
+			return err
+		}
+	}
+	if err := iprot.ReadStructEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+	}
+	return nil
+}
+
+func (p *ExplicitReconciliationSettings) readField1(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadI32(); err != nil {
+		return thrift.PrependError("error reading field 1: ", err)
+	} else {
+		p.BatchSize = &v
+	}
+	return nil
+}
+
+func (p *ExplicitReconciliationSettings) Write(oprot thrift.TProtocol) error {
+	if err := oprot.WriteStructBegin("ExplicitReconciliationSettings"); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+	}
+	if err := p.writeField1(oprot); err != nil {
+		return err
+	}
+	if err := oprot.WriteFieldStop(); err != nil {
+		return thrift.PrependError("write field stop error: ", err)
+	}
+	if err := oprot.WriteStructEnd(); err != nil {
+		return thrift.PrependError("write struct stop error: ", err)
+	}
+	return nil
+}
+
+func (p *ExplicitReconciliationSettings) writeField1(oprot thrift.TProtocol) (err error) {
+	if p.IsSetBatchSize() {
+		if err := oprot.WriteFieldBegin("batchSize", thrift.I32, 1); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:batchSize: ", p), err)
+		}
+		if err := oprot.WriteI32(int32(*p.BatchSize)); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T.batchSize (1) field write error: ", p), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 1:batchSize: ", p), err)
+		}
+	}
+	return err
+}
+
+func (p *ExplicitReconciliationSettings) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("ExplicitReconciliationSettings(%+v)", *p)
 }
