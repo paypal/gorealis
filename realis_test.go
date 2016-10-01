@@ -113,8 +113,6 @@ func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
 
 	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 
-
-	// Tasks must exist for it to be killed
 	t.Run("TestRealisClient_StartCronJob_Thermos", func(t *testing.T){
 		resp, err := r.StartCronJob(job.JobKey())
 		if err != nil {
@@ -125,7 +123,6 @@ func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
 		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 	})
 
-	// Tasks must exist for it to be killed
 	t.Run("TestRealisClient_DeschedulerCronJob_Thermos", func(t *testing.T){
 		resp, err := r.DescheduleCronJob(job.JobKey())
 		if err != nil {
