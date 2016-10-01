@@ -1,0 +1,62 @@
+{
+  "environment": "prod",
+  "health_check_config": {
+    "initial_interval_secs": 15.0,
+    "health_checker": {
+      "http": {
+        "expected_response_code": 0,
+        "endpoint": "/health",
+        "expected_response": "ok"
+      }
+    },
+    "interval_secs": 10.0,
+    "timeout_secs": 1.0,
+    "max_consecutive_failures": 0
+  },
+  "name": "hello_world_from_gorealis",
+  "service": false,
+  "max_task_failures": 1,
+  "cron_collision_policy": "KILL_EXISTING",
+  "enable_hooks": false,
+  "cluster": "devcluster",
+  "task": {
+    "processes": [
+      {
+        "daemon": false,
+        "name": "hello",
+        "ephemeral": false,
+        "max_failures": 1,
+        "min_duration": 5,
+        "cmdline": "echo hello world from gorealis; sleep 10",
+        "final": false
+      }
+    ],
+    "name": "hello",
+    "finalization_wait": 30,
+    "max_failures": 1,
+    "max_concurrency": 0,
+    "resources": {
+      "gpu": 0,
+      "disk": 134217728,
+      "ram": 134217728,
+      "cpu": 1.0
+    },
+    "constraints": [
+      {
+        "order": [
+          "hello"
+        ]
+      }
+    ]
+  },
+  "production": false,
+  "role": "vagrant",
+  "lifecycle": {
+    "http": {
+      "graceful_shutdown_endpoint": "/quitquitquit",
+      "port": "health",
+      "shutdown_endpoint": "/abortabortabort"
+    }
+  },
+  "priority": 0
+}
