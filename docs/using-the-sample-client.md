@@ -22,7 +22,7 @@ Usage of ./client:
 ```
 
 ## Sample commands:
-These commands are set to run on a vagrant box. To be able to runt he docker compose
+These commands are set to run on a vagrant box. To be able to run the docker compose
 executor examples, the vagrant box must be configured properly to use the docker compose executor.
 
 ### Thermos
