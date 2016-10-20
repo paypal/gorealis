@@ -124,7 +124,7 @@ func main() {
 		fmt.Println(resp.String())
 
 		if resp.ResponseCode == aurora.ResponseCode_OK {
-			if !monitor.Instances(job.JobKey(), job.GetInstanceCount(), 5, 50) {
+			if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 5, 50); !ok || err != nil {
 				_, err := r.KillJob(job.JobKey())
 				if err != nil {
 					fmt.Println(err)
@@ -176,7 +176,7 @@ func main() {
 		}
 
 		if resp.ResponseCode == aurora.ResponseCode_OK {
-			if !monitor.Instances(job.JobKey(), 0, 5, 50) {
+			if ok, err := monitor.Instances(job.JobKey(), 0, 5, 50); !ok || err != nil {
 				fmt.Println("Unable to kill all instances of job")
 				os.Exit(1)
 			}
@@ -226,7 +226,7 @@ func main() {
 		}
 
 		if resp.ResponseCode == aurora.ResponseCode_OK {
-			if !monitor.Instances(job.JobKey(), job.GetInstanceCount()+numOfInstances, 5, 50) {
+			if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount()+numOfInstances, 5, 50); !ok || err != nil {
 				fmt.Println("Flexing up failed")
 			}
 		}

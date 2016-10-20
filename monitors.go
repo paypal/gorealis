@@ -21,6 +21,7 @@ import (
 	"github.com/rdelval/gorealis/response"
 	"os"
 	"time"
+	"github.com/pkg/errors"
 )
 
 type Monitor struct {
@@ -44,7 +45,7 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 
 		updateDetail := response.JobUpdateDetails(respDetail)
 
-		if(len(updateDetail) == 0 ) {
+		if len(updateDetail) == 0 {
 			fmt.Println("No update found")
 			return false
 		}
@@ -71,19 +72,18 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 	return false
 }
 
-func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval int, timeout int) bool {
+func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval int, timeout int) (bool, error) {
 
 	for i := 0; i*interval < timeout; i++ {
 
 		live, err := m.Client.GetInstanceIds(key, aurora.LIVE_STATES)
 
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			return false, errors.Wrap(err, "Unable to communicate with Aurora")
 		}
 
 		if len(live) == int(instances) {
-			return true
+			return true, nil
 		}
 
 		fmt.Println("Polling, instances running: ", len(live))
@@ -91,5 +91,5 @@ func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval int, t
 	}
 
 	fmt.Println("Timed out")
-	return false
+	return false, nil
 }
