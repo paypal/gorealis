@@ -82,7 +82,7 @@ func main() {
 		job = realis.NewJob().
 			Environment("prod").
 			Role("vagrant").
-			Name("hello_world_from_gorealis_docker").
+			Name("hello_world_from_gorealis").
 			ExecutorName(aurora.AURORA_EXECUTOR_NAME).
 			ExecutorData(string(payload)).
 			CPU(1).
@@ -108,8 +108,20 @@ func main() {
 			AddLabel("fileName", "sample-app/docker-compose.yml").
 			AddURIs(true, true, "https://github.com/mesos/docker-compose-executor/releases/download/0.1.0/sample-app.tar.gz")
 		break
+	case "none":
+		job = realis.NewJob().
+				Environment("prod").
+				Role("vagrant").
+				Name("docker_as_task").
+				CPU(1).
+				RAM(64).
+				Disk(100).
+				IsService(true).
+				InstanceCount(1).
+				AddPorts(1)
+		break
 	default:
-		fmt.Println("Only thermos and compose are supported for now")
+		fmt.Println("Only thermos, compose, and none are supported for now")
 		os.Exit(1)
 	}
 

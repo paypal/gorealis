@@ -68,7 +68,6 @@ func NewJob() Job {
 	taskConfig.Job = jobKey
 	taskConfig.Container = aurora.NewContainer()
 	taskConfig.Container.Mesos = aurora.NewMesosContainer()
-	taskConfig.ExecutorConfig = aurora.NewExecutorConfig()
 	taskConfig.MesosFetcherUris = make(map[*aurora.MesosFetcherURI]bool)
 	taskConfig.Metadata = make(map[*aurora.Metadata]bool)
 	taskConfig.Constraints = make(map[*aurora.Constraint]bool)
@@ -116,12 +115,22 @@ func (j AuroraJob) Name(name string) Job {
 
 // Set name of the executor that will the task will be configured to.
 func (j AuroraJob) ExecutorName(name string) Job {
+
+	if  j.jobConfig.TaskConfig.ExecutorConfig == nil {
+		j.jobConfig.TaskConfig.ExecutorConfig = aurora.NewExecutorConfig()
+	}
+
 	j.jobConfig.TaskConfig.ExecutorConfig.Name = name
 	return j
 }
 
 // Will be included as part of entire task inside the scheduler that will be serialized.
 func (j AuroraJob) ExecutorData(data string) Job {
+
+	if  j.jobConfig.TaskConfig.ExecutorConfig == nil {
+		j.jobConfig.TaskConfig.ExecutorConfig = aurora.NewExecutorConfig()
+	}
+
 	j.jobConfig.TaskConfig.ExecutorConfig.Data = data
 	return j
 }
