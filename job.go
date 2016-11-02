@@ -25,8 +25,8 @@ type Job interface {
 	Role(role string) Job
 	Name(name string) Job
 	CPU(cpus float64) Job
-    CronSchedule(cron string) Job
-    CronCollisionPolicy(policy aurora.CronCollisionPolicy) Job
+	CronSchedule(cron string) Job
+	CronCollisionPolicy(policy aurora.CronCollisionPolicy) Job
 	Disk(disk int64) Job
 	RAM(ram int64) Job
 	ExecutorName(name string) Job
@@ -44,6 +44,7 @@ type Job interface {
 	InstanceCount(instCount int32) Job
 	GetInstanceCount() int32
 	MaxFailure(maxFail int32) Job
+	Container(container Container) Job
 }
 
 // Structure to collect all information pertaining to an Aurora job.
@@ -259,6 +260,14 @@ func (j AuroraJob) AddValueConstraint(name string, negated bool, values ...strin
 func (j AuroraJob) AddLimitConstraint(name string, limit int32) Job {
 	j.jobConfig.TaskConfig.Constraints[&aurora.Constraint{name,
 		&aurora.TaskConstraint{nil, &aurora.LimitConstraint{limit}}}] = true
+
+	return j
+}
+
+// Set a container to run for the job configuration to run.
+// TODO (rdelvalle): Add no thermos mode where container is launched as a task and not an executor.
+func (j AuroraJob) Container(container Container) Job {
+	j.jobConfig.TaskConfig.Container = container.Build()
 
 	return j
 }

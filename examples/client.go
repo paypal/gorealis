@@ -29,7 +29,7 @@ func main() {
 	executor := flag.String("executor", "thermos", "Executor to use")
 	url := flag.String("url", "", "URL at which the Aurora Scheduler exists as [url]:[port]")
 	clustersConfig := flag.String("clusters", "", "Location of the clusters.json file used by aurora.")
-	clusterName := flag.String("cluster", "devcluster", "Name of cluster to run job on")
+	clusterName := flag.String("cluster", "devcluster", "Name of cluster to run job on (only necessary if clusters is set)")
 	updateId := flag.String("updateId", "", "Update ID to operate on")
 	username := flag.String("username", "aurora", "Username to use for authorization")
 	password := flag.String("password", "secret", "Password to use for authorization")
@@ -82,7 +82,7 @@ func main() {
 		job = realis.NewJob().
 			Environment("prod").
 			Role("vagrant").
-			Name("hello_world_from_gorealis").
+			Name("hello_world_from_gorealis_docker").
 			ExecutorName(aurora.AURORA_EXECUTOR_NAME).
 			ExecutorData(string(payload)).
 			CPU(1).
@@ -125,6 +125,27 @@ func main() {
 
 		if resp.ResponseCode == aurora.ResponseCode_OK {
 			if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 5, 50); !ok || err != nil {
+				_, err := r.KillJob(job.JobKey())
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+			}
+		}
+		break
+	case "createDocker":
+		fmt.Println("Creating a docker based job")
+		container := realis.NewDockerContainer().Image("python:2.7").AddParameter("network", "host")
+		job.Container(container)
+		resp, err := r.CreateJob(job)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		fmt.Println(resp.String())
+
+		if resp.ResponseCode == aurora.ResponseCode_OK {
+			if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 10, 300); !ok || err != nil {
 				_, err := r.KillJob(job.JobKey())
 				if err != nil {
 					fmt.Println(err)
