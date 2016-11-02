@@ -18,7 +18,8 @@ library has been tested. Vendoring a working version of this library is highly r
 * End to end testing with Vagrant setup
 
 ## Importing
-We suggest using http://labix.org/gopkg.in for any imports of packages in this library
+* We suggest using a vendoring tool such as [govendor](https://github.com/kardianos/govendor) and
+fetching by version, for example: `govendor fetch github.com/rdelval/gorealis@v1`
 
 ## Contributions
 Contributions are very much welcome. Please raise an issue so that the contribution may be discussed before it's made.
