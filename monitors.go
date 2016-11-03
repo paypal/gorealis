@@ -17,11 +17,11 @@ package realis
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/rdelval/gorealis/gen-go/apache/aurora"
 	"github.com/rdelval/gorealis/response"
 	"os"
 	"time"
-	"github.com/pkg/errors"
 )
 
 type Monitor struct {

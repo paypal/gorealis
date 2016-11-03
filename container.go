@@ -48,4 +48,3 @@ func (c DockerContainer) AddParameter(name, value string) DockerContainer {
 	c.container.Parameters = append(c.container.Parameters, &aurora.DockerParameter{name, value})
 	return c
 }
-

@@ -21,11 +21,11 @@ import (
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/pkg/errors"
 	"github.com/rdelval/gorealis/gen-go/apache/aurora"
+	"github.com/rdelval/gorealis/response"
 	"net/http"
 	"net/http/cookiejar"
 	"os"
 	"time"
-	"github.com/rdelval/gorealis/response"
 )
 
 type Realis interface {

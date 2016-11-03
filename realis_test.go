@@ -15,12 +15,12 @@
 package realis
 
 import (
-	"testing"
-	"github.com/stretchr/testify/assert"
 	"fmt"
-	"os"
-	"io/ioutil"
 	"github.com/rdelval/gorealis/gen-go/apache/aurora"
+	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+	"os"
+	"testing"
 )
 
 var r Realis
@@ -71,7 +71,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 
 	// Tasks must exist for it to be killed
-	t.Run("TestRealisClient_KillJob_Thermos", func(t *testing.T){
+	t.Run("TestRealisClient_KillJob_Thermos", func(t *testing.T) {
 		resp, err := r.KillJob(job.JobKey())
 		if err != nil {
 			fmt.Println(err)
@@ -113,7 +113,7 @@ func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
 
 	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 
-	t.Run("TestRealisClient_StartCronJob_Thermos", func(t *testing.T){
+	t.Run("TestRealisClient_StartCronJob_Thermos", func(t *testing.T) {
 		resp, err := r.StartCronJob(job.JobKey())
 		if err != nil {
 			fmt.Println(err)
@@ -123,7 +123,7 @@ func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
 		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 	})
 
-	t.Run("TestRealisClient_DeschedulerCronJob_Thermos", func(t *testing.T){
+	t.Run("TestRealisClient_DeschedulerCronJob_Thermos", func(t *testing.T) {
 		resp, err := r.DescheduleCronJob(job.JobKey())
 		if err != nil {
 			fmt.Println(err)

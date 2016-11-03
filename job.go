@@ -116,7 +116,7 @@ func (j AuroraJob) Name(name string) Job {
 // Set name of the executor that will the task will be configured to.
 func (j AuroraJob) ExecutorName(name string) Job {
 
-	if  j.jobConfig.TaskConfig.ExecutorConfig == nil {
+	if j.jobConfig.TaskConfig.ExecutorConfig == nil {
 		j.jobConfig.TaskConfig.ExecutorConfig = aurora.NewExecutorConfig()
 	}
 
@@ -127,7 +127,7 @@ func (j AuroraJob) ExecutorName(name string) Job {
 // Will be included as part of entire task inside the scheduler that will be serialized.
 func (j AuroraJob) ExecutorData(data string) Job {
 
-	if  j.jobConfig.TaskConfig.ExecutorConfig == nil {
+	if j.jobConfig.TaskConfig.ExecutorConfig == nil {
 		j.jobConfig.TaskConfig.ExecutorConfig = aurora.NewExecutorConfig()
 	}
 

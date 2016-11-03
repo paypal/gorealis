@@ -110,15 +110,15 @@ func main() {
 		break
 	case "none":
 		job = realis.NewJob().
-				Environment("prod").
-				Role("vagrant").
-				Name("docker_as_task").
-				CPU(1).
-				RAM(64).
-				Disk(100).
-				IsService(true).
-				InstanceCount(1).
-				AddPorts(1)
+			Environment("prod").
+			Role("vagrant").
+			Name("docker_as_task").
+			CPU(1).
+			RAM(64).
+			Disk(100).
+			IsService(true).
+			InstanceCount(1).
+			AddPorts(1)
 		break
 	default:
 		fmt.Println("Only thermos, compose, and none are supported for now")

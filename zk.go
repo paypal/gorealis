@@ -35,13 +35,18 @@ type ServiceInstance struct {
 	Status              string              `json:"status"`
 }
 
+type NoopLogger struct{}
+
+func (NoopLogger) Printf(format string, a ...interface{}) {
+}
+
 // Loads leader from ZK endpoint.
 func LeaderFromZK(cluster Cluster) (string, error) {
 
 	endpoints := strings.Split(cluster.ZK, ",")
 
 	//TODO (rdelvalle): When enabling debugging, change logger here
-	c, _, err := zk.Connect(endpoints, time.Second*10, zk.WithoutLogger())
+	c, _, err := zk.Connect(endpoints, time.Second*10, func(c *zk.Conn) { c.SetLogger(NoopLogger{}) })
 	if err != nil {
 		return "", errors.Wrap(err, "Failed to connect to Zookeeper at "+cluster.ZK)
 	}
