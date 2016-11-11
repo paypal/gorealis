@@ -16,7 +16,9 @@
 package response
 
 import (
+	"bytes"
 	"github.com/rdelval/gorealis/gen-go/apache/aurora"
+	"github.com/pkg/errors"
 )
 
 // Get key from a response created by a StartJobUpdate call
@@ -30,4 +32,25 @@ func JobUpdateDetails(resp *aurora.Response) []*aurora.JobUpdateDetails {
 
 func ScheduleStatusResult(resp *aurora.Response) *aurora.ScheduleStatusResult_ {
 	return resp.GetResult_().GetScheduleStatusResult_()
+}
+
+func ResponseCodeCheck(resp *aurora.Response) (*aurora.Response, error) {
+	if resp.GetResponseCode() != aurora.ResponseCode_OK {
+		return resp, errors.New(CombineMessage(resp))
+	}
+
+	return resp, nil
+}
+
+// Based on aurora client: src/main/python/apache/aurora/client/base.py
+func CombineMessage(resp *aurora.Response) string {
+	var buffer bytes.Buffer
+	for _, detail := range resp.GetDetails() {
+		buffer.WriteString(detail.GetMessage() + ", ")
+	}
+
+	if buffer.Len() > 0 {
+		buffer.Truncate(buffer.Len()-2) // Get rid of trailing comma + space
+	}
+	return buffer.String()
 }
