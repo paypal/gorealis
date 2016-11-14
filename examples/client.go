@@ -57,7 +57,7 @@ func main() {
 	}
 
 	//Create new configuration with default transport layer
-	config, err := realis.NewDefaultConfig(*url)
+	config, err := realis.NewDefaultConfig(*url, 10000)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
