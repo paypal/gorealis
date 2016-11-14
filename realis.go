@@ -69,7 +69,7 @@ func NewClient(config RealisConfig) Realis {
 }
 
 // Create a default configuration of the transport layer, requires a URL to test connection with.
-func NewDefaultConfig(url string) (RealisConfig, error) {
+func NewDefaultConfig(url string, timeoutms int) (RealisConfig, error) {
 	jar, err := cookiejar.New(nil)
 
 	if err != nil {
@@ -78,7 +78,7 @@ func NewDefaultConfig(url string) (RealisConfig, error) {
 
 	//Custom client to timeout after 10 seconds to avoid hanging
 	trans, err := thrift.NewTHttpPostClientWithOptions(url+"/api",
-		thrift.THttpClientOptions{Client: &http.Client{Timeout: time.Second * 10, Jar: jar}})
+		thrift.THttpClientOptions{Client: &http.Client{Timeout: time.Millisecond * time.Duration(timeoutms), Jar: jar}})
 
 	if err != nil {
 		return RealisConfig{}, errors.Wrap(err, "Error creating transport")
