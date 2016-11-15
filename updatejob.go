@@ -25,7 +25,7 @@ type UpdateJob struct {
 }
 
 // Create a default UpdateJob object.
-func NewUpdateJob(config *aurora.TaskConfig) *UpdateJob {
+func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 
 	req := aurora.NewJobUpdateRequest()
 	req.TaskConfig = config
@@ -61,6 +61,37 @@ func NewUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 	req.Settings.MaxFailedInstances = 0
 	req.Settings.RollbackOnFailure = true
 	req.Settings.WaitForBatchCompletion = false
+
+	//TODO(rdelvalle): Deep copy job struct to avoid unexpected behavior
+	return &UpdateJob{job, req}
+}
+
+func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings) *UpdateJob {
+
+	req := aurora.NewJobUpdateRequest()
+	req.TaskConfig = config
+	req.Settings = settings
+
+	job := NewJob().(AuroraJob)
+	job.jobConfig.TaskConfig = config
+
+	// Rebuild resource map from TaskConfig
+	for ptr := range config.Resources {
+		if ptr.NumCpus != nil {
+			job.resources["cpu"].NumCpus = ptr.NumCpus
+			continue // Guard against Union violations that Go won't enforce
+		}
+
+		if ptr.RamMb != nil {
+			job.resources["ram"].RamMb = ptr.RamMb
+			continue
+		}
+
+		if ptr.DiskMb != nil {
+			job.resources["disk"].DiskMb = ptr.DiskMb
+			continue
+		}
+	}
 
 	//TODO(rdelvalle): Deep copy job struct to avoid unexpected behavior
 	return &UpdateJob{job, req}

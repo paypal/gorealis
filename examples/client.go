@@ -272,7 +272,7 @@ func main() {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		updateJob := realis.NewUpdateJob(taskConfig)
+		updateJob := realis.NewDefaultUpdateJob(taskConfig)
 		updateJob.InstanceCount(5).RAM(128)
 
 		resp, err := r.StartJobUpdate(updateJob, "")

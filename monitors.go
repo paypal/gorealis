@@ -20,7 +20,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rdelval/gorealis/gen-go/apache/aurora"
 	"github.com/rdelval/gorealis/response"
-	"os"
 	"time"
 )
 
@@ -29,7 +28,7 @@ type Monitor struct {
 }
 
 // Polls the scheduler every certain amount of time to see if the update has succeeded
-func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout int) bool {
+func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout int) (bool, error) {
 
 	updateQ := aurora.JobUpdateQuery{
 		Key:   &updateKey,
@@ -40,14 +39,14 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 		respDetail, err := m.Client.JobUpdateDetails(updateQ)
 		if err != nil {
 			fmt.Println(err)
-			os.Exit(1)
+			return false, err
 		}
 
 		updateDetail := response.JobUpdateDetails(respDetail)
 
 		if len(updateDetail) == 0 {
 			fmt.Println("No update found")
-			return false
+			return false, errors.New("No update found for "+updateKey.String())
 		}
 		status := updateDetail[0].Update.Summary.State.Status
 
@@ -57,10 +56,10 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 			// if we encounter an inactive state and it is not at rolled forward, update failed
 			if status == aurora.JobUpdateStatus_ROLLED_FORWARD {
 				fmt.Println("Update succeded")
-				return true
+				return true, nil
 			} else {
 				fmt.Println("Update failed")
-				return false
+				return false, nil
 			}
 		}
 
@@ -69,7 +68,7 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 	}
 
 	fmt.Println("Timed out")
-	return false
+	return false, nil
 }
 
 func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval int, timeout int) (bool, error) {
