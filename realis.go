@@ -33,6 +33,7 @@ type Realis interface {
 	AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error)
 	CreateJob(auroraJob Job) (*aurora.Response, error)
 	DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, error)
+	GetTaskStatus(query *aurora.TaskQuery)([]*aurora.ScheduledTask, error)
 	FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error)
 	GetInstanceIds(key *aurora.JobKey, states map[aurora.ScheduleStatus]bool) (map[int32]bool, error)
 	JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aurora.Response, error)
@@ -286,6 +287,21 @@ func (r realisClient) AddInstances(instKey aurora.InstanceKey, count int32) (*au
 	return response.ResponseCodeCheck(resp)
 }
 
+func (r realisClient) GetTaskStatus(query *aurora.TaskQuery)(tasks []*aurora.ScheduledTask, e error) {
+
+	resp, err := r.client.GetTasksStatus(query)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error querying Aurora Scheduler for task status")
+	}
+	//Check for response code..
+	if resp.GetResponseCode() != aurora.ResponseCode_OK {
+		return nil, errors.New(resp.ResponseCode.String() + "--" + response.CombineMessage(resp))
+	}
+
+	return response.ScheduleStatusResult(resp).GetTasks(), nil
+}
+
+
 func (r realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error) {
 
 	ids := make(map[int32]bool)
@@ -300,6 +316,11 @@ func (r realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskC
 	resp, err := r.client.GetTasksStatus(taskQ)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error querying Aurora Scheduler for task configuration")
+	}
+
+	//Check for response code..
+	if resp.GetResponseCode() != aurora.ResponseCode_OK {
+		return nil, errors.New(resp.ResponseCode.String() + "--" +response.CombineMessage(resp))
 	}
 
 	tasks := response.ScheduleStatusResult(resp).GetTasks()

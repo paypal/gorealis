@@ -235,7 +235,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		fmt.Println("Number of live instances: ", len(live))
+		fmt.Printf("Live instances: %+v\n", live)
 		break
 	case "activeCount":
 		fmt.Println("Getting instance count")
@@ -266,7 +266,7 @@ func main() {
 		fmt.Println(resp.String())
 		break
 	case "update":
-		fmt.Println("Updating a job with with more RAM and to 3 instances")
+		fmt.Println("Updating a job with with more RAM and to 5 instances")
 		taskConfig, err := r.FetchTaskConfig(aurora.InstanceKey{job.JobKey(), 0})
 		if err != nil {
 			fmt.Println(err)
@@ -282,7 +282,7 @@ func main() {
 		}
 
 		jobUpdateKey := response.JobUpdateKey(resp)
-		monitor.JobUpdate(*jobUpdateKey, 5, 100)
+		monitor.JobUpdate(*jobUpdateKey, 5, 500)
 
 		break
 	case "updateDetails":
@@ -316,12 +316,27 @@ func main() {
 	case "taskConfig":
 		fmt.Println("Getting job info")
 		config, err := r.FetchTaskConfig(aurora.InstanceKey{job.JobKey(), 0})
+
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 		print(config.String())
 		break
+	case "taskStatus":
+		fmt.Println("Getting task status")
+		taskQ := &aurora.TaskQuery{Role: job.JobKey().Role,
+			Environment: job.JobKey().Environment,
+			JobName:     job.JobKey().Name,
+		}
+		tasks, err := r.GetTaskStatus(taskQ)
+		if err != nil {
+			fmt.Printf("error: %+v\n ",err )
+			os.Exit(1)
+		}
+		fmt.Printf("length: %d\n ", len(tasks))
+		fmt.Printf("tasks: %+v\n", tasks)
+
 	default:
 		fmt.Println("Command not supported")
 		os.Exit(1)
