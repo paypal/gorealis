@@ -6,22 +6,6 @@ we will be using a vagrant instance to demonstrate the setup process. Many of th
 steps also apply to an Aurora installation made via a package manager. Differences in how to configure
 the cluster between the vagrant image and the package manager will be clarified when necessary.
 
-## Pre-configured Aurora Vagrant box
-Alternatively, if Vagrant and VirtualBox are already configured your machine, 
-you may use a pre-configured vagrant image and skip to the [Creating Aurora Jobs](#creating-aurora-jobs).
-
-To take this path, start by cloning the following repository and checking out the DockerComposeExecutor branch:
-```
-$  git clone -b 0.16.0-DCE git@github.com:rdelval/aurora.git
-```
-
-And bringing the vagrant box
-```
-$ cd aurora
-$ vagrant up
-```
-**The pre-configured Vagrant box will most likely run on a stale version of Aurora (compared to the master)**
-
 ## Configuring Aurora manually
 ### Spinning up an Aurora instance with Vagrant
 Follow the guide at http://aurora.apache.org/documentation/latest/getting-started/vagrant/
