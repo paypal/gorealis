@@ -55,18 +55,13 @@ type realisClient struct {
 // Wrap object to provide future flexibility
 type RealisConfig struct {
 	transport thrift.TTransport
+	protoFactory thrift.TProtocolFactory
 }
 
 // Create a new Client with a default transport layer
 func NewClient(config RealisConfig) Realis {
-
-	httpTrans := (config.transport).(*thrift.THttpClient)
-	httpTrans.SetHeader("User-Agent", "GoRealis v1.0.4")
-
-	protocolFactory := thrift.NewTJSONProtocolFactory()
-
 	return realisClient{
-		client: aurora.NewAuroraSchedulerManagerClientFactory(config.transport, protocolFactory)}
+		client: aurora.NewAuroraSchedulerManagerClientFactory(config.transport, config.protoFactory)}
 }
 
 // Create a default configuration of the transport layer, requires a URL to test connection with.
@@ -89,8 +84,12 @@ func NewDefaultConfig(url string, timeoutms int) (RealisConfig, error) {
 		fmt.Fprintln(os.Stderr)
 		return RealisConfig{}, errors.Wrapf(err, "Error opening connection to %s", url)
 	}
+	httpTrans := (trans).(*thrift.THttpClient)
+	httpTrans.SetHeader("Accept", "application/vnd.apache.thrift.binary")
+	httpTrans.SetHeader("Content-Type", "application/vnd.apache.thrift.binary")
+	httpTrans.SetHeader("User-Agent", "GoRealis v1.0.4")
 
-	return RealisConfig{transport: trans}, nil
+	return RealisConfig{transport: trans, protoFactory: thrift.NewTBinaryProtocolFactoryDefault()}, nil
 
 }
 

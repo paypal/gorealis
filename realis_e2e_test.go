@@ -28,7 +28,7 @@ var thermosPayload []byte
 
 func TestMain(m *testing.M) {
 	// New configuration to connect to Vagrant image
-	config, err := NewDefaultConfig("http://192.168.33.7:8081")
+	config, err := NewDefaultConfig("http://192.168.33.7:8081",10000)
 	if err != nil {
 		fmt.Println("Please run vagrant box before running test suite")
 		os.Exit(1)
