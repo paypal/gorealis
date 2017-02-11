@@ -3,10 +3,10 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "hcwvwW3c+NPM+g4nyv1prqgNrC4=",
+			"checksumSHA1": "iYwcP0aXWQx5s2+ltOU0smXL58g=",
 			"path": "git.apache.org/thrift.git/lib/go/thrift",
-			"revision": "2007783e874d524a46b818598a45078448ecc53e",
-			"revisionTime": "2016-08-09T19:04:53Z"
+			"revision": "e1832c354391deb0e0ce94a62ff32e8ce1c83fd3",
+			"revisionTime": "2017-02-10T18:03:10Z"
 		},
 		{
 			"checksumSHA1": "GcaTbmmzSGqTb2X6qnNtmDyew1Q=",
