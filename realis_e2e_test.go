@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"time"
 )
 
 var r Realis
@@ -28,7 +29,7 @@ var thermosPayload []byte
 
 func TestMain(m *testing.M) {
 	// New configuration to connect to Vagrant image
-	config, err := NewDefaultConfig("http://192.168.33.7:8081")
+	config, err := NewDefaultConfig("http://192.168.33.7:8081",10000)
 	if err != nil {
 		fmt.Println("Please run vagrant box before running test suite")
 		os.Exit(1)
@@ -62,23 +63,29 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		InstanceCount(1).
 		AddPorts(1)
 
+	start := time.Now()
 	resp, err := r.CreateJob(job)
+	end := time.Now()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
 	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+	fmt.Printf("Create call took %d ns\n", (end.UnixNano()- start.UnixNano()))
 
 	// Tasks must exist for it to be killed
 	t.Run("TestRealisClient_KillJob_Thermos", func(t *testing.T) {
+		start := time.Now()
 		resp, err := r.KillJob(job.JobKey())
+		end := time.Now()
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 
 		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+		fmt.Printf("Kill call took %d ns\n", (end.UnixNano()- start.UnixNano()))
 	})
 }
 
@@ -114,22 +121,27 @@ func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
 	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 
 	t.Run("TestRealisClient_StartCronJob_Thermos", func(t *testing.T) {
+		start := time.Now()
 		resp, err := r.StartCronJob(job.JobKey())
+		end := time.Now()
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-
 		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+		fmt.Printf("Schedule cron call took %d ns\n", (end.UnixNano()- start.UnixNano()))
 	})
 
 	t.Run("TestRealisClient_DeschedulerCronJob_Thermos", func(t *testing.T) {
+		start := time.Now()
 		resp, err := r.DescheduleCronJob(job.JobKey())
+		end := time.Now()
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 
 		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+		fmt.Printf("Deschedule cron call took %d ns\n", (end.UnixNano()- start.UnixNano()))
 	})
 }
