@@ -165,7 +165,7 @@ func (r realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*au
 		instanceIds[instId] = true
 	}
 
-	resp, err := r.client.KillTasks(key, instanceIds)
+	resp, err := r.client.KillTasks(key, instanceIds, "")
 	if err != nil {
 		return nil, errors.Wrap(err, "Error sending Kill command to Aurora Scheduler")
 	}
@@ -182,7 +182,7 @@ func (r realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 	}
 
 	if len(instanceIds) > 0 {
-		resp, err := r.client.KillTasks(key, instanceIds)
+		resp, err := r.client.KillTasks(key, instanceIds, "")
 
 		if err != nil {
 			return nil, errors.Wrap(err, "Error sending Kill command to Aurora Scheduler")
