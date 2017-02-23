@@ -274,7 +274,6 @@ func (j AuroraJob) AddLimitConstraint(name string, limit int32) Job {
 }
 
 // Set a container to run for the job configuration to run.
-// TODO (rdelvalle): Add no thermos mode where container is launched as a task and not an executor.
 func (j AuroraJob) Container(container Container) Job {
 	j.jobConfig.TaskConfig.Container = container.Build()
 
