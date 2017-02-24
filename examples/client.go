@@ -166,6 +166,27 @@ func main() {
 			}
 		}
 		break
+	case "createMesosContainer":
+		fmt.Println("Creating a docker based job")
+		container := realis.NewMesosContainer().DockerImage("python", "2.7")
+		job.Container(container)
+		resp, err := r.CreateJob(job)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		fmt.Println(resp.String())
+
+		if resp.ResponseCode == aurora.ResponseCode_OK {
+			if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 10, 300); !ok || err != nil {
+				_, err := r.KillJob(job.JobKey())
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+			}
+		}
+		break
 	case "scheduleCron":
 		fmt.Println("Scheduling a Cron job")
 		// Cron config

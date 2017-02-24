@@ -22,7 +22,6 @@ type Container interface {
 	Build() *aurora.Container
 }
 
-// TODO(rdelvalle): Implement Mesos container builder
 type MesosContainer struct {
 	container *aurora.MesosContainer
 }
@@ -46,5 +45,31 @@ func (c DockerContainer) Image(image string) DockerContainer {
 
 func (c DockerContainer) AddParameter(name, value string) DockerContainer {
 	c.container.Parameters = append(c.container.Parameters, &aurora.DockerParameter{name, value})
+	return c
+}
+
+func NewMesosContainer() MesosContainer {
+	return MesosContainer{container: aurora.NewMesosContainer()}
+}
+
+func (c MesosContainer) Build() *aurora.Container {
+	return &aurora.Container{Mesos: c.container}
+}
+
+func (c MesosContainer) DockerImage(name, tag string) MesosContainer {
+	if c.container.Image == nil {
+		c.container.Image = aurora.NewImage()
+	}
+
+	c.container.Image.Docker = &aurora.DockerImage{name, tag}
+	return c
+}
+
+func (c MesosContainer) AppcImage(name, imageId string) MesosContainer {
+	if c.container.Image == nil {
+		c.container.Image = aurora.NewImage()
+	}
+
+	c.container.Image.Appc = &aurora.AppcImage{name, imageId}
 	return c
 }
