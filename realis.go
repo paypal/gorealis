@@ -17,13 +17,14 @@ package realis
 
 import (
 	"encoding/base64"
+	"net/http"
+	"net/http/cookiejar"
+	"time"
+
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/pkg/errors"
 	"github.com/rdelval/gorealis/gen-go/apache/aurora"
 	"github.com/rdelval/gorealis/response"
-	"net/http"
-	"net/http/cookiejar"
-	"time"
 )
 
 type Realis interface {
@@ -60,6 +61,16 @@ type RealisConfig struct {
 func NewClient(config RealisConfig) Realis {
 	return realisClient{
 		client: aurora.NewAuroraSchedulerManagerClientFactory(config.transport, config.protoFactory)}
+}
+
+// Create a new ReadOnlyClient with a default transport layer
+func NewReadOnlyClient(config RealisConfig) *aurora.ReadOnlySchedulerClient {
+
+	return aurora.NewReadOnlySchedulerClientFactory(config.transport, config.protoFactory)
+}
+
+func CloseReadONlyClient(r *aurora.ReadOnlySchedulerClient) {
+	r.Transport.Close()
 }
 
 // Creates a default Thrift Transport object for communications in gorealis using an HTTP Post Client
