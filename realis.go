@@ -17,13 +17,14 @@ package realis
 
 import (
 	"encoding/base64"
+	"net/http"
+	"net/http/cookiejar"
+	"time"
+
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/pkg/errors"
 	"github.com/rdelval/gorealis/gen-go/apache/aurora"
 	"github.com/rdelval/gorealis/response"
-	"net/http"
-	"net/http/cookiejar"
-	"time"
 )
 
 type Realis interface {
@@ -43,11 +44,13 @@ type Realis interface {
 	ScheduleCronJob(auroraJob Job) (*aurora.Response, error)
 	StartJobUpdate(updateJob *UpdateJob, message string) (*aurora.Response, error)
 	StartCronJob(key *aurora.JobKey) (*aurora.Response, error)
+	GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQuery) (*aurora.Response, error)
 	Close()
 }
 
 type realisClient struct {
-	client *aurora.AuroraSchedulerManagerClient
+	client         *aurora.AuroraSchedulerManagerClient
+	readonlyClient *aurora.ReadOnlySchedulerClient
 }
 
 // Wrapper object to provide future flexibility
@@ -59,7 +62,8 @@ type RealisConfig struct {
 // Create a new Client with a default transport layer
 func NewClient(config RealisConfig) Realis {
 	return realisClient{
-		client: aurora.NewAuroraSchedulerManagerClientFactory(config.transport, config.protoFactory)}
+		client:         aurora.NewAuroraSchedulerManagerClientFactory(config.transport, config.protoFactory),
+		readonlyClient: aurora.NewReadOnlySchedulerClientFactory(config.transport, config.protoFactory)}
 }
 
 // Creates a default Thrift Transport object for communications in gorealis using an HTTP Post Client
@@ -132,6 +136,7 @@ func basicAuth(username, password string) string {
 // Releases resources associated with the realis client.
 func (r realisClient) Close() {
 	r.client.Transport.Close()
+	r.readonlyClient.Transport.Close()
 }
 
 // Uses predefined set of states to retrieve a set of active jobs in Apache Aurora.
@@ -154,6 +159,10 @@ func (r realisClient) GetInstanceIds(key *aurora.JobKey, states map[aurora.Sched
 	}
 
 	return jobInstanceIds, nil
+}
+
+func (r realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQuery) (*aurora.Response, error) {
+	return r.readonlyClient.GetJobUpdateSummaries(jobUpdateQuery)
 }
 
 // Kill specific instances of a job.

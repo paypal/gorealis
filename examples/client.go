@@ -17,11 +17,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"os"
+
 	"github.com/rdelval/gorealis"
 	"github.com/rdelval/gorealis/gen-go/apache/aurora"
 	"github.com/rdelval/gorealis/response"
-	"io/ioutil"
-	"os"
 )
 
 func main() {
@@ -344,6 +345,21 @@ func main() {
 		}
 		print(config.String())
 		break
+
+	case "updatesummary":
+
+		fmt.Println("Getting job update summary")
+		jobquery := &aurora.JobUpdateQuery{
+			Role:   &job.JobKey().Role,
+			JobKey: job.JobKey(),
+		}
+		updatesummary, err := r.GetJobUpdateSummaries(jobquery)
+		if err != nil {
+			fmt.Printf("error while getting update summary: %v", err)
+			os.Exit(1)
+		}
+		fmt.Println(updatesummary)
+
 	case "taskStatus":
 		fmt.Println("Getting task status")
 		taskQ := &aurora.TaskQuery{Role: job.JobKey().Role,
@@ -352,7 +368,7 @@ func main() {
 		}
 		tasks, err := r.GetTaskStatus(taskQ)
 		if err != nil {
-			fmt.Printf("error: %+v\n ",err )
+			fmt.Printf("error: %+v\n ", err)
 			os.Exit(1)
 		}
 		fmt.Printf("length: %d\n ", len(tasks))
