@@ -74,7 +74,7 @@ func main() {
 
 	switch *executor {
 	case "thermos":
-		payload, err := ioutil.ReadFile("thermos_payload.json")
+		payload, err := ioutil.ReadFile("examples/thermos_payload.json")
 		if err != nil {
 			fmt.Println("Error reading json config file: ", err)
 			os.Exit(1)
@@ -100,11 +100,11 @@ func main() {
 			Name("docker-compose").
 			ExecutorName("docker-compose-executor").
 			ExecutorData("{}").
-			CPU(1).
+			CPU(0.5).
 			RAM(64).
 			Disk(100).
 			IsService(false).
-			InstanceCount(1).
+			InstanceCount(3).
 			AddPorts(1).
 			AddLabel("fileName", "sample-app/docker-compose.yml").
 			AddURIs(true, true, "https://github.com/mesos/docker-compose-executor/releases/download/0.1.0/sample-app.tar.gz")
@@ -273,7 +273,15 @@ func main() {
 	case "flexUp":
 		fmt.Println("Flexing up job")
 
-		numOfInstances := int32(5)
+		numOfInstances := int32(2)
+
+		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		currInstances := int32(len(live))
+		fmt.Println("Current num of instances: ", currInstances)
 		resp, err := r.AddInstances(aurora.InstanceKey{job.JobKey(), 0}, numOfInstances)
 		if err != nil {
 			fmt.Println(err)
@@ -281,7 +289,34 @@ func main() {
 		}
 
 		if resp.ResponseCode == aurora.ResponseCode_OK {
-			if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount()+numOfInstances, 5, 50); !ok || err != nil {
+			if ok, err := monitor.Instances(job.JobKey(), currInstances+numOfInstances, 5, 50); !ok || err != nil {
+				fmt.Println("Flexing up failed")
+			}
+		}
+		fmt.Println(resp.String())
+		break
+
+	case "flexDown":
+		fmt.Println("Flexing down job")
+
+		numOfInstances := int32(2)
+
+		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		currInstances := int32(len(live))
+		fmt.Println("Current num of instances: ", currInstances)
+
+		resp, err := r.RemoveInstances(job.JobKey(), numOfInstances)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		if resp.ResponseCode == aurora.ResponseCode_OK {
+			if ok, err := monitor.Instances(job.JobKey(), currInstances-numOfInstances, 5, 50); !ok || err != nil {
 				fmt.Println("Flexing up failed")
 			}
 		}

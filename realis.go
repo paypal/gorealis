@@ -25,11 +25,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rdelval/gorealis/gen-go/apache/aurora"
 	"github.com/rdelval/gorealis/response"
+	"fmt"
 )
 
 type Realis interface {
 	AbortJobUpdate(updateKey aurora.JobUpdateKey, message string) (*aurora.Response, error)
 	AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error)
+	RemoveInstances(key *aurora.JobKey, count int32) (*aurora.Response, error)
 	CreateJob(auroraJob Job) (*aurora.Response, error)
 	DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, error)
 	GetTaskStatus(query *aurora.TaskQuery) ([]*aurora.ScheduledTask, error)
@@ -318,6 +320,28 @@ func (r realisClient) AddInstances(instKey aurora.InstanceKey, count int32) (*au
 	}
 
 	return response.ResponseCodeCheck(resp)
+}
+
+//Scale down the number of instances under a job configuration using the configuratipn of a specific instance
+func (r realisClient) RemoveInstances(key *aurora.JobKey, count int32) (*aurora.Response, error) {
+	instanceIds, err := r.GetInstanceIds(key, aurora.ACTIVE_STATES)
+	if err != nil {
+		return nil, errors.Wrap(err, "RemoveInstances: Could not retrieve relevant instance IDs")
+	}
+	if len(instanceIds) < int(count) {
+		return nil, errors.New(fmt.Sprintf("RemoveInstances: No sufficient instances to Kill - " +
+			"Instances to kill %d Total Instances %d", count, len(instanceIds)))
+	}
+	instanceList := make([]int32, count)
+	i := 0
+	for k := range instanceIds {
+		instanceList[i] = k
+		i += 1
+		if i == int(count) {
+			break
+		}
+	}
+	return r.KillInstances(key, instanceList...)
 }
 
 func (r realisClient) GetTaskStatus(query *aurora.TaskQuery) (tasks []*aurora.ScheduledTask, e error) {
