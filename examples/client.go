@@ -317,7 +317,7 @@ func main() {
 
 		if resp.ResponseCode == aurora.ResponseCode_OK {
 			if ok, err := monitor.Instances(job.JobKey(), currInstances-numOfInstances, 5, 50); !ok || err != nil {
-				fmt.Println("Flexing up failed")
+				fmt.Println("flexDown failed")
 			}
 		}
 		fmt.Println(resp.String())
