@@ -21,11 +21,12 @@ import (
 	"net/http/cookiejar"
 	"time"
 
+	"fmt"
+
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/pkg/errors"
 	"github.com/rdelval/gorealis/gen-go/apache/aurora"
 	"github.com/rdelval/gorealis/response"
-	"fmt"
 )
 
 type Realis interface {
@@ -63,7 +64,7 @@ type RealisConfig struct {
 
 // Create a new Client with a default transport layer
 func NewClient(config RealisConfig) Realis {
-	return realisClient{
+	return &realisClient{
 		client:         aurora.NewAuroraSchedulerManagerClientFactory(config.transport, config.protoFactory),
 		readonlyClient: aurora.NewReadOnlySchedulerClientFactory(config.transport, config.protoFactory)}
 }
@@ -136,13 +137,13 @@ func basicAuth(username, password string) string {
 }
 
 // Releases resources associated with the realis client.
-func (r realisClient) Close() {
+func (r *realisClient) Close() {
 	r.client.Transport.Close()
 	r.readonlyClient.Transport.Close()
 }
 
 // Uses predefined set of states to retrieve a set of active jobs in Apache Aurora.
-func (r realisClient) GetInstanceIds(key *aurora.JobKey, states map[aurora.ScheduleStatus]bool) (map[int32]bool, error) {
+func (r *realisClient) GetInstanceIds(key *aurora.JobKey, states map[aurora.ScheduleStatus]bool) (map[int32]bool, error) {
 	taskQ := &aurora.TaskQuery{Role: key.Role,
 		Environment: key.Environment,
 		JobName:     key.Name,
@@ -163,12 +164,16 @@ func (r realisClient) GetInstanceIds(key *aurora.JobKey, states map[aurora.Sched
 	return jobInstanceIds, nil
 }
 
-func (r realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQuery) (*aurora.Response, error) {
-	return r.readonlyClient.GetJobUpdateSummaries(jobUpdateQuery)
+func (r *realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQuery) (*aurora.Response, error) {
+	resp, err := r.readonlyClient.GetJobUpdateSummaries(jobUpdateQuery)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error getting job update summaries from Aurora Scheduler")
+	}
+	return response.ResponseCodeCheck(resp)
 }
 
 // Kill specific instances of a job.
-func (r realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error) {
+func (r *realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error) {
 
 	instanceIds := make(map[int32]bool)
 
@@ -185,7 +190,7 @@ func (r realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*au
 }
 
 // Sends a kill message to the scheduler for all active tasks under a job.
-func (r realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
+func (r *realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 
 	instanceIds, err := r.GetInstanceIds(key, aurora.ACTIVE_STATES)
 	if err != nil {
@@ -206,7 +211,7 @@ func (r realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 }
 
 // Sends a create job message to the scheduler with a specific job configuration.
-func (r realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
+func (r *realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 	resp, err := r.client.CreateJob(auroraJob.JobConfig())
 
 	if err != nil {
@@ -216,7 +221,7 @@ func (r realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 	return response.ResponseCodeCheck(resp)
 }
 
-func (r realisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) {
+func (r *realisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) {
 	resp, err := r.client.ScheduleCronJob(auroraJob.JobConfig())
 
 	if err != nil {
@@ -226,7 +231,7 @@ func (r realisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) {
 	return response.ResponseCodeCheck(resp)
 }
 
-func (r realisClient) DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, error) {
+func (r *realisClient) DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, error) {
 	resp, err := r.client.DescheduleCronJob(key)
 
 	if err != nil {
@@ -236,7 +241,7 @@ func (r realisClient) DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, e
 	return response.ResponseCodeCheck(resp)
 }
 
-func (r realisClient) StartCronJob(key *aurora.JobKey) (*aurora.Response, error) {
+func (r *realisClient) StartCronJob(key *aurora.JobKey) (*aurora.Response, error) {
 	resp, err := r.client.StartCronJob(key)
 
 	if err != nil {
@@ -247,7 +252,7 @@ func (r realisClient) StartCronJob(key *aurora.JobKey) (*aurora.Response, error)
 }
 
 // Restarts specific instances specified
-func (r realisClient) RestartInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error) {
+func (r *realisClient) RestartInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error) {
 	instanceIds := make(map[int32]bool)
 
 	for _, instId := range instances {
@@ -263,7 +268,7 @@ func (r realisClient) RestartInstances(key *aurora.JobKey, instances ...int32) (
 }
 
 // Restarts all active tasks under a job configuration.
-func (r realisClient) RestartJob(key *aurora.JobKey) (*aurora.Response, error) {
+func (r *realisClient) RestartJob(key *aurora.JobKey) (*aurora.Response, error) {
 
 	instanceIds, err := r.GetInstanceIds(key, aurora.ACTIVE_STATES)
 	if err != nil {
@@ -284,7 +289,7 @@ func (r realisClient) RestartJob(key *aurora.JobKey) (*aurora.Response, error) {
 }
 
 // Update all tasks under a job configuration. Currently gorealis doesn't support for canary deployments.
-func (r realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*aurora.Response, error) {
+func (r *realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*aurora.Response, error) {
 
 	resp, err := r.client.StartJobUpdate(updateJob.req, message)
 
@@ -296,7 +301,7 @@ func (r realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*aur
 }
 
 // Abort Job Update on Aurora. Requires the updateId which can be obtained on the Aurora web UI.
-func (r realisClient) AbortJobUpdate(
+func (r *realisClient) AbortJobUpdate(
 	updateKey aurora.JobUpdateKey,
 	message string) (*aurora.Response, error) {
 
@@ -311,7 +316,7 @@ func (r realisClient) AbortJobUpdate(
 
 // Scale up the number of instances under a job configuration using the configuration for specific
 // instance to scale up.
-func (r realisClient) AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error) {
+func (r *realisClient) AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error) {
 
 	resp, err := r.client.AddInstances(&instKey, count)
 
@@ -323,13 +328,13 @@ func (r realisClient) AddInstances(instKey aurora.InstanceKey, count int32) (*au
 }
 
 //Scale down the number of instances under a job configuration using the configuratipn of a specific instance
-func (r realisClient) RemoveInstances(key *aurora.JobKey, count int32) (*aurora.Response, error) {
+func (r *realisClient) RemoveInstances(key *aurora.JobKey, count int32) (*aurora.Response, error) {
 	instanceIds, err := r.GetInstanceIds(key, aurora.ACTIVE_STATES)
 	if err != nil {
 		return nil, errors.Wrap(err, "RemoveInstances: Could not retrieve relevant instance IDs")
 	}
 	if len(instanceIds) < int(count) {
-		return nil, errors.New(fmt.Sprintf("RemoveInstances: No sufficient instances to Kill - " +
+		return nil, errors.New(fmt.Sprintf("RemoveInstances: No sufficient instances to Kill - "+
 			"Instances to kill %d Total Instances %d", count, len(instanceIds)))
 	}
 	instanceList := make([]int32, count)
@@ -344,7 +349,7 @@ func (r realisClient) RemoveInstances(key *aurora.JobKey, count int32) (*aurora.
 	return r.KillInstances(key, instanceList...)
 }
 
-func (r realisClient) GetTaskStatus(query *aurora.TaskQuery) (tasks []*aurora.ScheduledTask, e error) {
+func (r *realisClient) GetTaskStatus(query *aurora.TaskQuery) (tasks []*aurora.ScheduledTask, e error) {
 
 	resp, err := r.client.GetTasksStatus(query)
 	if err != nil {
@@ -358,7 +363,7 @@ func (r realisClient) GetTaskStatus(query *aurora.TaskQuery) (tasks []*aurora.Sc
 	return response.ScheduleStatusResult(resp).GetTasks(), nil
 }
 
-func (r realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error) {
+func (r *realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error) {
 
 	ids := make(map[int32]bool)
 
@@ -393,7 +398,7 @@ func (r realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskC
 	return tasks[0].AssignedTask.Task, nil
 }
 
-func (r realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aurora.Response, error) {
+func (r *realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aurora.Response, error) {
 
 	resp, err := r.client.GetJobUpdateDetails(&updateQuery)
 	if err != nil {
@@ -402,7 +407,7 @@ func (r realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*auro
 
 	return response.ResponseCodeCheck(resp)
 }
-func (r realisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string) (*aurora.Response, error) {
+func (r *realisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string) (*aurora.Response, error) {
 
 	resp, err := r.client.RollbackJobUpdate(&key, message)
 	if err != nil {
