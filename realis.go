@@ -23,6 +23,8 @@ import (
 
 	"fmt"
 
+	"math/rand"
+
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/pkg/errors"
 	"github.com/rdelval/gorealis/gen-go/apache/aurora"
@@ -48,25 +50,83 @@ type Realis interface {
 	StartJobUpdate(updateJob *UpdateJob, message string) (*aurora.Response, error)
 	StartCronJob(key *aurora.JobKey) (*aurora.Response, error)
 	GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQuery) (*aurora.Response, error)
+	ReestablishConn() error
 	Close()
 }
 
 type realisClient struct {
+	config         *RealisConfig
 	client         *aurora.AuroraSchedulerManagerClient
 	readonlyClient *aurora.ReadOnlySchedulerClient
 }
 
 // Wrapper object to provide future flexibility
 type RealisConfig struct {
-	transport    thrift.TTransport
-	protoFactory thrift.TProtocolFactory
+	username, password string
+	cluster            *Cluster
+	transport          thrift.TTransport
+	protoFactory       thrift.TProtocolFactory
+}
+
+type Backoff struct {
+	Duration time.Duration // the base duration
+	Factor   float64       // Duration is multipled by factor each iteration
+	Jitter   float64       // The amount of jitter applied each iteration
+	Steps    int           // Exit with error after this many steps
+}
+
+var defaultBackoff = Backoff{
+	Steps:    10,
+	Duration: 5 * time.Second,
+	Factor:   5.0,
+	Jitter:   0.1,
+}
+
+// Jitter returns a time.Duration between duration and duration + maxFactor *
+// duration.
+//
+// This allows clients to avoid converging on periodic behavior. If maxFactor
+// is 0.0, a suggested default value will be chosen.
+func Jitter(duration time.Duration, maxFactor float64) time.Duration {
+	if maxFactor <= 0.0 {
+		maxFactor = 1.0
+	}
+	wait := duration + time.Duration(rand.Float64()*maxFactor*float64(duration))
+	return wait
+}
+
+// Create a new Client with Cluster information and other details.
+
+func NewClientUsingCluster(cluster *Cluster, user, passwd string) (Realis, error) {
+
+	url, err := LeaderFromZK(*cluster)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	fmt.Printf(" url: %s\n", url)
+
+	//Create new configuration with default transport layer
+	config, err := NewDefaultConfig("http://localhost:18000", 10000)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	config.username = user
+	config.password = passwd
+	config.cluster = cluster
+	// Configured for vagrant
+	AddBasicAuth(config, user, passwd)
+	r := NewClient(config)
+	return r, nil
 }
 
 // Create a new Client with a default transport layer
-func NewClient(config RealisConfig) Realis {
+func NewClient(realisconfig *RealisConfig) Realis {
 	return &realisClient{
-		client:         aurora.NewAuroraSchedulerManagerClientFactory(config.transport, config.protoFactory),
-		readonlyClient: aurora.NewReadOnlySchedulerClientFactory(config.transport, config.protoFactory)}
+		config:         realisconfig,
+		client:         aurora.NewAuroraSchedulerManagerClientFactory(realisconfig.transport, realisconfig.protoFactory),
+		readonlyClient: aurora.NewReadOnlySchedulerClientFactory(realisconfig.transport, realisconfig.protoFactory)}
 }
 
 // Creates a default Thrift Transport object for communications in gorealis using an HTTP Post Client
@@ -92,28 +152,28 @@ func defaultTTransport(urlstr string, timeoutms int) (thrift.TTransport, error) 
 
 // Create a default configuration of the transport layer, requires a URL to test connection with.
 // Uses HTTP Post as transport layer and Thrift JSON as the wire protocol by default.
-func NewDefaultConfig(url string, timeoutms int) (RealisConfig, error) {
+func NewDefaultConfig(url string, timeoutms int) (*RealisConfig, error) {
 	return NewTJSONConfig(url, timeoutms)
 }
 
 // Creates a realis config object using HTTP Post and Thrift JSON protocol to communicate with Aurora.
-func NewTJSONConfig(url string, timeoutms int) (RealisConfig, error) {
+func NewTJSONConfig(url string, timeoutms int) (*RealisConfig, error) {
 	trans, err := defaultTTransport(url, timeoutms)
 	if err != nil {
-		return RealisConfig{}, errors.Wrap(err, "Error creating realis config")
+		return &RealisConfig{}, errors.Wrap(err, "Error creating realis config")
 	}
 
 	httpTrans := (trans).(*thrift.THttpClient)
 	httpTrans.SetHeader("Content-Type", "application/x-thrift")
 
-	return RealisConfig{transport: trans, protoFactory: thrift.NewTJSONProtocolFactory()}, nil
+	return &RealisConfig{transport: trans, protoFactory: thrift.NewTJSONProtocolFactory()}, nil
 }
 
 // Creates a realis config config using HTTP Post and Thrift Binary protocol to communicate with Aurora.
-func NewTBinaryConfig(url string, timeoutms int) (RealisConfig, error) {
+func NewTBinaryConfig(url string, timeoutms int) (*RealisConfig, error) {
 	trans, err := defaultTTransport(url, timeoutms)
 	if err != nil {
-		return RealisConfig{}, errors.Wrap(err, "Error creating realis config")
+		return &RealisConfig{}, errors.Wrap(err, "Error creating realis config")
 	}
 
 	httpTrans := (trans).(*thrift.THttpClient)
@@ -121,12 +181,14 @@ func NewTBinaryConfig(url string, timeoutms int) (RealisConfig, error) {
 	httpTrans.SetHeader("Content-Type", "application/vnd.apache.thrift.binary")
 	httpTrans.SetHeader("User-Agent", "GoRealis v1.0.4")
 
-	return RealisConfig{transport: trans, protoFactory: thrift.NewTBinaryProtocolFactoryDefault()}, nil
+	return &RealisConfig{transport: trans, protoFactory: thrift.NewTBinaryProtocolFactoryDefault()}, nil
 
 }
 
 // Helper function to add basic authorization needed to communicate with Apache Aurora.
 func AddBasicAuth(config *RealisConfig, username string, password string) {
+	config.username = username
+	config.password = password
 	httpTrans := (config.transport).(*thrift.THttpClient)
 	httpTrans.SetHeader("Authorization", "Basic "+basicAuth(username, password))
 }
@@ -134,6 +196,38 @@ func AddBasicAuth(config *RealisConfig, username string, password string) {
 func basicAuth(username, password string) string {
 	auth := username + ":" + password
 	return base64.StdEncoding.EncodeToString([]byte(auth))
+}
+
+func (r *realisClient) ReestablishConn() error {
+	//close existing connection..
+	fmt.Println("ReestablishConn begin ....")
+	r.Close()
+	if r.config.cluster != nil && r.config.username != "" && r.config.password != "" {
+		url, err := LeaderFromZK(*r.config.cluster)
+		if err != nil {
+			fmt.Println("LeaderFromZK error: ", err)
+			return err
+		}
+		fmt.Println("ReestablishConn url: ", url)
+		config, err := NewDefaultConfig("http://localhost:18000", 10000)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		// Configured for basic-auth
+		AddBasicAuth(config, r.config.username, r.config.password)
+		config.cluster = r.config.cluster
+		r.config = config
+		r.client = aurora.NewAuroraSchedulerManagerClientFactory(config.transport, config.protoFactory)
+		r.readonlyClient = aurora.NewReadOnlySchedulerClientFactory(config.transport, config.protoFactory)
+	} else {
+		fmt.Println(" Missing Data for ReestablishConn ")
+		fmt.Println(" r.config.cluster: ", r.config.cluster)
+		fmt.Println(" r.config.username: ", r.config.username)
+		fmt.Println(" r.config.passwd: ", r.config.password)
+		return errors.New(" Missing Data for ReestablishConn ")
+	}
+	return nil
 }
 
 // Releases resources associated with the realis client.
@@ -192,33 +286,94 @@ func (r *realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*a
 // Sends a kill message to the scheduler for all active tasks under a job.
 func (r *realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 
-	instanceIds, err := r.GetInstanceIds(key, aurora.ACTIVE_STATES)
+	var instanceIds map[int32]bool
+	var err error
+	var resp *aurora.Response
+	duration := defaultBackoff.Duration
+	for i := 0; i < defaultBackoff.Steps; i++ {
+		if i != 0 {
+			adjusted := duration
+			if defaultBackoff.Jitter > 0.0 {
+				adjusted = Jitter(duration, defaultBackoff.Jitter)
+			}
+			fmt.Println(" sleeping for: ", adjusted)
+			time.Sleep(adjusted)
+			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+		}
+
+		if instanceIds, err = r.GetInstanceIds(key, aurora.ACTIVE_STATES); err == nil {
+			fmt.Println("instanceIds: ", instanceIds)
+			break
+		}
+		err1 := r.ReestablishConn()
+		if err1 != nil {
+			fmt.Println("error in ReestablishConn: ", err1)
+		}
+	}
+
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not retrieve relevant task instance IDs")
 	}
 
 	if len(instanceIds) > 0 {
-		resp, err := r.client.KillTasks(key, instanceIds)
+
+		duration := defaultBackoff.Duration
+		for i := 0; i < defaultBackoff.Steps; i++ {
+			if i != 0 {
+				adjusted := duration
+				if defaultBackoff.Jitter > 0.0 {
+					adjusted = Jitter(duration, defaultBackoff.Jitter)
+				}
+				fmt.Println(" sleeping for: ", adjusted)
+				time.Sleep(adjusted)
+				duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+			}
+
+			if resp, err = r.client.KillTasks(key, instanceIds); err == nil {
+				return response.ResponseCodeCheck(resp)
+			}
+
+			err1 := r.ReestablishConn()
+			if err1 != nil {
+				fmt.Println("error in ReestablishConn: ", err1)
+			}
+		}
 
 		if err != nil {
 			return nil, errors.Wrap(err, "Error sending Kill command to Aurora Scheduler")
 		}
 
-		return response.ResponseCodeCheck(resp)
-	} else {
-		return nil, errors.New("No tasks in the Active state")
 	}
+	return nil, errors.New("No tasks in the Active state")
+
 }
 
 // Sends a create job message to the scheduler with a specific job configuration.
 func (r *realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
-	resp, err := r.client.CreateJob(auroraJob.JobConfig())
+	var resp *aurora.Response
+	var err error
 
-	if err != nil {
-		return nil, errors.Wrap(err, "Error sending Create command to Aurora Scheduler")
+	duration := defaultBackoff.Duration
+	for i := 0; i < defaultBackoff.Steps; i++ {
+		if i != 0 {
+			adjusted := duration
+			if defaultBackoff.Jitter > 0.0 {
+				adjusted = Jitter(duration, defaultBackoff.Jitter)
+			}
+			fmt.Println(" sleeping for: ", adjusted)
+			time.Sleep(adjusted)
+			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+		}
+
+		if resp, err = r.client.CreateJob(auroraJob.JobConfig()); err == nil {
+			return response.ResponseCodeCheck(resp)
+		}
+		err1 := r.ReestablishConn()
+		if err1 != nil {
+			fmt.Println("error in ReestablishConn: ", err1)
+		}
 	}
-
-	return response.ResponseCodeCheck(resp)
+	return nil, errors.Wrap(err, "Error sending Create command to Aurora Scheduler")
 }
 
 func (r *realisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) {
@@ -291,13 +446,32 @@ func (r *realisClient) RestartJob(key *aurora.JobKey) (*aurora.Response, error) 
 // Update all tasks under a job configuration. Currently gorealis doesn't support for canary deployments.
 func (r *realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*aurora.Response, error) {
 
-	resp, err := r.client.StartJobUpdate(updateJob.req, message)
+	var resp *aurora.Response
+	var err error
 
-	if err != nil {
-		return nil, errors.Wrap(err, "Error sending StartJobUpdate command to Aurora Scheduler")
+	duration := defaultBackoff.Duration
+	for i := 0; i < defaultBackoff.Steps; i++ {
+		if i != 0 {
+			adjusted := duration
+			if defaultBackoff.Jitter > 0.0 {
+				adjusted = Jitter(duration, defaultBackoff.Jitter)
+			}
+			fmt.Println(" sleeping for: ", adjusted)
+			time.Sleep(adjusted)
+			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+		}
+		if resp, err = r.client.StartJobUpdate(updateJob.req, message); err == nil {
+			return response.ResponseCodeCheck(resp)
+		}
+		err1 := r.ReestablishConn()
+		if err1 != nil {
+			fmt.Println("error in ReestablishConn: ", err1)
+		}
 	}
 
-	return response.ResponseCodeCheck(resp)
+	//resp, err = r.client.StartJobUpdate(updateJob.req, message)
+	return nil, errors.Wrap(err, "Error sending StartJobUpdate command to Aurora Scheduler")
+
 }
 
 // Abort Job Update on Aurora. Requires the updateId which can be obtained on the Aurora web UI.
@@ -374,7 +548,31 @@ func (r *realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.Task
 		InstanceIds: ids,
 		Statuses:    aurora.ACTIVE_STATES}
 
-	resp, err := r.client.GetTasksStatus(taskQ)
+	var resp *aurora.Response
+	var err error
+
+	duration := defaultBackoff.Duration
+	for i := 0; i < defaultBackoff.Steps; i++ {
+		if i != 0 {
+			adjusted := duration
+			if defaultBackoff.Jitter > 0.0 {
+				adjusted = Jitter(duration, defaultBackoff.Jitter)
+			}
+			fmt.Println(" sleeping for: ", adjusted)
+			time.Sleep(adjusted)
+			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+		}
+
+		if resp, err = r.client.GetTasksStatus(taskQ); err == nil {
+			fmt.Println("resp: ", resp)
+			break
+		}
+		err1 := r.ReestablishConn()
+		if err1 != nil {
+			fmt.Println("error in ReestablishConn: ", err1)
+		}
+	}
+
 	if err != nil {
 		return nil, errors.Wrap(err, "Error querying Aurora Scheduler for task configuration")
 	}
@@ -394,7 +592,7 @@ func (r *realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.Task
 			instKey.JobKey.Name)
 	}
 
-	// Currently, instance 0 is always picked
+	// Currently, instance 0 is always picked..
 	return tasks[0].AssignedTask.Task, nil
 }
 
@@ -408,11 +606,31 @@ func (r *realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aur
 	return response.ResponseCodeCheck(resp)
 }
 func (r *realisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string) (*aurora.Response, error) {
+	var resp *aurora.Response
+	var err error
 
-	resp, err := r.client.RollbackJobUpdate(&key, message)
-	if err != nil {
-		return nil, errors.Wrap(err, "Unable to roll back job update")
+	duration := defaultBackoff.Duration
+	for i := 0; i < defaultBackoff.Steps; i++ {
+		if i != 0 {
+			adjusted := duration
+			if defaultBackoff.Jitter > 0.0 {
+				adjusted = Jitter(duration, defaultBackoff.Jitter)
+			}
+			fmt.Println(" sleeping for: ", adjusted)
+			time.Sleep(adjusted)
+			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+		}
+		if resp, err = r.client.RollbackJobUpdate(&key, message); err == nil {
+			fmt.Println(" resp: ", resp)
+			return response.ResponseCodeCheck(resp)
+		}
+		err1 := r.ReestablishConn()
+		if err1 != nil {
+			fmt.Println("error in ReestablishConn: ", err1)
+		}
 	}
 
-	return response.ResponseCodeCheck(resp)
+	//resp, err = r.client.RollbackJobUpdate(&key, message)
+	return nil, errors.Wrap(err, "Unable to roll back job update")
+
 }
