@@ -327,7 +327,7 @@ func (r *realisClient) AddInstances(instKey aurora.InstanceKey, count int32) (*a
 	return response.ResponseCodeCheck(resp)
 }
 
-//Scale down the number of instances under a job configuration using the configuratipn of a specific instance
+//Scale down the number of instances under a job configuration using the configuration of a specific instance
 func (r *realisClient) RemoveInstances(key *aurora.JobKey, count int32) (*aurora.Response, error) {
 	instanceIds, err := r.GetInstanceIds(key, aurora.ACTIVE_STATES)
 	if err != nil {
