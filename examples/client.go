@@ -60,7 +60,6 @@ func main() {
 
 	var job realis.Job
 	var err error
-	var config *realis.RealisConfig
 	var monitor *realis.Monitor
 	var r realis.Realis
 
@@ -76,7 +75,7 @@ func main() {
 		}
 		fmt.Printf("cluster: %+v \n", cluster)
 
-		r, err = realis.NewClientUsingCluster(cluster, *username, *password)
+		r, err = realis.NewDefaultClientUsingCluster(cluster, *username, *password)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -84,17 +83,11 @@ func main() {
 		monitor = &realis.Monitor{r}
 
 	} else {
-		//Create new configuration with default transport layer
-		config, err = realis.NewDefaultConfig(*url, 10000)
+		r, err = realis.NewDefaultClientUsingUrl(*url, *username, *password)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-
-		// Configured for vagrant
-		realis.AddBasicAuth(config, *username, *password)
-		r = realis.NewClient(config)
-
 		monitor = &realis.Monitor{r}
 	}
 	defer r.Close()
@@ -122,20 +115,16 @@ func main() {
 		break
 	case "compose":
 		job = realis.NewJob().
-			//Environment("prod").
-			//Role("vagrant").
-			//Name("docker-compose").
-			Role("gorealis").
-			Environment("k2").
-			Name("testapp").
-			ExecutorName("sampleapp").
-			ExecutorName("dce-regular").
+			Environment("prod").
+			Role("vagrant").
+			Name("docker-compose").
+			ExecutorName("docker-compose-executor").
 			ExecutorData("{}").
 			CPU(0.25).
 			RAM(64).
 			Disk(100).
 			IsService(true).
-			InstanceCount(4).
+			InstanceCount(2).
 			AddPorts(4).
 			AddLabel("fileName", "sample-app/docker-compose.yml").
 			AddURIs(true, true, "https://github.com/mesos/docker-compose-executor/releases/download/0.1.0/sample-app.tar.gz")
@@ -307,7 +296,7 @@ func main() {
 	case "flexUp":
 		fmt.Println("Flexing up job")
 
-		numOfInstances := int32(2)
+		numOfInstances := int32(4)
 
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
 		if err != nil {

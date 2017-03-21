@@ -59,7 +59,7 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 				fmt.Println("error in ReestablishConn: ", err1)
 			}
 		}
-
+		// if error remains then return (false, err).
 		if err != nil {
 			return false, err
 		}
@@ -114,10 +114,14 @@ func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval int, t
 				fmt.Println(" live: ", live)
 				break
 			}
-			err1 := m.Client.ReestablishConn()
-			if err1 != nil {
-				fmt.Println("error in ReestablishConn: ", err1)
+
+			if err != nil {
+				err1 := m.Client.ReestablishConn()
+				if err1 != nil {
+					fmt.Println("error in ReestablishConn: ", err1)
+				}
 			}
+
 		}
 
 		//live, err := m.Client.GetInstanceIds(key, aurora.LIVE_STATES)
