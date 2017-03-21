@@ -124,7 +124,7 @@ func main() {
 			RAM(64).
 			Disk(100).
 			IsService(true).
-			InstanceCount(2).
+			InstanceCount(1).
 			AddPorts(4).
 			AddLabel("fileName", "sample-app/docker-compose.yml").
 			AddURIs(true, true, "https://github.com/mesos/docker-compose-executor/releases/download/0.1.0/sample-app.tar.gz")

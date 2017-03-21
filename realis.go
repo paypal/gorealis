@@ -108,7 +108,7 @@ func NewDefaultClientUsingCluster(cluster *Cluster, user, passwd string) (Realis
 	fmt.Printf(" url: %s\n", url)
 
 	//Create new configuration with default transport layer
-	config, err := NewDefaultConfig("http://localhost:18000", 10000)
+	config, err := newDefaultConfig(url, 10000)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -119,21 +119,25 @@ func NewDefaultClientUsingCluster(cluster *Cluster, user, passwd string) (Realis
 	config.url = ""
 	// Configured for vagrant
 	AddBasicAuth(config, user, passwd)
-	r := NewClient(config)
+	r := newClient(config)
 	return r, nil
+}
+
+func GetDefaultClusterFromZKUrl(zkurl string) *Cluster {
+	return &Cluster{Name: "defaultCluster",
+		AuthMechanism: "UNAUTHENTICATED",
+		ZK:            zkurl,
+		SchedZKPath:   "/aurora/scheduler",
+		AgentRunDir:   "latest",
+		AgentRoot:     "/var/lib/mesos",
+	}
 }
 
 //This api would create default cluster object..
 func NewDefaultClientUsingZKUrl(zkUrl, user, passwd string) (Realis, error) {
 
 	fmt.Println(" zkUrl: %s", zkUrl)
-	cluster := &Cluster{Name: "testCluster",
-		AuthMechanism: "UNAUTHENTICATED",
-		ZK:            zkUrl,
-		SchedZKPath:   "/aurora/scheduler",
-		AgentRunDir:   "latest",
-		AgentRoot:     "/var/lib/mesos",
-	}
+	cluster := GetDefaultClusterFromZKUrl(zkUrl)
 
 	url, err := LeaderFromZK(*cluster)
 	if err != nil {
@@ -143,7 +147,7 @@ func NewDefaultClientUsingZKUrl(zkUrl, user, passwd string) (Realis, error) {
 	fmt.Printf(" url: %s\n", url)
 
 	//Create new configuration with default transport layer
-	config, err := NewDefaultConfig("http://localhost:18000", 10000)
+	config, err := newDefaultConfig(url, 10000)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -154,7 +158,7 @@ func NewDefaultClientUsingZKUrl(zkUrl, user, passwd string) (Realis, error) {
 	config.url = ""
 	// Configured for vagrant
 	AddBasicAuth(config, user, passwd)
-	r := NewClient(config)
+	r := newClient(config)
 	return r, nil
 }
 
@@ -162,7 +166,7 @@ func NewDefaultClientUsingUrl(url, user, passwd string) (Realis, error) {
 
 	fmt.Printf(" url: %s\n", url)
 	//Create new configuration with default transport layer
-	config, err := NewDefaultConfig("http://localhost:18000", 10000)
+	config, err := newDefaultConfig(url, 10000)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -173,12 +177,12 @@ func NewDefaultClientUsingUrl(url, user, passwd string) (Realis, error) {
 	config.cluster = nil
 	// Configured for vagrant
 	AddBasicAuth(config, user, passwd)
-	r := NewClient(config)
+	r := newClient(config)
 	return r, nil
 }
 
 // Create a new Client with a default transport layer
-func NewClient(realisconfig *RealisConfig) Realis {
+func newClient(realisconfig *RealisConfig) Realis {
 	return &realisClient{
 		config:         realisconfig,
 		client:         aurora.NewAuroraSchedulerManagerClientFactory(realisconfig.transport, realisconfig.protoFactory),
@@ -208,12 +212,12 @@ func defaultTTransport(urlstr string, timeoutms int) (thrift.TTransport, error) 
 
 // Create a default configuration of the transport layer, requires a URL to test connection with.
 // Uses HTTP Post as transport layer and Thrift JSON as the wire protocol by default.
-func NewDefaultConfig(url string, timeoutms int) (*RealisConfig, error) {
-	return NewTJSONConfig(url, timeoutms)
+func newDefaultConfig(url string, timeoutms int) (*RealisConfig, error) {
+	return newTJSONConfig(url, timeoutms)
 }
 
 // Creates a realis config object using HTTP Post and Thrift JSON protocol to communicate with Aurora.
-func NewTJSONConfig(url string, timeoutms int) (*RealisConfig, error) {
+func newTJSONConfig(url string, timeoutms int) (*RealisConfig, error) {
 	trans, err := defaultTTransport(url, timeoutms)
 	if err != nil {
 		return &RealisConfig{}, errors.Wrap(err, "Error creating realis config")
@@ -226,7 +230,7 @@ func NewTJSONConfig(url string, timeoutms int) (*RealisConfig, error) {
 }
 
 // Creates a realis config config using HTTP Post and Thrift Binary protocol to communicate with Aurora.
-func NewTBinaryConfig(url string, timeoutms int) (*RealisConfig, error) {
+func newTBinaryConfig(url string, timeoutms int) (*RealisConfig, error) {
 	trans, err := defaultTTransport(url, timeoutms)
 	if err != nil {
 		return &RealisConfig{}, errors.Wrap(err, "Error creating realis config")
@@ -266,7 +270,7 @@ func (r *realisClient) ReestablishConn() error {
 			fmt.Errorf("LeaderFromZK error: %+v\n ", err)
 		}
 		fmt.Println("ReestablishConn url: ", url)
-		config, err := NewDefaultConfig(url, 10000)
+		config, err := newDefaultConfig(url, 10000)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -279,7 +283,7 @@ func (r *realisClient) ReestablishConn() error {
 	} else if r.config.url != "" && r.config.username != "" && r.config.password != "" {
 		//Re-establish using scheduler url.
 		//Create new configuration with default transport layer
-		config, err := NewDefaultConfig(r.config.url, 10000)
+		config, err := newDefaultConfig(r.config.url, 10000)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -326,7 +330,6 @@ func (r *realisClient) GetInstanceIds(key *aurora.JobKey, states map[aurora.Sche
 			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
 		}
 		if resp, err = r.client.GetTasksWithoutConfigs(taskQ); err == nil {
-			fmt.Println("resp: ", resp)
 			break
 		}
 		err1 := r.ReestablishConn()
@@ -365,7 +368,6 @@ func (r *realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQue
 			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
 		}
 		if resp, err = r.readonlyClient.GetJobUpdateSummaries(jobUpdateQuery); err == nil {
-			fmt.Println("resp: ", resp)
 			return response.ResponseCodeCheck(resp)
 		}
 		err1 := r.ReestablishConn()
@@ -400,7 +402,6 @@ func (r *realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*a
 			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
 		}
 		if resp, err = r.client.KillTasks(key, instanceIds); err == nil {
-			fmt.Println("resp: ", resp)
 			return response.ResponseCodeCheck(resp)
 		}
 		err1 := r.ReestablishConn()
@@ -807,7 +808,6 @@ func (r *realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.Task
 		}
 
 		if resp, err = r.client.GetTasksStatus(taskQ); err == nil {
-			fmt.Println("resp: ", resp)
 			break
 		}
 		err1 := r.ReestablishConn()
@@ -856,7 +856,6 @@ func (r *realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aur
 			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
 		}
 		if resp, err = r.client.GetJobUpdateDetails(&updateQuery); err == nil {
-			fmt.Println(" resp: ", resp)
 			return response.ResponseCodeCheck(resp)
 		}
 		err1 := r.ReestablishConn()
@@ -883,7 +882,6 @@ func (r *realisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string
 			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
 		}
 		if resp, err = r.client.RollbackJobUpdate(&key, message); err == nil {
-			fmt.Println(" resp: ", resp)
 			return response.ResponseCodeCheck(resp)
 		}
 		err1 := r.ReestablishConn()
