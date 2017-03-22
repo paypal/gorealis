@@ -17,10 +17,11 @@ package realis
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/pkg/errors"
 	"github.com/rdelval/gorealis/gen-go/apache/aurora"
 	"github.com/rdelval/gorealis/response"
-	"time"
 )
 
 type Monitor struct {
@@ -35,10 +36,31 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 		Limit: 1,
 	}
 
+	duration := defaultBackoff.Duration
+	var err error
+	var respDetail *aurora.Response
+
 	for i := 0; i*interval <= timeout; i++ {
-		respDetail, err := m.Client.JobUpdateDetails(updateQ)
+		for i := 0; i < defaultBackoff.Steps; i++ {
+			if i != 0 {
+				adjusted := duration
+				if defaultBackoff.Jitter > 0.0 {
+					adjusted = Jitter(duration, defaultBackoff.Jitter)
+				}
+				fmt.Println(" sleeping for: ", adjusted)
+				time.Sleep(adjusted)
+				duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+			}
+			if respDetail, err = m.Client.JobUpdateDetails(updateQ); err == nil {
+				break
+			}
+			err1 := m.Client.ReestablishConn()
+			if err1 != nil {
+				fmt.Println("error in ReestablishConn: ", err1)
+			}
+		}
+		// if error remains then return (false, err).
 		if err != nil {
-			fmt.Println(err)
 			return false, err
 		}
 
@@ -46,7 +68,7 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 
 		if len(updateDetail) == 0 {
 			fmt.Println("No update found")
-			return false, errors.New("No update found for "+updateKey.String())
+			return false, errors.New("No update found for " + updateKey.String())
 		}
 		status := updateDetail[0].Update.Summary.State.Status
 
@@ -72,19 +94,43 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 }
 
 func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval int, timeout int) (bool, error) {
+	duration := defaultBackoff.Duration
+	var err error
+	var live map[int32]bool
 
 	for i := 0; i*interval < timeout; i++ {
+		for i := 0; i < defaultBackoff.Steps; i++ {
+			if i != 0 {
+				adjusted := duration
+				if defaultBackoff.Jitter > 0.0 {
+					adjusted = Jitter(duration, defaultBackoff.Jitter)
+				}
+				fmt.Println(" sleeping for: ", adjusted)
+				time.Sleep(adjusted)
+				fmt.Println(" sleeping done")
+				duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+			}
+			if live, err = m.Client.GetInstanceIds(key, aurora.LIVE_STATES); err == nil {
+				fmt.Println(" live: ", live)
+				break
+			}
 
-		live, err := m.Client.GetInstanceIds(key, aurora.LIVE_STATES)
+			if err != nil {
+				err1 := m.Client.ReestablishConn()
+				if err1 != nil {
+					fmt.Println("error in ReestablishConn: ", err1)
+				}
+			}
 
+		}
+
+		//live, err := m.Client.GetInstanceIds(key, aurora.LIVE_STATES)
 		if err != nil {
 			return false, errors.Wrap(err, "Unable to communicate with Aurora")
 		}
-
 		if len(live) == int(instances) {
 			return true, nil
 		}
-
 		fmt.Println("Polling, instances running: ", len(live))
 		time.Sleep(time.Duration(interval) * time.Second)
 	}

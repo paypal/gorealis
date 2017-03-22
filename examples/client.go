@@ -34,6 +34,7 @@ func main() {
 	updateId := flag.String("updateId", "", "Update ID to operate on")
 	username := flag.String("username", "aurora", "Username to use for authorization")
 	password := flag.String("password", "secret", "Password to use for authorization")
+	zkUrl := flag.String("zkurl", "", "zookeeper url")
 	flag.Parse()
 
 	// Attempt to load leader from zookeeper
@@ -57,20 +58,39 @@ func main() {
 		}
 	}
 
-	//Create new configuration with default transport layer
-	config, err := realis.NewDefaultConfig(*url, 10000)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	// Configured for vagrant
-	realis.AddBasicAuth(&config, *username, *password)
-	r := realis.NewClient(config)
-	defer r.Close()
-
-	monitor := &realis.Monitor{r}
 	var job realis.Job
+	var err error
+	var monitor *realis.Monitor
+	var r realis.Realis
+
+	//check if zkUrl is available.
+	if *zkUrl != "" {
+		fmt.Println("zkUrl: ", *zkUrl)
+		cluster := &realis.Cluster{Name: "example",
+			AuthMechanism: "UNAUTHENTICATED",
+			ZK:            *zkUrl,
+			SchedZKPath:   "/aurora/scheduler",
+			AgentRunDir:   "latest",
+			AgentRoot:     "/var/lib/mesos",
+		}
+		fmt.Printf("cluster: %+v \n", cluster)
+
+		r, err = realis.NewDefaultClientUsingCluster(cluster, *username, *password)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		monitor = &realis.Monitor{r}
+
+	} else {
+		r, err = realis.NewDefaultClientUsingUrl(*url, *username, *password)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		monitor = &realis.Monitor{r}
+	}
+	defer r.Close()
 
 	switch *executor {
 	case "thermos":
@@ -100,12 +120,12 @@ func main() {
 			Name("docker-compose").
 			ExecutorName("docker-compose-executor").
 			ExecutorData("{}").
-			CPU(0.5).
+			CPU(0.25).
 			RAM(64).
 			Disk(100).
-			IsService(false).
-			InstanceCount(3).
-			AddPorts(1).
+			IsService(true).
+			InstanceCount(1).
+			AddPorts(4).
 			AddLabel("fileName", "sample-app/docker-compose.yml").
 			AddURIs(true, true, "https://github.com/mesos/docker-compose-executor/releases/download/0.1.0/sample-app.tar.gz")
 		break
@@ -143,7 +163,10 @@ func main() {
 					fmt.Println(err)
 					os.Exit(1)
 				}
+				fmt.Println("ok: ", ok)
+				fmt.Println("err: ", err)
 			}
+
 		}
 		break
 	case "createDocker":
@@ -273,7 +296,7 @@ func main() {
 	case "flexUp":
 		fmt.Println("Flexing up job")
 
-		numOfInstances := int32(2)
+		numOfInstances := int32(4)
 
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
 		if err != nil {
