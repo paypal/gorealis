@@ -103,7 +103,7 @@ func NewTHttpClientWithOptions(urlstr string, options THttpClientOptions) (TTran
 	if client == nil {
 		client = DefaultHttpClient
 	}
-	httpHeader := map[string][]string{}
+	httpHeader := map[string][]string{"Content-Type": []string{"application/x-thrift"}}
 	return &THttpClient{client: client, response: response, url: parsedURL, header: httpHeader}, nil
 }
 
@@ -121,7 +121,7 @@ func NewTHttpPostClientWithOptions(urlstr string, options THttpClientOptions) (T
 	if client == nil {
 		client = DefaultHttpClient
 	}
-	httpHeader := map[string][]string{}
+	httpHeader := map[string][]string{"Content-Type": []string{"application/x-thrift"}}
 	return &THttpClient{client: client, url: parsedURL, requestBuffer: bytes.NewBuffer(buf), header: httpHeader}, nil
 }
 
