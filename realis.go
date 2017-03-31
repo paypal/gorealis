@@ -31,6 +31,8 @@ import (
 	"github.com/rdelval/gorealis/response"
 )
 
+const VERSION = "1.0.4"
+
 type Realis interface {
 	AbortJobUpdate(updateKey aurora.JobUpdateKey, message string) (*aurora.Response, error)
 	AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error)
@@ -353,6 +355,7 @@ func newTJSONConfig(url string, timeoutms int) (*RealisConfig, error) {
 
 	httpTrans := (trans).(*thrift.THttpClient)
 	httpTrans.SetHeader("Content-Type", "application/x-thrift")
+	httpTrans.SetHeader("User-Agent", "GoRealis v"+VERSION)
 
 	return &RealisConfig{transport: trans, protoFactory: thrift.NewTJSONProtocolFactory()}, nil
 }
@@ -365,9 +368,11 @@ func newTBinaryConfig(url string, timeoutms int) (*RealisConfig, error) {
 	}
 
 	httpTrans := (trans).(*thrift.THttpClient)
+	httpTrans.DelHeader("Content-Type") // Workaround for using thrift HttpPostClient
+
 	httpTrans.SetHeader("Accept", "application/vnd.apache.thrift.binary")
 	httpTrans.SetHeader("Content-Type", "application/vnd.apache.thrift.binary")
-	httpTrans.SetHeader("User-Agent", "GoRealis v1.0.4")
+	httpTrans.SetHeader("User-Agent", "GoRealis v"+VERSION)
 
 	return &RealisConfig{transport: trans, protoFactory: thrift.NewTBinaryProtocolFactoryDefault()}, nil
 

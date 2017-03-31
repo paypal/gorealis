@@ -28,8 +28,10 @@ var r Realis
 var thermosPayload []byte
 
 func TestMain(m *testing.M) {
+	var err error
+
 	// New configuration to connect to Vagrant image
-	config, err := NewDefaultConfig("http://192.168.33.7:8081",10000)
+	r, err = NewDefaultClientUsingUrl("http://192.168.33.7:8081","aurora", "secret")
 	if err != nil {
 		fmt.Println("Please run vagrant box before running test suite")
 		os.Exit(1)
@@ -40,10 +42,6 @@ func TestMain(m *testing.M) {
 		fmt.Println("Error reading thermos payload file: ", err)
 		os.Exit(1)
 	}
-
-	// Configured for vagrant
-	AddBasicAuth(&config, "aurora", "secret")
-	r = NewClient(config)
 
 	os.Exit(m.Run())
 }
