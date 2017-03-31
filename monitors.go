@@ -36,12 +36,13 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 		Limit: 1,
 	}
 
-	duration := defaultBackoff.Duration
+	defaultBackoff := m.Client.RealisConfig().backoff
+	duration := defaultBackoff.Duration //defaultBackoff.Duration
 	var err error
 	var respDetail *aurora.Response
 
 	for i := 0; i*interval <= timeout; i++ {
-		for i := 0; i < defaultBackoff.Steps; i++ {
+		for step := 0; step < defaultBackoff.Steps; step++ {
 			if i != 0 {
 				adjusted := duration
 				if defaultBackoff.Jitter > 0.0 {
@@ -94,12 +95,14 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 }
 
 func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval int, timeout int) (bool, error) {
+
+	defaultBackoff := m.Client.RealisConfig().backoff
 	duration := defaultBackoff.Duration
 	var err error
 	var live map[int32]bool
 
 	for i := 0; i*interval < timeout; i++ {
-		for i := 0; i < defaultBackoff.Steps; i++ {
+		for step := 0; step < defaultBackoff.Steps; step++ {
 			if i != 0 {
 				adjusted := duration
 				if defaultBackoff.Jitter > 0.0 {
