@@ -92,6 +92,12 @@ func ZKCluster(cluster *Cluster) option {
 	}
 }
 
+func ZKUrl(url string) option {
+	return func(config *RealisConfig) {
+		config.cluster = GetDefaultClusterFromZKUrl(url)
+	}
+}
+
 func Retries(backoff *Backoff) option {
 	return func(config *RealisConfig) {
 		config.backoff = backoff
@@ -433,8 +439,6 @@ func (r *realisClient) ReestablishConn() error {
 		}
 		// Configured for basic-auth
 		AddBasicAuth(r.config, r.config.username, r.config.password)
-		//config.cluster = r.config.cluster
-		//r.config = config
 		r.client = aurora.NewAuroraSchedulerManagerClientFactory(r.config.transport, r.config.protoFactory)
 		r.readonlyClient = aurora.NewReadOnlySchedulerClientFactory(r.config.transport, r.config.protoFactory)
 	} else if r.config.url != "" && r.config.username != "" && r.config.password != "" {

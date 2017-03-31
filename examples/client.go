@@ -66,8 +66,8 @@ func main() {
 	var r realis.Realis
 
 	var defaultBackoff = &realis.Backoff{
-		Steps:    5,
-		Duration: 5 * time.Second,
+		Steps:    2,
+		Duration: 10 * time.Second,
 		Factor:   2.0,
 		Jitter:   0.1,
 	}
@@ -84,16 +84,12 @@ func main() {
 		}
 		fmt.Printf("cluster: %+v \n", cluster)
 
-		r, err = realis.NewRealisClient(realis.ZKCluster(cluster), realis.BasicAuth(*username, *password), realis.ThriftJSON(), realis.TimeoutMS(15000))
+		//r, err = realis.NewRealisClient(realis.ZKCluster(cluster), realis.BasicAuth(*username, *password), realis.ThriftJSON(), realis.TimeoutMS(15000))
+		r, err = realis.NewRealisClient(realis.ZKUrl(*zkUrl), realis.BasicAuth(*username, *password), realis.ThriftJSON(), realis.TimeoutMS(15000), realis.BackOff(defaultBackoff))
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		//r, err = realis.NewDefaultClientUsingCluster(cluster, *username, *password)
-		//if err != nil {
-		//	fmt.Println(err)
-		//	os.Exit(1)
-		//}
 		monitor = &realis.Monitor{r}
 
 	} else {
