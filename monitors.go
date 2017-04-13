@@ -43,7 +43,7 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 
 	for i := 0; i*interval <= timeout; i++ {
 		for step := 0; step < defaultBackoff.Steps; step++ {
-			if i != 0 {
+			if step != 0 {
 				adjusted := duration
 				if defaultBackoff.Jitter > 0.0 {
 					adjusted = Jitter(duration, defaultBackoff.Jitter)
@@ -103,7 +103,7 @@ func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval int, t
 
 	for i := 0; i*interval < timeout; i++ {
 		for step := 0; step < defaultBackoff.Steps; step++ {
-			if i != 0 {
+			if step != 0 {
 				adjusted := duration
 				if defaultBackoff.Jitter > 0.0 {
 					adjusted = Jitter(duration, defaultBackoff.Jitter)

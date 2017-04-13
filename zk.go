@@ -17,11 +17,12 @@ package realis
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/samuel/go-zookeeper/zk"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
+	"github.com/samuel/go-zookeeper/zk"
 )
 
 type Endpoint struct {
@@ -42,6 +43,33 @@ func (NoopLogger) Printf(format string, a ...interface{}) {
 
 // Loads leader from ZK endpoint.
 func LeaderFromZK(cluster Cluster) (string, error) {
+
+	var err error
+	var zkurl string
+
+	duration := defaultBackoff.Duration
+	for i := 0; i < defaultBackoff.Steps; i++ {
+		if i != 0 {
+			adjusted := duration
+			if defaultBackoff.Jitter > 0.0 {
+				adjusted = Jitter(duration, defaultBackoff.Jitter)
+			}
+			fmt.Println(" sleeping for: ", adjusted)
+			time.Sleep(adjusted)
+			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+		}
+		if zkurl, err = leaderFromZK(cluster); err == nil {
+			return zkurl, err
+		}
+		if err != nil {
+			fmt.Println("error in LeaderFromZK: ", err)
+		}
+	}
+
+	return "", err
+}
+
+func leaderFromZK(cluster Cluster) (string, error) {
 
 	endpoints := strings.Split(cluster.ZK, ",")
 
@@ -92,4 +120,5 @@ func LeaderFromZK(cluster Cluster) (string, error) {
 	}
 
 	return "", errors.New("No leader found")
+
 }
