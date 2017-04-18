@@ -20,6 +20,8 @@ import (
 	"io/ioutil"
 	"os"
 
+	"time"
+
 	"github.com/rdelval/gorealis"
 	"github.com/rdelval/gorealis/gen-go/apache/aurora"
 	"github.com/rdelval/gorealis/response"
@@ -63,6 +65,13 @@ func main() {
 	var monitor *realis.Monitor
 	var r realis.Realis
 
+	var defaultBackoff = &realis.Backoff{
+		Steps:    2,
+		Duration: 10 * time.Second,
+		Factor:   2.0,
+		Jitter:   0.1,
+	}
+
 	//check if zkUrl is available.
 	if *zkUrl != "" {
 		fmt.Println("zkUrl: ", *zkUrl)
@@ -75,7 +84,8 @@ func main() {
 		}
 		fmt.Printf("cluster: %+v \n", cluster)
 
-		r, err = realis.NewDefaultClientUsingCluster(cluster, *username, *password)
+		//r, err = realis.NewRealisClient(realis.ZKCluster(cluster), realis.BasicAuth(*username, *password), realis.ThriftJSON(), realis.TimeoutMS(15000))
+		r, err = realis.NewRealisClient(realis.ZKUrl(*zkUrl), realis.BasicAuth(*username, *password), realis.ThriftJSON(), realis.TimeoutMS(15000), realis.BackOff(defaultBackoff))
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -83,11 +93,12 @@ func main() {
 		monitor = &realis.Monitor{r}
 
 	} else {
-		r, err = realis.NewDefaultClientUsingUrl(*url, *username, *password)
+		r, err = realis.NewRealisClient(realis.SchedulerUrl(*url), realis.BasicAuth(*username, *password), realis.ThriftJSON(), realis.TimeoutMS(20000), realis.BackOff(defaultBackoff))
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
+
 		monitor = &realis.Monitor{r}
 	}
 	defer r.Close()
