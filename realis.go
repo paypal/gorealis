@@ -208,7 +208,7 @@ func NewRealisClient(options ...option) (Realis, error) {
 		fmt.Printf(" updating default backoff : %+v\n", *config.backoff)
 	}
 
-	fmt.Printf("gorealis config: %+v\n", config)
+	fmt.Printf("gorealis config url: %+v\n", config.url)
 
 	return &realisClient{
 		config:         config,
@@ -488,7 +488,7 @@ func (r *realisClient) ReestablishConn() error {
 		fmt.Println(" r.config.url: ", r.config.url)
 		return errors.New(" Missing Data for ReestablishConn ")
 	}
-	fmt.Printf(" config before return: %+v\n", r.config)
+	fmt.Printf(" config url before return: %+v\n", r.config.url)
 	return nil
 }
 
