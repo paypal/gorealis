@@ -316,7 +316,12 @@ func main() {
 		}
 		currInstances := int32(len(live))
 		fmt.Println("Current num of instances: ", currInstances)
-		resp, err := r.AddInstances(aurora.InstanceKey{job.JobKey(), 0}, numOfInstances)
+		var instId int32
+		for k := range live{
+			instId = k
+			break
+		}
+		resp, err := r.AddInstances(aurora.InstanceKey{job.JobKey(), instId}, numOfInstances)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -358,7 +363,17 @@ func main() {
 		break
 	case "update":
 		fmt.Println("Updating a job with with more RAM and to 5 instances")
-		taskConfig, err := r.FetchTaskConfig(aurora.InstanceKey{job.JobKey(), 0})
+		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		var instId int32
+		for k := range live{
+			instId = k
+			break
+		}
+		taskConfig, err := r.FetchTaskConfig(aurora.InstanceKey{job.JobKey(), instId})
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -406,7 +421,17 @@ func main() {
 		break
 	case "taskConfig":
 		fmt.Println("Getting job info")
-		config, err := r.FetchTaskConfig(aurora.InstanceKey{job.JobKey(), 0})
+		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		var instId int32
+		for k := range live{
+			instId = k
+			break
+		}
+		config, err := r.FetchTaskConfig(aurora.InstanceKey{job.JobKey(), instId})
 
 		if err != nil {
 			fmt.Println(err)

@@ -208,7 +208,7 @@ func NewRealisClient(options ...option) (Realis, error) {
 		fmt.Printf(" updating default backoff : %+v\n", *config.backoff)
 	}
 
-	fmt.Printf("gorealis config: %+v\n", config)
+	fmt.Printf("gorealis config url: %+v\n", config.url)
 
 	return &realisClient{
 		config:         config,
@@ -488,7 +488,7 @@ func (r *realisClient) ReestablishConn() error {
 		fmt.Println(" r.config.url: ", r.config.url)
 		return errors.New(" Missing Data for ReestablishConn ")
 	}
-	fmt.Printf(" config before return: %+v\n", r.config)
+	fmt.Printf(" config url before return: %+v\n", r.config.url)
 	return nil
 }
 
@@ -934,7 +934,7 @@ func (r *realisClient) AddInstances(instKey aurora.InstanceKey, count int32) (*a
 	return nil, errors.Wrap(err, "Error sending AddInstances command to Aurora Scheduler")
 }
 
-//Scale down the number of instances under a job configuration using the configuratipn of a specific instance
+//Scale down the number of instances under a job configuration using the configuration of a specific instance
 func (r *realisClient) RemoveInstances(key *aurora.JobKey, count int32) (*aurora.Response, error) {
 	instanceIds, err := r.GetInstanceIds(key, aurora.ACTIVE_STATES)
 	if err != nil {
