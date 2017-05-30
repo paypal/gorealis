@@ -528,19 +528,20 @@ func (r *realisClient) GetInstanceIds(key *aurora.JobKey, states map[aurora.Sche
 			fmt.Println("error in ReestablishConn: ", err1)
 		}
 	}
-
 	if err != nil {
 		return nil, errors.Wrap(err, "Error querying Aurora Scheduler for active IDs")
 	}
-
+	resp, err = response.ResponseCodeCheck(resp)
+	if err != nil {
+		return nil, err
+	}
 	tasks := response.ScheduleStatusResult(resp).GetTasks()
-
 	jobInstanceIds := make(map[int32]bool)
 	for _, task := range tasks {
 		jobInstanceIds[task.GetAssignedTask().GetInstanceId()] = true
 	}
-
 	return jobInstanceIds, nil
+
 }
 
 func (r *realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQuery) (*aurora.Response, error) {
