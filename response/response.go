@@ -17,8 +17,9 @@ package response
 
 import (
 	"bytes"
-	"github.com/rdelval/gorealis/gen-go/apache/aurora"
+
 	"github.com/pkg/errors"
+	"github.com/rdelval/gorealis/gen-go/apache/aurora"
 )
 
 // Get key from a response created by a StartJobUpdate call
@@ -35,6 +36,9 @@ func ScheduleStatusResult(resp *aurora.Response) *aurora.ScheduleStatusResult_ {
 }
 
 func ResponseCodeCheck(resp *aurora.Response) (*aurora.Response, error) {
+	if resp == nil {
+		return resp, errors.New("Got nil Response")
+	}
 	if resp.GetResponseCode() != aurora.ResponseCode_OK {
 		return resp, errors.New(CombineMessage(resp))
 	}
@@ -50,7 +54,7 @@ func CombineMessage(resp *aurora.Response) string {
 	}
 
 	if buffer.Len() > 0 {
-		buffer.Truncate(buffer.Len()-2) // Get rid of trailing comma + space
+		buffer.Truncate(buffer.Len() - 2) // Get rid of trailing comma + space
 	}
 	return buffer.String()
 }
