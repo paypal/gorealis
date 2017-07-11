@@ -56,7 +56,7 @@ func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 	req.Settings.UpdateOnlyTheseInstances = make(map[*aurora.Range]bool)
 	req.Settings.UpdateGroupSize = 1
 	req.Settings.WaitForBatchCompletion = false
-	req.Settings.MinWaitInInstanceRunningMs = 45000 // Deprecated
+	req.Settings.MinWaitInInstanceRunningMs = 45000
 	req.Settings.MaxPerInstanceFailures = 0
 	req.Settings.MaxFailedInstances = 0
 	req.Settings.RollbackOnFailure = true
@@ -110,8 +110,8 @@ func (u *UpdateJob) BatchSize(size int32) *UpdateJob {
 }
 
 // Minimum number of seconds a shard must remain in RUNNING state before considered a success.
-func (u *UpdateJob) WatchTime(milliseconds int32) *UpdateJob {
-	u.req.Settings.MaxPerInstanceFailures = milliseconds
+func (u *UpdateJob) WatchTime(ms int32) *UpdateJob {
+	u.req.Settings.MinWaitInInstanceRunningMs = ms
 	return u
 }
 
