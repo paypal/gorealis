@@ -40,6 +40,7 @@ type Realis interface {
 	CreateJob(auroraJob Job) (*aurora.Response, error)
 	DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, error)
 	GetTaskStatus(query *aurora.TaskQuery) ([]*aurora.ScheduledTask, error)
+	GetTasksWithoutConfigs(query *aurora.TaskQuery) ([]*aurora.ScheduledTask, error)
 	FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error)
 	GetInstanceIds(key *aurora.JobKey, states map[aurora.ScheduleStatus]bool) (map[int32]bool, error)
 	JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aurora.Response, error)
@@ -957,6 +958,7 @@ func (r *realisClient) RemoveInstances(key *aurora.JobKey, count int32) (*aurora
 	return r.KillInstances(key, instanceList...)
 }
 
+// Get information about task including a fully hydrated task configuration object
 func (r *realisClient) GetTaskStatus(query *aurora.TaskQuery) (tasks []*aurora.ScheduledTask, e error) {
 
 	var resp *aurora.Response
@@ -984,6 +986,42 @@ func (r *realisClient) GetTaskStatus(query *aurora.TaskQuery) (tasks []*aurora.S
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Error querying Aurora Scheduler for task status")
+	}
+	//Check for response code..
+	if resp.GetResponseCode() != aurora.ResponseCode_OK {
+		return nil, errors.New(resp.ResponseCode.String() + "--" + response.CombineMessage(resp))
+	}
+
+	return response.ScheduleStatusResult(resp).GetTasks(), nil
+}
+
+// Get information about task including without a task configuration object
+func (r *realisClient) GetTasksWithoutConfigs(query *aurora.TaskQuery) (tasks []*aurora.ScheduledTask, e error) {
+	var resp *aurora.Response
+	var err error
+	defaultBackoff := r.config.backoff
+	duration := defaultBackoff.Duration
+	for i := 0; i < defaultBackoff.Steps; i++ {
+		if i != 0 {
+			adjusted := duration
+			if defaultBackoff.Jitter > 0.0 {
+				adjusted = Jitter(duration, defaultBackoff.Jitter)
+			}
+			fmt.Println(" sleeping for: ", adjusted)
+			time.Sleep(adjusted)
+			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+		}
+		if resp, err = r.client.GetTasksWithoutConfigs(query); err == nil {
+			break
+		}
+		err1 := r.ReestablishConn()
+		if err1 != nil {
+			fmt.Println("error in ReestablishConn: ", err1)
+		}
+	}
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Error querying Aurora Scheduler for task status without configs")
 	}
 	//Check for response code..
 	if resp.GetResponseCode() != aurora.ResponseCode_OK {
