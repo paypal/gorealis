@@ -468,6 +468,20 @@ func main() {
 		fmt.Printf("length: %d\n ", len(tasks))
 		fmt.Printf("tasks: %+v\n", tasks)
 
+	case "tasksWithoutConfig":
+		fmt.Println("Getting task status")
+		taskQ := &aurora.TaskQuery{Role: job.JobKey().Role,
+			Environment: job.JobKey().Environment,
+			JobName:     job.JobKey().Name,
+		}
+		tasks, err := r.GetTasksWithoutConfigs(taskQ)
+		if err != nil {
+			fmt.Printf("error: %+v\n ", err)
+			os.Exit(1)
+		}
+		fmt.Printf("length: %d\n ", len(tasks))
+		fmt.Printf("tasks: %+v\n", tasks)
+
 	default:
 		fmt.Println("Command not supported")
 		os.Exit(1)
