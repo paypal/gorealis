@@ -41,32 +41,32 @@ type NoopLogger struct{}
 func (NoopLogger) Printf(format string, a ...interface{}) {
 }
 
-// Loads leader from ZK endpoint.
+// Retrieves current Aurora leader from ZK.
 func LeaderFromZK(cluster Cluster) (string, error) {
 
 	var err error
 	var zkurl string
 
 	duration := defaultBackoff.Duration
-	for i := 0; i < defaultBackoff.Steps; i++ {
-		if i != 0 {
-			adjusted := duration
-			if defaultBackoff.Jitter > 0.0 {
-				adjusted = Jitter(duration, defaultBackoff.Jitter)
-			}
-			fmt.Println(" sleeping for: ", adjusted)
-			time.Sleep(adjusted)
-			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
-		}
-		if zkurl, err = leaderFromZK(cluster); err == nil {
+	for step := 0; step < defaultBackoff.Steps; step++ {
+
+		// Attempt to find leader
+		zkurl, err = leaderFromZK(cluster)
+		if err == nil {
 			return zkurl, err
 		}
-		if err != nil {
-			fmt.Println("error in LeaderFromZK: ", err)
+
+		// Backoff if we failed to determine leader
+		adjusted := duration
+		if defaultBackoff.Jitter > 0.0 {
+			adjusted = Jitter(duration, defaultBackoff.Jitter)
 		}
+		fmt.Printf("Error determining Aurora leader: %v; retrying in %v\n", err, adjusted)
+		time.Sleep(adjusted)
+		duration = time.Duration(float64(duration) * defaultBackoff.Factor)
 	}
 
-	return "", err
+	return "", errors.Wrapf(err, "Failed to determine leader after %v attempts", defaultBackoff.Steps)
 }
 
 func leaderFromZK(cluster Cluster) (string, error) {

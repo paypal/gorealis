@@ -168,9 +168,12 @@ func NewRealisClient(options ...option) (Realis, error) {
 	//Cluster or URL?
 	if config.cluster != nil {
 		url, err = LeaderFromZK(*config.cluster)
+
+		// If ZK is configured, throw an error if the leader is unable to be determined
 		if err != nil {
-			fmt.Errorf("LeaderFromZK error: %+v\n ", err)
+			return nil, errors.Wrap(err, "LeaderFromZK error")
 		}
+
 		fmt.Println("schedURLFromZK: ", url)
 	} else if config.url != "" {
 		fmt.Println("Scheduler URL: ", config.url)
