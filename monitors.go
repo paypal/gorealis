@@ -24,6 +24,11 @@ import (
 	"github.com/rdelval/gorealis/response"
 )
 
+const (
+	UpdateFailed = "update failed"
+	RolledBack   = "update rolled back"
+)
+
 type Monitor struct {
 	Client Realis
 }
@@ -82,7 +87,12 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 				return true, nil
 			} else if status == aurora.JobUpdateStatus_FAILED {
 				fmt.Println("Update failed")
-				return false, errors.New("update failed")
+				return false, errors.New(UpdateFailed)
+			} else if status == aurora.JobUpdateStatus_ROLLED_BACK {
+				fmt.Println("rolled back")
+				return false, errors.New(RolledBack)
+			} else {
+				return false, nil
 			}
 		}
 
