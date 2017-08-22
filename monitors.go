@@ -80,9 +80,9 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 			if status == aurora.JobUpdateStatus_ROLLED_FORWARD {
 				fmt.Println("Update succeded")
 				return true, nil
-			} else {
+			} else if status == aurora.JobUpdateStatus_FAILED {
 				fmt.Println("Update failed")
-				return false, nil
+				return false, errors.New("update failed")
 			}
 		}
 
