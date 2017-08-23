@@ -24,6 +24,11 @@ import (
 	"github.com/rdelval/gorealis/response"
 )
 
+const (
+	UpdateFailed = "update failed"
+	RolledBack   = "update rolled back"
+)
+
 type Monitor struct {
 	Client Realis
 }
@@ -77,11 +82,17 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 
 			// Rolled forward is the only state in which an update has been successfully updated
 			// if we encounter an inactive state and it is not at rolled forward, update failed
-			if status == aurora.JobUpdateStatus_ROLLED_FORWARD {
+			switch status {
+			case aurora.JobUpdateStatus_ROLLED_FORWARD:
 				fmt.Println("Update succeded")
 				return true, nil
-			} else {
+			case aurora.JobUpdateStatus_FAILED:
 				fmt.Println("Update failed")
+				return false, errors.New(UpdateFailed)
+			case aurora.JobUpdateStatus_ROLLED_BACK:
+				fmt.Println("rolled back")
+				return false, errors.New(RolledBack)
+			default:
 				return false, nil
 			}
 		}
