@@ -87,6 +87,11 @@ func NewJob() Job {
 	taskConfig.Resources[ramMb] = true
 	taskConfig.Resources[diskMb] = true
 
+
+	numCpus.NumCpus = new(float64)
+	ramMb.RamMb = new(int64)
+	diskMb.DiskMb = new(int64)
+
 	return &AuroraJob{jobConfig, resources, 0}
 }
 
@@ -136,21 +141,23 @@ func (j *AuroraJob) ExecutorData(data string) Job {
 }
 
 func (j *AuroraJob) CPU(cpus float64) Job {
-	j.resources["cpu"].NumCpus = &cpus
+	*j.resources["cpu"].NumCpus = cpus
 	j.jobConfig.TaskConfig.NumCpus = cpus //Will be deprecated soon
 
 	return j
 }
 
 func (j *AuroraJob) RAM(ram int64) Job {
-	j.resources["ram"].RamMb = &ram
+	*j.resources["ram"].RamMb = ram
 	j.jobConfig.TaskConfig.RamMb = ram //Will be deprecated soon
+
+
 
 	return j
 }
 
 func (j *AuroraJob) Disk(disk int64) Job {
-	j.resources["disk"].DiskMb = &disk
+	*j.resources["disk"].DiskMb = disk
 	j.jobConfig.TaskConfig.DiskMb = disk //Will be deprecated
 
 	return j
