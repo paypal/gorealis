@@ -87,17 +87,22 @@ func NewJob() Job {
 	taskConfig.Resources[ramMb] = true
 	taskConfig.Resources[diskMb] = true
 
-	return AuroraJob{jobConfig, resources, 0}
+
+	numCpus.NumCpus = new(float64)
+	ramMb.RamMb = new(int64)
+	diskMb.DiskMb = new(int64)
+
+	return &AuroraJob{jobConfig, resources, 0}
 }
 
 // Set Job Key environment.
-func (j AuroraJob) Environment(env string) Job {
+func (j *AuroraJob) Environment(env string) Job {
 	j.jobConfig.Key.Environment = env
 	return j
 }
 
 // Set Job Key Role.
-func (j AuroraJob) Role(role string) Job {
+func (j *AuroraJob) Role(role string) Job {
 	j.jobConfig.Key.Role = role
 
 	//Will be deprecated
@@ -108,13 +113,13 @@ func (j AuroraJob) Role(role string) Job {
 }
 
 // Set Job Key Name.
-func (j AuroraJob) Name(name string) Job {
+func (j *AuroraJob) Name(name string) Job {
 	j.jobConfig.Key.Name = name
 	return j
 }
 
 // Set name of the executor that will the task will be configured to.
-func (j AuroraJob) ExecutorName(name string) Job {
+func (j *AuroraJob) ExecutorName(name string) Job {
 
 	if j.jobConfig.TaskConfig.ExecutorConfig == nil {
 		j.jobConfig.TaskConfig.ExecutorConfig = aurora.NewExecutorConfig()
@@ -125,7 +130,7 @@ func (j AuroraJob) ExecutorName(name string) Job {
 }
 
 // Will be included as part of entire task inside the scheduler that will be serialized.
-func (j AuroraJob) ExecutorData(data string) Job {
+func (j *AuroraJob) ExecutorData(data string) Job {
 
 	if j.jobConfig.TaskConfig.ExecutorConfig == nil {
 		j.jobConfig.TaskConfig.ExecutorConfig = aurora.NewExecutorConfig()
@@ -135,77 +140,79 @@ func (j AuroraJob) ExecutorData(data string) Job {
 	return j
 }
 
-func (j AuroraJob) CPU(cpus float64) Job {
-	j.resources["cpu"].NumCpus = &cpus
+func (j *AuroraJob) CPU(cpus float64) Job {
+	*j.resources["cpu"].NumCpus = cpus
 	j.jobConfig.TaskConfig.NumCpus = cpus //Will be deprecated soon
 
 	return j
 }
 
-func (j AuroraJob) RAM(ram int64) Job {
-	j.resources["ram"].RamMb = &ram
+func (j *AuroraJob) RAM(ram int64) Job {
+	*j.resources["ram"].RamMb = ram
 	j.jobConfig.TaskConfig.RamMb = ram //Will be deprecated soon
+
+
 
 	return j
 }
 
-func (j AuroraJob) Disk(disk int64) Job {
-	j.resources["disk"].DiskMb = &disk
+func (j *AuroraJob) Disk(disk int64) Job {
+	*j.resources["disk"].DiskMb = disk
 	j.jobConfig.TaskConfig.DiskMb = disk //Will be deprecated
 
 	return j
 }
 
 // How many failures to tolerate before giving up.
-func (j AuroraJob) MaxFailure(maxFail int32) Job {
+func (j *AuroraJob) MaxFailure(maxFail int32) Job {
 	j.jobConfig.TaskConfig.MaxTaskFailures = maxFail
 	return j
 }
 
 // How many instances of the job to run
-func (j AuroraJob) InstanceCount(instCount int32) Job {
+func (j *AuroraJob) InstanceCount(instCount int32) Job {
 	j.jobConfig.InstanceCount = instCount
 	return j
 }
 
-func (j AuroraJob) CronSchedule(cron string) Job {
+func (j *AuroraJob) CronSchedule(cron string) Job {
 	j.jobConfig.CronSchedule = &cron
 	return j
 }
 
-func (j AuroraJob) CronCollisionPolicy(policy aurora.CronCollisionPolicy) Job {
+func (j *AuroraJob) CronCollisionPolicy(policy aurora.CronCollisionPolicy) Job {
 	j.jobConfig.CronCollisionPolicy = policy
 	return j
 }
 
 // How many instances of the job to run
-func (j AuroraJob) GetInstanceCount() int32 {
+func (j *AuroraJob) GetInstanceCount() int32 {
 	return j.jobConfig.InstanceCount
 }
 
 // Restart the job's tasks if they fail
-func (j AuroraJob) IsService(isService bool) Job {
+func (j *AuroraJob) IsService(isService bool) Job {
 	j.jobConfig.TaskConfig.IsService = isService
 	return j
 }
 
 // Get the current job configurations key to use for some realis calls.
-func (j AuroraJob) JobKey() *aurora.JobKey {
+func (j *AuroraJob) JobKey() *aurora.JobKey {
 	return j.jobConfig.Key
 }
 
 // Get the current job configurations key to use for some realis calls.
-func (j AuroraJob) JobConfig() *aurora.JobConfiguration {
+func (j *AuroraJob) JobConfig() *aurora.JobConfiguration {
 	return j.jobConfig
 }
 
-func (j AuroraJob) TaskConfig() *aurora.TaskConfig {
+func (j *AuroraJob) TaskConfig() *aurora.TaskConfig {
 	return j.jobConfig.TaskConfig
 }
 
 // Add a list of URIs with the same extract and cache configuration. Scheduler must have
 // --enable_mesos_fetcher flag enabled. Currently there is no duplicate detection.
-func (j AuroraJob) AddURIs(extract bool, cache bool, values ...string) Job {
+func (j *AuroraJob) AddURIs(extract bool, cache bool, values ...string) Job {
 	for _, value := range values {
 		j.jobConfig.
 			TaskConfig.
@@ -216,14 +223,14 @@ func (j AuroraJob) AddURIs(extract bool, cache bool, values ...string) Job {
 
 // Adds a Mesos label to the job. Note that Aurora will add the
 // prefix "org.apache.aurora.metadata." to the beginning of each key.
-func (j AuroraJob) AddLabel(key string, value string) Job {
+func (j *AuroraJob) AddLabel(key string, value string) Job {
 	j.jobConfig.TaskConfig.Metadata[&aurora.Metadata{key, value}] = true
 	return j
 }
 
 // Add a named port to the job configuration  These are random ports as it's
 // not currently possible to request specific ports using Aurora.
-func (j AuroraJob) AddNamedPorts(names ...string) Job {
+func (j *AuroraJob) AddNamedPorts(names ...string) Job {
 	j.portCount += len(names)
 	for _, name := range names {
 		j.jobConfig.TaskConfig.Resources[&aurora.Resource{NamedPort: &name}] = true
@@ -236,7 +243,7 @@ func (j AuroraJob) AddNamedPorts(names ...string) Job {
 // will be org.apache.aurora.port.X, where X is the current port count for the job configuration
 // starting at 0. These are random ports as it's not currently possible to request
 // specific ports using Aurora.
-func (j AuroraJob) AddPorts(num int) Job {
+func (j *AuroraJob) AddPorts(num int) Job {
 	start := j.portCount
 	j.portCount += num
 	for i := start; i < j.portCount; i++ {
@@ -252,7 +259,7 @@ func (j AuroraJob) AddPorts(num int) Job {
 // name - Mesos slave attribute that the constraint is matched against.
 // If negated = true , treat this as a 'not' - to avoid specific values.
 // Values - list of values we look for in attribute name
-func (j AuroraJob) AddValueConstraint(name string, negated bool, values ...string) Job {
+func (j *AuroraJob) AddValueConstraint(name string, negated bool, values ...string) Job {
 	constraintValues := make(map[string]bool)
 	for _, value := range values {
 		constraintValues[value] = true
@@ -266,7 +273,7 @@ func (j AuroraJob) AddValueConstraint(name string, negated bool, values ...strin
 // From Aurora Docs:
 // A constraint that specifies the maximum number of active tasks on a host with
 // a matching attribute that may be scheduled simultaneously.
-func (j AuroraJob) AddLimitConstraint(name string, limit int32) Job {
+func (j *AuroraJob) AddLimitConstraint(name string, limit int32) Job {
 	j.jobConfig.TaskConfig.Constraints[&aurora.Constraint{name,
 		&aurora.TaskConstraint{nil, &aurora.LimitConstraint{limit}}}] = true
 
@@ -274,7 +281,7 @@ func (j AuroraJob) AddLimitConstraint(name string, limit int32) Job {
 }
 
 // Set a container to run for the job configuration to run.
-func (j AuroraJob) Container(container Container) Job {
+func (j *AuroraJob) Container(container Container) Job {
 	j.jobConfig.TaskConfig.Container = container.Build()
 
 	return j

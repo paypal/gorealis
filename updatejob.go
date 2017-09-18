@@ -31,7 +31,7 @@ func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 	req.TaskConfig = config
 	req.Settings = aurora.NewJobUpdateSettings()
 
-	job := NewJob().(AuroraJob)
+	job := NewJob().(*AuroraJob)
 	job.jobConfig.TaskConfig = config
 
 	// Rebuild resource map from TaskConfig
@@ -72,7 +72,7 @@ func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings)
 	req.TaskConfig = config
 	req.Settings = settings
 
-	job := NewJob().(AuroraJob)
+	job := NewJob().(*AuroraJob)
 	job.jobConfig.TaskConfig = config
 
 	// Rebuild resource map from TaskConfig
