@@ -58,7 +58,7 @@ type Realis interface {
 	Close()
 
 	// Admin functions
-	DrainHosts(hosts ...string) (*aurora.Response, error)
+	DrainHosts(hosts ...string) (*aurora.Response, *aurora.DrainHostsResult_, error)
 }
 
 type realisClient struct {
@@ -1157,14 +1157,17 @@ func (r *realisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string
 	return nil, errors.Wrap(err, "Unable to roll back job update")
 }
 
-func (r *realisClient) DrainHosts(hosts ...string) (*aurora.Response, error) {
+// Set a list of nodes to DRAINING. This means nothing will be able to be scheduled on them and any existing
+// tasks will be killed and re-scheduled elsewhere in the cluster. Tasks from DRAINING nodes are not guaranteed
+// to return to running unless there is enough capacity in the cluster to run them.
+func (r *realisClient) DrainHosts(hosts ...string) (*aurora.Response, *aurora.DrainHostsResult_, error) {
 
 	var resp *aurora.Response
+	var result *aurora.DrainHostsResult_
 	var clientErr, payloadErr error
 
-	fmt.Printf("number of hosts %d", len(hosts))
 	if len(hosts) == 0 {
-		return nil, errors.New("no hosts provided to drain")
+		return nil, nil, errors.New("no hosts provided to drain")
 	}
 
 	drainList := aurora.NewHosts()
@@ -1178,7 +1181,7 @@ func (r *realisClient) DrainHosts(hosts ...string) (*aurora.Response, error) {
 		// Send thrift call, if we have a thrift send error, attempt to reconnect
 		// and continue trying to resend command
 		if resp, clientErr = r.adminClient.DrainHosts(drainList); clientErr != nil {
-			// Experienced an error connection
+			// Experienced an connection error
 			err1 := r.ReestablishConn()
 			if err1 != nil {
 				fmt.Println("error in re-establishing connection: ", err1)
@@ -1186,10 +1189,12 @@ func (r *realisClient) DrainHosts(hosts ...string) (*aurora.Response, error) {
 			return false, nil
 		}
 
-		// If error is NOT due to connection, exit loop by returning
-		// a non nil error
+		// If error is NOT due to connection
 		if _, payloadErr = response.ResponseCodeCheck(resp); payloadErr != nil {
-			return false, payloadErr
+			// TODO(rdelvalle): an leader election may cause the response to have
+			// failed when it should have succeeded. Retry everything for now until
+			// we figure out a more concrete fix.
+			return false, nil
 		}
 
 		// Successful call
@@ -1197,11 +1202,16 @@ func (r *realisClient) DrainHosts(hosts ...string) (*aurora.Response, error) {
 
 	})
 
-	// We can timeout, or we can encounter a non-retriable error
-	// If this is the case, bubble error up
-	if retryErr != nil {
-		return resp, errors.Wrap(clientErr, "Unable to recover connection")
+	if resp != nil && resp.GetResult_() != nil {
+		result = resp.GetResult_().GetDrainHostsResult_()
 	}
 
-	return resp, nil
+
+	// Timed out on retries. *Note that when we fix the unexpected errors with a correct payload,
+	// this will can become either a timeout error or a payload error
+	if retryErr != nil {
+		return resp, result, errors.Wrap(clientErr, "Unable to recover connection")
+	}
+
+	return resp, result, nil
 }

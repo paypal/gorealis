@@ -506,12 +506,12 @@ func main() {
 			os.Exit(1)
 		}
 		hosts := strings.Split(drainCandidates, ",")
-		resp, err := r.DrainHosts(hosts...)
+		_, result, err := r.DrainHosts(hosts...)
 		if err != nil {
 			fmt.Printf("error: %+v\n", err.Error())
 			os.Exit(1)
 		}
-		fmt.Print(resp.String())
+		fmt.Print(result.String())
 
 	default:
 		fmt.Println("Command not supported")
