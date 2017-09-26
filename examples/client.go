@@ -25,35 +25,44 @@ import (
 	"github.com/rdelval/gorealis"
 	"github.com/rdelval/gorealis/gen-go/apache/aurora"
 	"github.com/rdelval/gorealis/response"
+	"strings"
 )
 
-func main() {
-	cmd := flag.String("cmd", "", "Job request type to send to Aurora Scheduler")
-	executor := flag.String("executor", "thermos", "Executor to use")
-	url := flag.String("url", "", "URL at which the Aurora Scheduler exists as [url]:[port]")
-	clustersConfig := flag.String("clusters", "", "Location of the clusters.json file used by aurora.")
-	clusterName := flag.String("cluster", "devcluster", "Name of cluster to run job on (only necessary if clusters is set)")
-	updateId := flag.String("updateId", "", "Update ID to operate on")
-	username := flag.String("username", "aurora", "Username to use for authorization")
-	password := flag.String("password", "secret", "Password to use for authorization")
-	zkUrl := flag.String("zkurl", "", "zookeeper url")
+var cmd, executor, url, clustersConfig, clusterName, updateId, username, password, zkUrl, drainCandidates string
+
+var CONNECTION_TIMEOUT = 20000
+
+func init() {
+	flag.StringVar(&cmd, "cmd", "", "Job request type to send to Aurora Scheduler")
+	flag.StringVar(&executor, "executor", "thermos", "Executor to use")
+	flag.StringVar(&url, "url", "", "URL at which the Aurora Scheduler exists as [url]:[port]")
+	flag.StringVar(&clustersConfig, "clusters", "", "Location of the clusters.json file used by aurora.")
+	flag.StringVar(&clusterName, "cluster", "devcluster", "Name of cluster to run job on (only necessary if clusters is set)")
+	flag.StringVar(&updateId, "updateId", "", "Update ID to operate on")
+	flag.StringVar(&username, "username", "aurora", "Username to use for authorization")
+	flag.StringVar(&password, "password", "secret", "Password to use for authorization")
+	flag.StringVar(&zkUrl, "zkurl", "", "zookeeper url")
+	flag.StringVar(&drainCandidates, "drainCandidates", "", "Comma separated list of candidate hosts to drain")
 	flag.Parse()
+}
+
+func main() {
 
 	// Attempt to load leader from zookeeper
-	if *clustersConfig != "" {
-		clusters, err := realis.LoadClusters(*clustersConfig)
+	if clustersConfig != "" {
+		clusters, err := realis.LoadClusters(clustersConfig)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 
-		cluster, ok := clusters[*clusterName]
+		cluster, ok := clusters[clusterName]
 		if !ok {
-			fmt.Printf("Cluster %s chosen doesn't exist\n", *clusterName)
+			fmt.Printf("Cluster %s chosen doesn't exist\n", clusterName)
 			os.Exit(1)
 		}
 
-		*url, err = realis.LeaderFromZK(cluster)
+		url, err = realis.LeaderFromZK(cluster)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -73,19 +82,23 @@ func main() {
 	}
 
 	//check if zkUrl is available.
-	if *zkUrl != "" {
-		fmt.Println("zkUrl: ", *zkUrl)
+	if zkUrl != "" {
+		fmt.Println("zkUrl: ", zkUrl)
 		cluster := &realis.Cluster{Name: "example",
 			AuthMechanism: "UNAUTHENTICATED",
-			ZK:            *zkUrl,
+			ZK:            zkUrl,
 			SchedZKPath:   "/aurora/scheduler",
 			AgentRunDir:   "latest",
 			AgentRoot:     "/var/lib/mesos",
 		}
 		fmt.Printf("cluster: %+v \n", cluster)
 
-		//r, err = realis.NewRealisClient(realis.ZKCluster(cluster), realis.BasicAuth(*username, *password), realis.ThriftJSON(), realis.TimeoutMS(15000))
-		r, err = realis.NewRealisClient(realis.ZKUrl(*zkUrl), realis.BasicAuth(*username, *password), realis.ThriftJSON(), realis.TimeoutMS(15000), realis.BackOff(defaultBackoff))
+		r, err = realis.NewRealisClient(realis.ZKUrl(zkUrl),
+			realis.BasicAuth(username, password),
+			realis.ThriftJSON(),
+			realis.TimeoutMS(CONNECTION_TIMEOUT),
+			realis.BackOff(defaultBackoff))
+
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -93,7 +106,11 @@ func main() {
 		monitor = &realis.Monitor{r}
 
 	} else {
-		r, err = realis.NewRealisClient(realis.SchedulerUrl(*url), realis.BasicAuth(*username, *password), realis.ThriftJSON(), realis.TimeoutMS(20000), realis.BackOff(defaultBackoff))
+		r, err = realis.NewRealisClient(realis.SchedulerUrl(url),
+			realis.BasicAuth(username, password),
+			realis.ThriftJSON(),
+			realis.TimeoutMS(CONNECTION_TIMEOUT),
+			realis.BackOff(defaultBackoff))
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -103,7 +120,7 @@ func main() {
 	}
 	defer r.Close()
 
-	switch *executor {
+	switch executor {
 	case "thermos":
 		payload, err := ioutil.ReadFile("examples/thermos_payload.json")
 		if err != nil {
@@ -157,7 +174,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	switch *cmd {
+	switch cmd {
 	case "create":
 		fmt.Println("Creating job")
 		resp, err := r.CreateJob(job)
@@ -317,7 +334,7 @@ func main() {
 		currInstances := int32(len(live))
 		fmt.Println("Current num of instances: ", currInstances)
 		var instId int32
-		for k := range live{
+		for k := range live {
 			instId = k
 			break
 		}
@@ -369,7 +386,7 @@ func main() {
 			os.Exit(1)
 		}
 		var instId int32
-		for k := range live{
+		for k := range live {
 			instId = k
 			break
 		}
@@ -393,7 +410,7 @@ func main() {
 		break
 	case "updateDetails":
 		resp, err := r.JobUpdateDetails(aurora.JobUpdateQuery{
-			Key: &aurora.JobUpdateKey{job.JobKey(), *updateId}, Limit: 1})
+			Key: &aurora.JobUpdateKey{job.JobKey(), updateId}, Limit: 1})
 
 		if err != nil {
 			fmt.Println(err)
@@ -403,7 +420,7 @@ func main() {
 		break
 	case "abortUpdate":
 		fmt.Println("Abort update")
-		resp, err := r.AbortJobUpdate(aurora.JobUpdateKey{job.JobKey(), *updateId}, "")
+		resp, err := r.AbortJobUpdate(aurora.JobUpdateKey{job.JobKey(), updateId}, "")
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -412,7 +429,7 @@ func main() {
 		break
 	case "rollbackUpdate":
 		fmt.Println("Abort update")
-		resp, err := r.RollbackJobUpdate(aurora.JobUpdateKey{job.JobKey(), *updateId}, "")
+		resp, err := r.RollbackJobUpdate(aurora.JobUpdateKey{job.JobKey(), updateId}, "")
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -427,7 +444,7 @@ func main() {
 			os.Exit(1)
 		}
 		var instId int32
-		for k := range live{
+		for k := range live {
 			instId = k
 			break
 		}
@@ -481,6 +498,20 @@ func main() {
 		}
 		fmt.Printf("length: %d\n ", len(tasks))
 		fmt.Printf("tasks: %+v\n", tasks)
+
+	case "drainHosts":
+		fmt.Println("Setting hosts to DRAINING")
+		if drainCandidates == "" {
+			fmt.Println("No hosts specified to drain")
+			os.Exit(1)
+		}
+		hosts := strings.Split(drainCandidates, ",")
+		_, result, err := r.DrainHosts(hosts...)
+		if err != nil {
+			fmt.Printf("error: %+v\n", err.Error())
+			os.Exit(1)
+		}
+		fmt.Print(result.String())
 
 	default:
 		fmt.Println("Command not supported")

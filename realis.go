@@ -56,12 +56,16 @@ type Realis interface {
 	ReestablishConn() error
 	RealisConfig() *RealisConfig
 	Close()
+
+	// Admin functions
+	DrainHosts(hosts ...string) (*aurora.Response, *aurora.DrainHostsResult_, error)
 }
 
 type realisClient struct {
 	config         *RealisConfig
 	client         *aurora.AuroraSchedulerManagerClient
 	readonlyClient *aurora.ReadOnlySchedulerClient
+	adminClient    *aurora.AuroraAdminClient
 }
 
 type option func(*RealisConfig)
@@ -151,7 +155,7 @@ func newTBinTransport(url string, timeout int) (thrift.TTransport, error) {
 
 func NewRealisClient(options ...option) (Realis, error) {
 	config := &RealisConfig{}
-	fmt.Println(" options length: ", options)
+	fmt.Println(" options length: ", len(options))
 	for _, opt := range options {
 		opt(config)
 	}
@@ -217,7 +221,8 @@ func NewRealisClient(options ...option) (Realis, error) {
 	return &realisClient{
 		config:         config,
 		client:         aurora.NewAuroraSchedulerManagerClientFactory(config.transport, config.protoFactory),
-		readonlyClient: aurora.NewReadOnlySchedulerClientFactory(config.transport, config.protoFactory)}, nil
+		readonlyClient: aurora.NewReadOnlySchedulerClientFactory(config.transport, config.protoFactory),
+		adminClient:    aurora.NewAuroraAdminClientFactory(config.transport, config.protoFactory)}, nil
 
 }
 
@@ -350,7 +355,8 @@ func newClient(realisconfig *RealisConfig) Realis {
 	return &realisClient{
 		config:         realisconfig,
 		client:         aurora.NewAuroraSchedulerManagerClientFactory(realisconfig.transport, realisconfig.protoFactory),
-		readonlyClient: aurora.NewReadOnlySchedulerClientFactory(realisconfig.transport, realisconfig.protoFactory)}
+		readonlyClient: aurora.NewReadOnlySchedulerClientFactory(realisconfig.transport, realisconfig.protoFactory),
+		adminClient:    aurora.NewAuroraAdminClientFactory(realisconfig.transport, realisconfig.protoFactory)}
 }
 
 // Creates a default Thrift Transport object for communications in gorealis using an HTTP Post Client
@@ -463,6 +469,7 @@ func (r *realisClient) ReestablishConn() error {
 		AddBasicAuth(r.config, r.config.username, r.config.password)
 		r.client = aurora.NewAuroraSchedulerManagerClientFactory(r.config.transport, r.config.protoFactory)
 		r.readonlyClient = aurora.NewReadOnlySchedulerClientFactory(r.config.transport, r.config.protoFactory)
+		r.adminClient = aurora.NewAuroraAdminClientFactory(r.config.transport, r.config.protoFactory)
 	} else if r.config.url != "" && r.config.username != "" && r.config.password != "" {
 		//Re-establish using scheduler url.
 		fmt.Println("ReestablishConn url: ", r.config.url)
@@ -484,6 +491,7 @@ func (r *realisClient) ReestablishConn() error {
 		AddBasicAuth(r.config, r.config.username, r.config.password)
 		r.client = aurora.NewAuroraSchedulerManagerClientFactory(r.config.transport, r.config.protoFactory)
 		r.readonlyClient = aurora.NewReadOnlySchedulerClientFactory(r.config.transport, r.config.protoFactory)
+		r.adminClient = aurora.NewAuroraAdminClientFactory(r.config.transport, r.config.protoFactory)
 	} else {
 		fmt.Println(" Missing Data for ReestablishConn ")
 		fmt.Println(" r.config.cluster: ", r.config.cluster)
@@ -679,7 +687,7 @@ func (r *realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 		if resp, err = r.client.CreateJob(auroraJob.JobConfig()); err == nil {
 			return response.ResponseCodeCheck(resp)
 		}
-		fmt.Println("CreateJob err: %+v\n", err)
+		fmt.Printf("CreateJob err: %+v\n", err)
 		err1 := r.ReestablishConn()
 		if err1 != nil {
 			fmt.Println("error in ReestablishConn: ", err1)
@@ -1147,4 +1155,63 @@ func (r *realisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string
 	}
 
 	return nil, errors.Wrap(err, "Unable to roll back job update")
+}
+
+// Set a list of nodes to DRAINING. This means nothing will be able to be scheduled on them and any existing
+// tasks will be killed and re-scheduled elsewhere in the cluster. Tasks from DRAINING nodes are not guaranteed
+// to return to running unless there is enough capacity in the cluster to run them.
+func (r *realisClient) DrainHosts(hosts ...string) (*aurora.Response, *aurora.DrainHostsResult_, error) {
+
+	var resp *aurora.Response
+	var result *aurora.DrainHostsResult_
+	var clientErr, payloadErr error
+
+	if len(hosts) == 0 {
+		return nil, nil, errors.New("no hosts provided to drain")
+	}
+
+	drainList := aurora.NewHosts()
+	drainList.HostNames = make(map[string]bool)
+	for _, host := range hosts {
+		drainList.HostNames[host] = true
+	}
+
+	retryErr := ExponentialBackoff(defaultBackoff, func() (bool, error) {
+
+		// Send thrift call, if we have a thrift send error, attempt to reconnect
+		// and continue trying to resend command
+		if resp, clientErr = r.adminClient.DrainHosts(drainList); clientErr != nil {
+			// Experienced an connection error
+			err1 := r.ReestablishConn()
+			if err1 != nil {
+				fmt.Println("error in re-establishing connection: ", err1)
+			}
+			return false, nil
+		}
+
+		// If error is NOT due to connection
+		if _, payloadErr = response.ResponseCodeCheck(resp); payloadErr != nil {
+			// TODO(rdelvalle): an leader election may cause the response to have
+			// failed when it should have succeeded. Retry everything for now until
+			// we figure out a more concrete fix.
+			return false, nil
+		}
+
+		// Successful call
+		return true, nil
+
+	})
+
+	if resp != nil && resp.GetResult_() != nil {
+		result = resp.GetResult_().GetDrainHostsResult_()
+	}
+
+
+	// Timed out on retries. *Note that when we fix the unexpected errors with a correct payload,
+	// this will can become either a timeout error or a payload error
+	if retryErr != nil {
+		return resp, result, errors.Wrap(clientErr, "Unable to recover connection")
+	}
+
+	return resp, result, nil
 }
