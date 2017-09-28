@@ -60,6 +60,7 @@ type Realis interface {
 	// Admin functions
 	DrainHosts(hosts ...string) (*aurora.Response, *aurora.DrainHostsResult_, error)
 	EndMaintenance(hosts ...string) (*aurora.Response, *aurora.EndMaintenanceResult_, error)
+	MaintenanceStatus(hosts ...string) (*aurora.Response, *aurora.MaintenanceStatusResult_, error)
 }
 
 type realisClient struct {
@@ -1231,7 +1232,7 @@ func (r *realisClient) EndMaintenance(hosts ...string) (*aurora.Response, *auror
 	var returnErr, clientErr, payloadErr error
 
 	if len(hosts) == 0 {
-		return nil, nil, errors.New("no hosts provided to drain")
+		return nil, nil, errors.New("no hosts provided to end maintenance on")
 	}
 
 	hostList := aurora.NewHosts()
@@ -1285,4 +1286,68 @@ func (r *realisClient) EndMaintenance(hosts ...string) (*aurora.Response, *auror
 	}
 
 	return resp, result, nil
+}
+
+func (r *realisClient) MaintenanceStatus(hosts ...string) (*aurora.Response, *aurora.MaintenanceStatusResult_, error) {
+
+	var resp *aurora.Response
+	var result *aurora.MaintenanceStatusResult_
+	var returnErr, clientErr, payloadErr error
+
+	if len(hosts) == 0 {
+		return nil, nil, errors.New("no hosts provided to get maintenance status from")
+	}
+
+	hostList := aurora.NewHosts()
+	hostList.HostNames = make(map[string]bool)
+	for _, host := range hosts {
+		hostList.HostNames[host] = true
+	}
+
+	retryErr := ExponentialBackoff(defaultBackoff, func() (bool, error) {
+
+		// Send thrift call, if we have a thrift send error, attempt to reconnect
+		// and continue trying to resend command
+		if resp, clientErr = r.adminClient.MaintenanceStatus(hostList); clientErr != nil {
+			// Experienced an connection error
+			err1 := r.ReestablishConn()
+			if err1 != nil {
+				fmt.Println("error in re-establishing connection: ", err1)
+			}
+			return false, nil
+		}
+
+		// If error is NOT due to connection
+		if _, payloadErr = response.ResponseCodeCheck(resp); payloadErr != nil {
+			// TODO(rdelvalle): an leader election may cause the response to have
+			// failed when it should have succeeded. Retry everything for now until
+			// we figure out a more concrete fix.
+			return false, nil
+		}
+
+		// Successful call
+		return true, nil
+
+	})
+
+	if resp != nil && resp.GetResult_() != nil {
+		result = resp.GetResult_().GetMaintenanceStatusResult_()
+	}
+
+	// Prioritize returning a bad payload error over a client error as a bad payload error indicates
+	// a deeper issue
+	if payloadErr != nil {
+		returnErr = payloadErr
+	} else {
+		returnErr = clientErr
+	}
+
+	// Timed out on retries. *Note that when we fix the unexpected errors with a correct payload,
+	// this will can become either a timeout error or a payload error
+	if retryErr != nil {
+		return resp, result, errors.Wrap(returnErr, "Unable to recover connection")
+	}
+
+	return resp, result, nil
+
 }
