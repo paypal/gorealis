@@ -152,3 +152,53 @@ func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval int, t
 	fmt.Println("Timed out")
 	return false, nil
 }
+
+// Monitor host status until all hosts match the status provided
+func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode, sleepTime, steps int) (bool, error) {
+
+	//  Transform modes into a look up table
+	desiredMode := make(map[aurora.MaintenanceMode]struct{})
+	for _,mode := range modes {
+		desiredMode[mode] = struct{}{}
+	}
+	hostMode := make(map[string]bool)
+
+	// Initial map has all hosts we're looking for.
+	// For each node we find in the correct mode, eliminate it from the map. If we reach 0 elements in the map,
+	// we found all hosts we we're monitoring. This avoids having to go through and check the list one by one each cycle.
+	for _,host := range hosts {
+		hostMode[host] = true
+	}
+
+	fmt.Println("mode map and hosts have the same number of elements: ", len(hostMode) == len(hosts))
+
+	for step := 0; step < steps; step++ {
+
+		// Client may have multiple retries handle retries
+		_, result, err := m.Client.MaintenanceStatus(hosts...)
+		if err != nil {
+			// Error is either a payload error or a severe connection error
+			return false, errors.Wrap(err,"client error")
+		}
+
+		for stat := range result.GetStatuses() {
+			if  _, ok := desiredMode[stat.GetMode()]; ok {
+				fmt.Printf("host %s\n", stat.GetHost())
+				fmt.Println(hostMode)
+				delete(hostMode, stat.GetHost())
+			}
+		}
+
+		if len(hostMode) == 0 {
+			fmt.Println("Provided hosts have all entered the desired state(s)")
+			return true, nil
+		} else {
+			fmt.Printf("%d host(s) not in desired state\n", len(hostMode))
+		}
+
+		time.Sleep(time.Duration(sleepTime) * time.Second)
+	}
+
+	return false, errors.New("Timed out")
+
+}
