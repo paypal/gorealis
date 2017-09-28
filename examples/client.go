@@ -511,6 +511,18 @@ func main() {
 			fmt.Printf("error: %+v\n", err.Error())
 			os.Exit(1)
 		}
+
+		// Monitor change to DRAINING and DRAINED mode
+		_, err = monitor.HostMaintenance(
+			hosts,
+			[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
+			5,
+			10)
+		if err != nil {
+			fmt.Printf("error: %+v\n", err.Error())
+			os.Exit(1)
+		}
+
 		fmt.Print(result.String())
 
 	case "endMaintenance":
@@ -521,6 +533,17 @@ func main() {
 		}
 		hosts := strings.Split(hostList, ",")
 		_, result, err := r.EndMaintenance(hosts...)
+		if err != nil {
+			fmt.Printf("error: %+v\n", err.Error())
+			os.Exit(1)
+		}
+
+		// Monitor change to DRAINING and DRAINED mode
+		_, err = monitor.HostMaintenance(
+			hosts,
+			[]aurora.MaintenanceMode{aurora.MaintenanceMode_NONE},
+			5,
+			10)
 		if err != nil {
 			fmt.Printf("error: %+v\n", err.Error())
 			os.Exit(1)

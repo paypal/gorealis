@@ -161,16 +161,14 @@ func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode
 	for _,mode := range modes {
 		desiredMode[mode] = struct{}{}
 	}
-	hostMode := make(map[string]bool)
 
 	// Initial map has all hosts we're looking for.
 	// For each node we find in the correct mode, eliminate it from the map. If we reach 0 elements in the map,
 	// we found all hosts we we're monitoring. This avoids having to go through and check the list one by one each cycle.
+	hostMode := make(map[string]struct{})
 	for _,host := range hosts {
-		hostMode[host] = true
+		hostMode[host] = struct{}{}
 	}
-
-	fmt.Println("mode map and hosts have the same number of elements: ", len(hostMode) == len(hosts))
 
 	for step := 0; step < steps; step++ {
 
@@ -183,14 +181,13 @@ func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode
 
 		for stat := range result.GetStatuses() {
 			if  _, ok := desiredMode[stat.GetMode()]; ok {
-				fmt.Printf("host %s\n", stat.GetHost())
-				fmt.Println(hostMode)
+				fmt.Printf("host %s entered %s state\n", stat.GetHost(), stat.GetMode())
 				delete(hostMode, stat.GetHost())
 			}
 		}
 
 		if len(hostMode) == 0 {
-			fmt.Println("Provided hosts have all entered the desired state(s)")
+			fmt.Println("Provided hosts have all entered desired state(s)")
 			return true, nil
 		} else {
 			fmt.Printf("%d host(s) not in desired state\n", len(hostMode))
