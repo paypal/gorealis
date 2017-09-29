@@ -187,7 +187,6 @@ func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode
 		}
 
 		if len(hostMode) == 0 {
-			fmt.Println("Provided hosts have all entered desired state(s)")
 			return true, nil
 		} else {
 			fmt.Printf("%d host(s) not in desired state\n", len(hostMode))

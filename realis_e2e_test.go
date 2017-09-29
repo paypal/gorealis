@@ -16,8 +16,8 @@ package realis_test
 
 import (
 	"fmt"
-	"github.com/rdelval/gorealis/gen-go/apache/aurora"
 	"github.com/rdelval/gorealis"
+	"github.com/rdelval/gorealis/gen-go/apache/aurora"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
@@ -26,6 +26,7 @@ import (
 )
 
 var r realis.Realis
+var monitor *realis.Monitor
 var thermosPayload []byte
 
 func TestMain(m *testing.M) {
@@ -37,10 +38,13 @@ func TestMain(m *testing.M) {
 		realis.ThriftJSON(),
 		realis.TimeoutMS(20000),
 		realis.BackOff(&realis.Backoff{Steps: 2, Duration: 10 * time.Second, Factor: 2.0, Jitter: 0.1}))
- 	if err != nil {
+	if err != nil {
 		fmt.Println("Please run vagrant box before running test suite")
 		os.Exit(1)
 	}
+
+	// Create monitor
+	monitor = &realis.Monitor{r}
 
 	thermosPayload, err = ioutil.ReadFile("examples/thermos_payload.json")
 	if err != nil {
@@ -75,7 +79,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 	}
 
 	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-	fmt.Printf("Create call took %d ns\n", (end.UnixNano()- start.UnixNano()))
+	fmt.Printf("Create call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 
 	// Tasks must exist for it to be killed
 	t.Run("TestRealisClient_KillJob_Thermos", func(t *testing.T) {
@@ -88,7 +92,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		}
 
 		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-		fmt.Printf("Kill call took %d ns\n", (end.UnixNano()- start.UnixNano()))
+		fmt.Printf("Kill call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 	})
 }
 
@@ -132,7 +136,7 @@ func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
 			os.Exit(1)
 		}
 		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-		fmt.Printf("Schedule cron call took %d ns\n", (end.UnixNano()- start.UnixNano()))
+		fmt.Printf("Schedule cron call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 	})
 
 	t.Run("TestRealisClient_DeschedulerCronJob_Thermos", func(t *testing.T) {
@@ -145,6 +149,45 @@ func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
 		}
 
 		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-		fmt.Printf("Deschedule cron call took %d ns\n", (end.UnixNano()- start.UnixNano()))
+		fmt.Printf("Deschedule cron call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 	})
+}
+func TestRealisClient_DrainHosts(t *testing.T) {
+	hosts := []string{"192.168.33.7"}
+	_, _ , err := r.DrainHosts(hosts...)
+	if err != nil {
+		fmt.Printf("error: %+v\n", err.Error())
+		os.Exit(1)
+	}
+
+	// Monitor change to DRAINING and DRAINED mode
+	_, err = monitor.HostMaintenance(
+		hosts,
+		[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
+		5,
+		10)
+	if err != nil {
+		fmt.Printf("error: %+v\n", err.Error())
+		os.Exit(1)
+	}
+
+	t.Run("TestRealisClient_EndMaintenance", func(t *testing.T) {
+		_, _ , err := r.EndMaintenance(hosts...)
+		if err != nil {
+			fmt.Printf("error: %+v\n", err.Error())
+			os.Exit(1)
+		}
+
+		// Monitor change to DRAINING and DRAINED mode
+		_, err = monitor.HostMaintenance(
+			hosts,
+			[]aurora.MaintenanceMode{aurora.MaintenanceMode_NONE},
+			5,
+			10)
+		if err != nil {
+			fmt.Printf("error: %+v\n", err.Error())
+			os.Exit(1)
+		}
+	})
+
 }
