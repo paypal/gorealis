@@ -348,7 +348,9 @@ func NewDefaultClientUsingUrl(url, user, passwd string) (Realis, error) {
 	config.cluster = nil
 	// Configured for vagrant
 	AddBasicAuth(config, user, passwd)
+	config.backoff = &Backoff{Steps: 2, Duration: 10 * time.Second, Factor: 2.0, Jitter: 0.1}
 	r := newClient(config)
+
 	return r, nil
 }
 
