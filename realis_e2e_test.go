@@ -12,11 +12,12 @@
  * limitations under the License.
  */
 
-package realis
+package realis_test
 
 import (
 	"fmt"
 	"github.com/rdelval/gorealis/gen-go/apache/aurora"
+	"github.com/rdelval/gorealis"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
@@ -24,15 +25,19 @@ import (
 	"time"
 )
 
-var r Realis
+var r realis.Realis
 var thermosPayload []byte
 
 func TestMain(m *testing.M) {
 	var err error
 
 	// New configuration to connect to Vagrant image
-	r, err = NewDefaultClientUsingUrl("http://192.168.33.7:8081","aurora", "secret")
-	if err != nil {
+	r, err = realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
+		realis.BasicAuth("aurora", "secret"),
+		realis.ThriftJSON(),
+		realis.TimeoutMS(20000),
+		realis.BackOff(&realis.Backoff{Steps: 2, Duration: 10 * time.Second, Factor: 2.0, Jitter: 0.1}))
+ 	if err != nil {
 		fmt.Println("Please run vagrant box before running test suite")
 		os.Exit(1)
 	}
@@ -48,10 +53,10 @@ func TestMain(m *testing.M) {
 
 func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 
-	job := NewJob().
+	job := realis.NewJob().
 		Environment("prod").
 		Role("vagrant").
-		Name("create_job_test").
+		Name("create_thermos_job_test").
 		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
 		ExecutorData(string(thermosPayload)).
 		CPU(1).
@@ -95,7 +100,7 @@ func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
 		os.Exit(1)
 	}
 
-	job := NewJob().
+	job := realis.NewJob().
 		Environment("prod").
 		Role("vagrant").
 		Name("cronsched_job_test").
