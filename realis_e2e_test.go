@@ -154,25 +154,36 @@ func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
 }
 func TestRealisClient_DrainHosts(t *testing.T) {
 	hosts := []string{"192.168.33.7"}
-	_, _ , err := r.DrainHosts(hosts...)
+	_, _, err := r.DrainHosts(hosts...)
 	if err != nil {
 		fmt.Printf("error: %+v\n", err.Error())
 		os.Exit(1)
 	}
 
 	// Monitor change to DRAINING and DRAINED mode
-	_, err = monitor.HostMaintenance(
+	nontransitioned, err := monitor.HostMaintenance(
 		hosts,
 		[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
 		5,
 		10)
-	if err != nil {
-		fmt.Printf("error: %+v\n", err.Error())
-		os.Exit(1)
-	}
+	assert.Equal(t, nontransitioned, map[string]struct{}{})
+	assert.NoError(t, err)
+
+	t.Run("TestRealisClient_MonitorNontransitioned", func(t *testing.T) {
+		// Monitor change to DRAINING and DRAINED mode
+		nontransitioned, err := monitor.HostMaintenance(
+			append(hosts, "IMAGINARY_HOST"),
+			[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
+			1,
+			1)
+
+		// Assert monitor returned an error that was not nil, and also a list of the non-transitioned hosts
+		assert.Error(t, err)
+		assert.Equal(t, nontransitioned, map[string]struct{}{"IMAGINARY_HOST": {}})
+	})
 
 	t.Run("TestRealisClient_EndMaintenance", func(t *testing.T) {
-		_, _ , err := r.EndMaintenance(hosts...)
+		_, _, err := r.EndMaintenance(hosts...)
 		if err != nil {
 			fmt.Printf("error: %+v\n", err.Error())
 			os.Exit(1)

@@ -153,48 +153,47 @@ func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval int, t
 	return false, nil
 }
 
-// Monitor host status until all hosts match the status provided
-func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode, sleepTime, steps int) (bool, error) {
+// Monitor host status until all hosts match the status provided. May return an error along with a non nil map which contains
+// the hosts that did not transition to the desired modes(s).
+func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode, sleepTime, steps int) (map[string]struct{}, error) {
 
-	//  Transform modes into a look up table
+	//  Transform modes to monitor for into a set for easy lookup
 	desiredMode := make(map[aurora.MaintenanceMode]struct{})
 	for _,mode := range modes {
 		desiredMode[mode] = struct{}{}
 	}
 
-	// Initial map has all hosts we're looking for.
-	// For each node we find in the correct mode, eliminate it from the map. If we reach 0 elements in the map,
-	// we found all hosts we we're monitoring. This avoids having to go through and check the list one by one each cycle.
-	hostMode := make(map[string]struct{})
+	// Turn slice into a host set to eliminate duplicates. Delete hosts that have entered the desired mode from
+	// observed list. We are done when the number of observed hosts reaches zero.
+	// This avoids having to go through and check the list one by one each cycle.
+	observedHosts := make(map[string]struct{})
 	for _,host := range hosts {
-		hostMode[host] = struct{}{}
+		observedHosts[host] = struct{}{}
 	}
 
 	for step := 0; step < steps; step++ {
-
 		// Client may have multiple retries handle retries
 		_, result, err := m.Client.MaintenanceStatus(hosts...)
 		if err != nil {
 			// Error is either a payload error or a severe connection error
-			return false, errors.Wrap(err,"client error")
+			return observedHosts, errors.Wrap(err,"client error")
 		}
 
-		for stat := range result.GetStatuses() {
-			if  _, ok := desiredMode[stat.GetMode()]; ok {
-				fmt.Printf("host %s entered %s state\n", stat.GetHost(), stat.GetMode())
-				delete(hostMode, stat.GetHost())
+		for status := range result.GetStatuses() {
+			if  _, ok := desiredMode[status.GetMode()]; ok {
+				fmt.Printf("host %s entered %s state\n", status.GetHost(), status.GetMode())
+				delete(observedHosts, status.GetHost())
 			}
 		}
 
-		if len(hostMode) == 0 {
-			return true, nil
+		if len(observedHosts) == 0{
+			return observedHosts, nil
 		} else {
-			fmt.Printf("%d host(s) not in desired state\n", len(hostMode))
+			fmt.Printf("%d host(s) not in desired state\n", len(observedHosts))
 		}
 
 		time.Sleep(time.Duration(sleepTime) * time.Second)
 	}
 
-	return false, errors.New("Timed out")
-
+	return observedHosts, errors.New("Timed out")
 }
