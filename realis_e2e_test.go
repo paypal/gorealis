@@ -73,10 +73,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 	start := time.Now()
 	resp, err := r.CreateJob(job)
 	end := time.Now()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	assert.NoError(t, err)
 
 	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 	fmt.Printf("Create call took %d ns\n", (end.UnixNano() - start.UnixNano()))
@@ -86,10 +83,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		start := time.Now()
 		resp, err := r.KillJob(job.JobKey())
 		end := time.Now()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		assert.NoError(t, err)
 
 		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 		fmt.Printf("Kill call took %d ns\n", (end.UnixNano() - start.UnixNano()))
@@ -99,10 +93,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
 
 	thermosCronPayload, err := ioutil.ReadFile("examples/thermos_cron_payload.json")
-	if err != nil {
-		fmt.Println("Error reading thermos payload file: ", err)
-		os.Exit(1)
-	}
+	assert.NoError(t, err)
 
 	job := realis.NewJob().
 		Environment("prod").
@@ -131,10 +122,8 @@ func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
 		start := time.Now()
 		resp, err := r.StartCronJob(job.JobKey())
 		end := time.Now()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+
+		assert.NoError(t, err)
 		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 		fmt.Printf("Schedule cron call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 	})
@@ -143,11 +132,8 @@ func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
 		start := time.Now()
 		resp, err := r.DescheduleCronJob(job.JobKey())
 		end := time.Now()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
 
+		assert.NoError(t, err)
 		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 		fmt.Printf("Deschedule cron call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 	})
@@ -161,17 +147,17 @@ func TestRealisClient_DrainHosts(t *testing.T) {
 	}
 
 	// Monitor change to DRAINING and DRAINED mode
-	nontransitioned, err := monitor.HostMaintenance(
+	hostResults, err := monitor.HostMaintenance(
 		hosts,
 		[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
 		5,
 		10)
-	assert.Equal(t, nontransitioned, map[string]struct{}{})
+	assert.Equal(t, map[string]bool{"192.168.33.7": true}, hostResults)
 	assert.NoError(t, err)
 
 	t.Run("TestRealisClient_MonitorNontransitioned", func(t *testing.T) {
 		// Monitor change to DRAINING and DRAINED mode
-		nontransitioned, err := monitor.HostMaintenance(
+		hostResults, err := monitor.HostMaintenance(
 			append(hosts, "IMAGINARY_HOST"),
 			[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
 			1,
@@ -179,7 +165,7 @@ func TestRealisClient_DrainHosts(t *testing.T) {
 
 		// Assert monitor returned an error that was not nil, and also a list of the non-transitioned hosts
 		assert.Error(t, err)
-		assert.Equal(t, nontransitioned, map[string]struct{}{"IMAGINARY_HOST": {}})
+		assert.Equal(t, map[string]bool{"192.168.33.7": true, "IMAGINARY_HOST": false}, hostResults)
 	})
 
 	t.Run("TestRealisClient_EndMaintenance", func(t *testing.T) {
@@ -195,10 +181,7 @@ func TestRealisClient_DrainHosts(t *testing.T) {
 			[]aurora.MaintenanceMode{aurora.MaintenanceMode_NONE},
 			5,
 			10)
-		if err != nil {
-			fmt.Printf("error: %+v\n", err.Error())
-			os.Exit(1)
-		}
+		assert.NoError(t, err)
 	})
 
 }
