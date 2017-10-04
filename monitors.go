@@ -154,7 +154,7 @@ func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval int, t
 }
 
 // Monitor host status until all hosts match the status provided. Returns a map where the value is true if the host
-// is in one of the desired mode(s) or false if it is not.
+// is in one of the desired mode(s) or false if it is not as of the time when the monitor exited.
 func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode, sleepTime, steps int) (map[string]bool, error) {
 
 	//  Transform modes to monitor for into a set for easy lookup
@@ -164,38 +164,47 @@ func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode
 	}
 
 	// Turn slice into a host set to eliminate duplicates.
-	observedHosts := make(map[string]bool)
+	// We also can't use a simple count because multiple modes means we can have multiple matches for a single host.
+	// I.e. host A transitions from ACTIVE to DRAINING to DRAINED while monitored
+	remainingHosts := make(map[string]struct{})
 	for _, host := range hosts {
-		observedHosts[host] = false
+		remainingHosts[host] = struct{}{}
 	}
 
+	hostResult := make(map[string]bool)
+
 	for step := 0; step < steps; step++ {
-		// Client may have multiple retries handle retries
+		if step != 0 {
+			time.Sleep(time.Duration(sleepTime) * time.Second)
+		}
+
+		// Client call has multiple retries internally
 		_, result, err := m.Client.MaintenanceStatus(hosts...)
 		if err != nil {
 			// Error is either a payload error or a severe connection error
-			return observedHosts, errors.Wrap(err, "client error")
+			for host := range remainingHosts {
+				hostResult[host] = false
+			}
+			return hostResult, errors.Wrap(err, "client error in monitor")
 		}
 
 		for status := range result.GetStatuses() {
+
 			if _, ok := desiredMode[status.GetMode()]; ok {
-				observedHosts[status.GetHost()] = true
+				hostResult[status.GetHost()] = true
+				delete(remainingHosts, status.GetHost())
 
-				transitionedHosts := 0
-				for _, val := range observedHosts {
-					if val {
-						transitionedHosts++
-					}
-				}
-
-				if len(observedHosts) == transitionedHosts {
-					return observedHosts, nil
+				if len(remainingHosts) == 0 {
+					return hostResult, nil
 				}
 			}
 		}
 
-		time.Sleep(time.Duration(sleepTime) * time.Second)
 	}
 
-	return observedHosts, errors.New("Timed out")
+	for host := range remainingHosts {
+		hostResult[host] = false
+	}
+
+	return hostResult, errors.New("Timed out")
 }
