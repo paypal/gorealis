@@ -513,17 +513,15 @@ func main() {
 		}
 
 		// Monitor change to DRAINING and DRAINED mode
-		nontransitioned, err := monitor.HostMaintenance(
+		hostResult, err := monitor.HostMaintenance(
 			hosts,
 			[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
 			5,
 			10)
 		if err != nil {
-
-			// Check whether the call was partially successful
-			if len(nontransitioned) != 0 {
-				fmt.Println("Partial success:")
-				for host, _ := range nontransitioned {
+			fmt.Println("Partial success:")
+			for host, ok := range hostResult {
+				if !ok {
 					fmt.Printf("Host %s did not transtion into desired mode(s)\n", host)
 				}
 			}
@@ -548,14 +546,14 @@ func main() {
 		}
 
 		// Monitor change to DRAINING and DRAINED mode
-		hostsResult, err := monitor.HostMaintenance(
+		hostResult, err := monitor.HostMaintenance(
 			hosts,
 			[]aurora.MaintenanceMode{aurora.MaintenanceMode_NONE},
 			5,
 			10)
 		if err != nil {
 			fmt.Println("Partial success:")
-			for host, ok := range hostsResult {
+			for host, ok := range hostResult {
 				if !ok {
 					fmt.Printf("Host %s did not transtion into desired mode(s)\n", host)
 				}
