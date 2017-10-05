@@ -519,7 +519,6 @@ func main() {
 			5,
 			10)
 		if err != nil {
-			fmt.Println("Partial success:")
 			for host, ok := range hostResult {
 				if !ok {
 					fmt.Printf("Host %s did not transtion into desired mode(s)\n", host)
@@ -552,7 +551,6 @@ func main() {
 			5,
 			10)
 		if err != nil {
-			fmt.Println("Partial success:")
 			for host, ok := range hostResult {
 				if !ok {
 					fmt.Printf("Host %s did not transtion into desired mode(s)\n", host)
