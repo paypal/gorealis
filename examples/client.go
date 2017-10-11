@@ -28,7 +28,7 @@ import (
 	"strings"
 )
 
-var cmd, executor, url, clustersConfig, clusterName, updateId, username, password, zkUrl, drainCandidates string
+var cmd, executor, url, clustersConfig, clusterName, updateId, username, password, zkUrl, hostList string
 
 var CONNECTION_TIMEOUT = 20000
 
@@ -42,7 +42,7 @@ func init() {
 	flag.StringVar(&username, "username", "aurora", "Username to use for authorization")
 	flag.StringVar(&password, "password", "secret", "Password to use for authorization")
 	flag.StringVar(&zkUrl, "zkurl", "", "zookeeper url")
-	flag.StringVar(&drainCandidates, "drainCandidates", "", "Comma separated list of candidate hosts to drain")
+	flag.StringVar(&hostList, "hostList", "", "Comma separated list of hosts to operate on")
 	flag.Parse()
 }
 
@@ -501,16 +501,66 @@ func main() {
 
 	case "drainHosts":
 		fmt.Println("Setting hosts to DRAINING")
-		if drainCandidates == "" {
+		if hostList == "" {
 			fmt.Println("No hosts specified to drain")
 			os.Exit(1)
 		}
-		hosts := strings.Split(drainCandidates, ",")
+		hosts := strings.Split(hostList, ",")
 		_, result, err := r.DrainHosts(hosts...)
 		if err != nil {
 			fmt.Printf("error: %+v\n", err.Error())
 			os.Exit(1)
 		}
+
+		// Monitor change to DRAINING and DRAINED mode
+		hostResult, err := monitor.HostMaintenance(
+			hosts,
+			[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
+			5,
+			10)
+		if err != nil {
+			for host, ok := range hostResult {
+				if !ok {
+					fmt.Printf("Host %s did not transtion into desired mode(s)\n", host)
+				}
+			}
+
+			fmt.Printf("error: %+v\n", err.Error())
+			os.Exit(1)
+		}
+
+		fmt.Print(result.String())
+
+	case "endMaintenance":
+		fmt.Println("Setting hosts to ACTIVE")
+		if hostList == "" {
+			fmt.Println("No hosts specified to drain")
+			os.Exit(1)
+		}
+		hosts := strings.Split(hostList, ",")
+		_, result, err := r.EndMaintenance(hosts...)
+		if err != nil {
+			fmt.Printf("error: %+v\n", err.Error())
+			os.Exit(1)
+		}
+
+		// Monitor change to DRAINING and DRAINED mode
+		hostResult, err := monitor.HostMaintenance(
+			hosts,
+			[]aurora.MaintenanceMode{aurora.MaintenanceMode_NONE},
+			5,
+			10)
+		if err != nil {
+			for host, ok := range hostResult {
+				if !ok {
+					fmt.Printf("Host %s did not transtion into desired mode(s)\n", host)
+				}
+			}
+
+			fmt.Printf("error: %+v\n", err.Error())
+			os.Exit(1)
+		}
+
 		fmt.Print(result.String())
 
 	default:

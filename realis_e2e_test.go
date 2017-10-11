@@ -12,10 +12,11 @@
  * limitations under the License.
  */
 
-package realis
+package realis_test
 
 import (
 	"fmt"
+	"github.com/rdelval/gorealis"
 	"github.com/rdelval/gorealis/gen-go/apache/aurora"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
@@ -24,18 +25,26 @@ import (
 	"time"
 )
 
-var r Realis
+var r realis.Realis
+var monitor *realis.Monitor
 var thermosPayload []byte
 
 func TestMain(m *testing.M) {
 	var err error
 
 	// New configuration to connect to Vagrant image
-	r, err = NewDefaultClientUsingUrl("http://192.168.33.7:8081","aurora", "secret")
+	r, err = realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
+		realis.BasicAuth("aurora", "secret"),
+		realis.ThriftJSON(),
+		realis.TimeoutMS(20000),
+		realis.BackOff(&realis.Backoff{Steps: 2, Duration: 10 * time.Second, Factor: 2.0, Jitter: 0.1}))
 	if err != nil {
 		fmt.Println("Please run vagrant box before running test suite")
 		os.Exit(1)
 	}
+
+	// Create monitor
+	monitor = &realis.Monitor{r}
 
 	thermosPayload, err = ioutil.ReadFile("examples/thermos_payload.json")
 	if err != nil {
@@ -48,10 +57,10 @@ func TestMain(m *testing.M) {
 
 func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 
-	job := NewJob().
+	job := realis.NewJob().
 		Environment("prod").
 		Role("vagrant").
-		Name("create_job_test").
+		Name("create_thermos_job_test").
 		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
 		ExecutorData(string(thermosPayload)).
 		CPU(1).
@@ -64,38 +73,29 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 	start := time.Now()
 	resp, err := r.CreateJob(job)
 	end := time.Now()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	assert.NoError(t, err)
 
 	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-	fmt.Printf("Create call took %d ns\n", (end.UnixNano()- start.UnixNano()))
+	fmt.Printf("Create call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 
 	// Tasks must exist for it to be killed
 	t.Run("TestRealisClient_KillJob_Thermos", func(t *testing.T) {
 		start := time.Now()
 		resp, err := r.KillJob(job.JobKey())
 		end := time.Now()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		assert.NoError(t, err)
 
 		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-		fmt.Printf("Kill call took %d ns\n", (end.UnixNano()- start.UnixNano()))
+		fmt.Printf("Kill call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 	})
 }
 
 func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
 
 	thermosCronPayload, err := ioutil.ReadFile("examples/thermos_cron_payload.json")
-	if err != nil {
-		fmt.Println("Error reading thermos payload file: ", err)
-		os.Exit(1)
-	}
+	assert.NoError(t, err)
 
-	job := NewJob().
+	job := realis.NewJob().
 		Environment("prod").
 		Role("vagrant").
 		Name("cronsched_job_test").
@@ -122,24 +122,66 @@ func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
 		start := time.Now()
 		resp, err := r.StartCronJob(job.JobKey())
 		end := time.Now()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+
+		assert.NoError(t, err)
 		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-		fmt.Printf("Schedule cron call took %d ns\n", (end.UnixNano()- start.UnixNano()))
+		fmt.Printf("Schedule cron call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 	})
 
 	t.Run("TestRealisClient_DeschedulerCronJob_Thermos", func(t *testing.T) {
 		start := time.Now()
 		resp, err := r.DescheduleCronJob(job.JobKey())
 		end := time.Now()
+
+		assert.NoError(t, err)
+		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+		fmt.Printf("Deschedule cron call took %d ns\n", (end.UnixNano() - start.UnixNano()))
+	})
+}
+func TestRealisClient_DrainHosts(t *testing.T) {
+	hosts := []string{"192.168.33.7"}
+	_, _, err := r.DrainHosts(hosts...)
+	if err != nil {
+		fmt.Printf("error: %+v\n", err.Error())
+		os.Exit(1)
+	}
+
+	// Monitor change to DRAINING and DRAINED mode
+	hostResults, err := monitor.HostMaintenance(
+		hosts,
+		[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
+		5,
+		10)
+	assert.Equal(t, map[string]bool{"192.168.33.7": true}, hostResults)
+	assert.NoError(t, err)
+
+	t.Run("TestRealisClient_MonitorNontransitioned", func(t *testing.T) {
+		// Monitor change to DRAINING and DRAINED mode
+		hostResults, err := monitor.HostMaintenance(
+			append(hosts, "IMAGINARY_HOST"),
+			[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
+			1,
+			1)
+
+		// Assert monitor returned an error that was not nil, and also a list of the non-transitioned hosts
+		assert.Error(t, err)
+		assert.Equal(t, map[string]bool{"192.168.33.7": true, "IMAGINARY_HOST": false}, hostResults)
+	})
+
+	t.Run("TestRealisClient_EndMaintenance", func(t *testing.T) {
+		_, _, err := r.EndMaintenance(hosts...)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Printf("error: %+v\n", err.Error())
 			os.Exit(1)
 		}
 
-		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-		fmt.Printf("Deschedule cron call took %d ns\n", (end.UnixNano()- start.UnixNano()))
+		// Monitor change to DRAINING and DRAINED mode
+		_, err = monitor.HostMaintenance(
+			hosts,
+			[]aurora.MaintenanceMode{aurora.MaintenanceMode_NONE},
+			5,
+			10)
+		assert.NoError(t, err)
 	})
+
 }
