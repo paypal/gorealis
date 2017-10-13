@@ -15,7 +15,7 @@
 package realis
 
 import (
-	"github.com/rdelval/gorealis/gen-go/apache/aurora"
+	"github.com/paypal/gorealis/gen-go/apache/aurora"
 )
 
 // Structure to collect all information required to create job update

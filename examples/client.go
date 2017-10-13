@@ -22,9 +22,9 @@ import (
 
 	"time"
 
-	"github.com/rdelval/gorealis"
-	"github.com/rdelval/gorealis/gen-go/apache/aurora"
-	"github.com/rdelval/gorealis/response"
+	"github.com/paypal/gorealis"
+	"github.com/paypal/gorealis/gen-go/apache/aurora"
+	"github.com/paypal/gorealis/response"
 	"strings"
 )
 

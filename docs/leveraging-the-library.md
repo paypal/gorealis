@@ -1,6 +1,6 @@
 # How to leverage the library (based on the [sample client](../examples/client.go))
 
-For a more complete look at the API, please visit https://godoc.org/github.com/rdelval/gorealis
+For a more complete look at the API, please visit https://godoc.org/github.com/paypal/gorealis
 
 * Create a default configuration file (alternatively, manually create your own Config):
 ```

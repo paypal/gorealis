@@ -29,21 +29,21 @@ executor examples, the vagrant box must be configured properly to use the docker
 
 #### Creating a Thermos job
 ```
-$ cd $GOPATH/src/github.com/rdelval/gorealis/examples
+$ cd $GOPATH/src/github.com/paypal/gorealis/examples
 $ go run client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=create
 ```
 #### Kill a Thermos job
 ```
-$ go run $GOPATH/src/github.com/rdelval/gorealis.git/examples/client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=kill
+$ go run $GOPATH/src/github.com/paypal/gorealis/examples/client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=kill
 ```
 
 ### Docker Compose executor (custom executor)
 
 #### Creating Docker Compose executor job
 ```
-$ go run $GOPATH/src/github.com/rdelval/gorealis/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=create
+$ go run $GOPATH/src/github.com/paypal/gorealis/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=create
 ```
 #### Kill a Docker Compose executor job
 ```
-$ go run $GOPATH/src/github.com/rdelval/gorealis/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=kill
+$ go run $GOPATH/src/github.com/paypal/gorealis/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=kill
 ```
