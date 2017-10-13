@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/rdelval/gorealis"
+	"github.com/paypal/gorealis"
 	"os"
 )
 

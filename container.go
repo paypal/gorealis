@@ -15,7 +15,7 @@
 package realis
 
 import (
-	"github.com/rdelval/gorealis/gen-go/apache/aurora"
+	"github.com/paypal/gorealis/gen-go/apache/aurora"
 )
 
 type Container interface {

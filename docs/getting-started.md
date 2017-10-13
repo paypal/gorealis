@@ -93,7 +93,7 @@ $ sudo service aurora-scheduler restart
 ### Using a custom client
 Pystachio does yet support launching tasks using custom executors. Therefore, a custom
 client must be used in order to launch tasks using a custom executor. In this case,
-we will be using [gorealis](https://github.com/rdelval/gorealis) to launch a task with
+we will be using [gorealis](https://github.com/paypal/gorealis) to launch a task with
 the compose executor on Aurora.
 
 ## Configuring the system to run a custom client and docker-compose executor
@@ -179,7 +179,7 @@ $ sudo pip install docker-compose
 Finally, we must get `gorealis` using the `go get` command:
 
 ```
-go get github.com/rdelval/gorealis
+go get github.com/paypal/gorealis
 ```
 
 # Creating Aurora Jobs
@@ -248,7 +248,7 @@ job = realis.NewJob().
 
 Using a vagrant setup as an example, we can run the following command to create a compose job:
 ```
-go run $GOPATH/src/github.com/rdelval/gorealis/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=create
+go run $GOPATH/src/github.com/paypal/gorealis/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=create
 ```
 
 If everything went according to plan, a new job will be shown in the Aurora UI.
@@ -290,7 +290,7 @@ job = realis.NewJob().
 
 Using a vagrant setup as an example, we can run the following command to create a Thermos job:
 ```
-$ cd $GOPATH/src/github.com/rdelval/gorealis
+$ cd $GOPATH/src/github.com/paypal/gorealis
 $ go run examples/client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=create -executor=thermos
 ```
 
@@ -310,6 +310,6 @@ $ aurora job killall devcluster/vagrant/prod/docker-compose
 ## Using gorealis
 
 ```
-$ go run $GOPATH/src/github.com/rdelval/gorealis/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=kill
-$ go run $GOPATH/src/github.com/rdelval/gorealis/examples/client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=kill
+$ go run $GOPATH/src/github.com/paypal/gorealis/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=kill
+$ go run $GOPATH/src/github.com/paypal/gorealis/examples/client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=kill
 ```

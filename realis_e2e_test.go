@@ -16,8 +16,8 @@ package realis_test
 
 import (
 	"fmt"
-	"github.com/rdelval/gorealis"
-	"github.com/rdelval/gorealis/gen-go/apache/aurora"
+	"github.com/paypal/gorealis"
+	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"

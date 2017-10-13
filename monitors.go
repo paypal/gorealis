@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/rdelval/gorealis/gen-go/apache/aurora"
-	"github.com/rdelval/gorealis/response"
+	"github.com/paypal/gorealis/gen-go/apache/aurora"
+	"github.com/paypal/gorealis/response"
 )
 
 const (

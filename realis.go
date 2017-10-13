@@ -27,8 +27,8 @@ import (
 
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/pkg/errors"
-	"github.com/rdelval/gorealis/gen-go/apache/aurora"
-	"github.com/rdelval/gorealis/response"
+	"github.com/paypal/gorealis/gen-go/apache/aurora"
+	"github.com/paypal/gorealis/response"
 )
 
 const VERSION = "1.0.4"

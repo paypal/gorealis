@@ -1,4 +1,4 @@
-# gorealis [![GoDoc](https://godoc.org/github.com/rdelval/gorealis?status.svg)](https://godoc.org/github.com/rdelval/gorealis)
+# gorealis [![GoDoc](https://godoc.org/github.com/paypal/gorealis?status.svg)](https://godoc.org/github.com/paypal/gorealis)
 
 Go library for interacting with [Apache Aurora](https://github.com/apache/aurora).
 
