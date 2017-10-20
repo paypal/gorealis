@@ -17,11 +17,12 @@ package realis
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/paypal/gorealis/response"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -41,35 +42,18 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 		Limit: 1,
 	}
 
-	defaultBackoff := m.Client.RealisConfig().backoff
-	duration := defaultBackoff.Duration //defaultBackoff.Duration
-	var err error
+	var cliErr error
 	var respDetail *aurora.Response
 
-	for i := 0; i*interval <= timeout; i++ {
-		for step := 0; step < defaultBackoff.Steps; step++ {
-			if step != 0 {
-				adjusted := duration
-				if defaultBackoff.Jitter > 0.0 {
-					adjusted = Jitter(duration, defaultBackoff.Jitter)
-				}
-				fmt.Println(" sleeping for: ", adjusted)
-				time.Sleep(adjusted)
-				duration = time.Duration(float64(duration) * defaultBackoff.Factor)
-			}
-			if respDetail, err = m.Client.JobUpdateDetails(updateQ); err == nil {
-				break
-			}
-			err1 := m.Client.ReestablishConn()
-			if err1 != nil {
-				fmt.Println("error in ReestablishConn: ", err1)
-			}
+	retryErr := ExponentialBackoff(*m.Client.RealisConfig().backoff, func() (bool, error) {
+		respDetail, cliErr = CheckAndRetryConn(m.Client, func() (*aurora.Response, error) {
+			return m.Client.JobUpdateDetails(updateQ)
+		})
+		if cliErr == RetryConnErr {
+			return false, nil
+		} else {
+			return false, cliErr
 		}
-		// if error remains then return (false, err).
-		if err != nil {
-			return false, err
-		}
-
 		updateDetail := response.JobUpdateDetails(respDetail)
 
 		if len(updateDetail) == 0 {
@@ -96,61 +80,45 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 				return false, nil
 			}
 		}
-
-		fmt.Println("Polling, update still active...")
-		time.Sleep(time.Duration(interval) * time.Second)
+		return false, nil
+	})
+	if retryErr != nil {
+		return false, errors.Wrap(cliErr, retryErr.Error())
 	}
-
-	fmt.Println("Timed out")
-	return false, nil
+	return true, nil
 }
 
 func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval int, timeout int) (bool, error) {
 
-	defaultBackoff := m.Client.RealisConfig().backoff
-	duration := defaultBackoff.Duration
-	var err error
+	var cliErr error
 	var live map[int32]bool
 
-	for i := 0; i*interval < timeout; i++ {
-		for step := 0; step < defaultBackoff.Steps; step++ {
-			if step != 0 {
-				adjusted := duration
-				if defaultBackoff.Jitter > 0.0 {
-					adjusted = Jitter(duration, defaultBackoff.Jitter)
-				}
-				fmt.Println(" sleeping for: ", adjusted)
-				time.Sleep(adjusted)
-				fmt.Println(" sleeping done")
-				duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+	retryErr := ExponentialBackoff(*m.Client.RealisConfig().backoff, func() (bool, error) {
+		live, cliErr = m.Client.GetInstanceIds(key, aurora.LIVE_STATES)
+		if strings.Contains(cliErr.Error(), ConnRefusedErr) || strings.Contains(cliErr.Error(), NoLeaderFoundErr) {
+			// TODO try this condition only if the error is connection related
+			conErr := m.Client.ReestablishConn()
+			if conErr != nil {
+				// TODO: identify specific type of connection errors
+				return false, nil
 			}
-			if live, err = m.Client.GetInstanceIds(key, aurora.LIVE_STATES); err == nil {
-				fmt.Println(" live: ", live)
-				break
-			}
-
-			if err != nil {
-				err1 := m.Client.ReestablishConn()
-				if err1 != nil {
-					fmt.Println("error in ReestablishConn: ", err1)
-				}
-			}
-
+			return false, nil
 		}
-
-		//live, err := m.Client.GetInstanceIds(key, aurora.LIVE_STATES)
-		if err != nil {
-			return false, errors.Wrap(err, "Unable to communicate with Aurora")
+		if cliErr != nil {
+			return false, errors.Wrap(cliErr, "Unable to communicate with Aurora")
 		}
 		if len(live) == int(instances) {
 			return true, nil
 		}
-		fmt.Println("Polling, instances running: ", len(live))
-		time.Sleep(time.Duration(interval) * time.Second)
+		return false, nil
+	})
+	if cliErr != nil {
+		return false, cliErr
 	}
-
-	fmt.Println("Timed out")
-	return false, nil
+	if retryErr != nil {
+		return false, retryErr
+	}
+	return true, nil
 }
 
 // Monitor host status until all hosts match the status provided. Returns a map where the value is true if the host

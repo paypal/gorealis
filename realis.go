@@ -26,9 +26,9 @@ import (
 	"math/rand"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
-	"github.com/pkg/errors"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/paypal/gorealis/response"
+	"github.com/pkg/errors"
 )
 
 const VERSION = "1.0.4"
@@ -522,34 +522,25 @@ func (r *realisClient) GetInstanceIds(key *aurora.JobKey, states map[aurora.Sche
 		Statuses:    states}
 
 	var resp *aurora.Response
-	var err error
+	var clientErr error
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+			return r.client.GetTasksWithoutConfigs(taskQ)
+		})
+		if clientErr == RetryConnErr {
+			return false, nil
+		} else {
+			return false, clientErr
+		}
+		return true, nil
+	})
 
-	defaultBackoff := r.config.backoff
-	duration := defaultBackoff.Duration
-	for i := 0; i < defaultBackoff.Steps; i++ {
-		if i != 0 {
-			adjusted := duration
-			if defaultBackoff.Jitter > 0.0 {
-				adjusted = Jitter(duration, defaultBackoff.Jitter)
-			}
-			fmt.Println(" sleeping for: ", adjusted)
-			time.Sleep(adjusted)
-			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
-		}
-		if resp, err = r.client.GetTasksWithoutConfigs(taskQ); err == nil {
-			break
-		}
-		err1 := r.ReestablishConn()
-		if err1 != nil {
-			fmt.Println("error in ReestablishConn: ", err1)
-		}
+	if clientErr != nil {
+		return nil, errors.Wrap(clientErr, retryErr.Error()+": Error querying Aurora Scheduler for active IDs")
 	}
-	if err != nil {
-		return nil, errors.Wrap(err, "Error querying Aurora Scheduler for active IDs")
-	}
-	resp, err = response.ResponseCodeCheck(resp)
-	if err != nil {
-		return nil, err
+	resp, clientErr = response.ResponseCodeCheck(resp)
+	if clientErr != nil {
+		return nil, clientErr
 	}
 	tasks := response.ScheduleStatusResult(resp).GetTasks()
 	jobInstanceIds := make(map[int32]bool)
@@ -562,30 +553,25 @@ func (r *realisClient) GetInstanceIds(key *aurora.JobKey, states map[aurora.Sche
 
 func (r *realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQuery) (*aurora.Response, error) {
 	var resp *aurora.Response
-	var err error
+	var clientErr error
 
-	defaultBackoff := r.config.backoff
-	duration := defaultBackoff.Duration
-	for i := 0; i < defaultBackoff.Steps; i++ {
-		if i != 0 {
-			adjusted := duration
-			if defaultBackoff.Jitter > 0.0 {
-				adjusted = Jitter(duration, defaultBackoff.Jitter)
-			}
-			fmt.Println(" sleeping for: ", adjusted)
-			time.Sleep(adjusted)
-			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+			return r.readonlyClient.GetJobUpdateSummaries(jobUpdateQuery)
+		})
+		if clientErr == RetryConnErr {
+			return false, nil
+		} else {
+			return false, clientErr
 		}
-		if resp, err = r.readonlyClient.GetJobUpdateSummaries(jobUpdateQuery); err == nil {
-			return response.ResponseCodeCheck(resp)
-		}
-		err1 := r.ReestablishConn()
-		if err1 != nil {
-			fmt.Println("error in ReestablishConn: ", err1)
-		}
+		return true, nil
+	})
 
+	if clientErr != nil {
+		return nil, errors.Wrap(clientErr, retryErr.Error()+": Error getting job update summaries from Aurora Scheduler")
 	}
-	return nil, errors.Wrap(err, "Error getting job update summaries from Aurora Scheduler")
+	return response.ResponseCodeCheck(resp)
+
 }
 
 // Kill specific instances of a job.
@@ -593,35 +579,28 @@ func (r *realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*a
 
 	instanceIds := make(map[int32]bool)
 	var resp *aurora.Response
-	var err error
-
-	defaultBackoff := r.config.backoff
-	duration := defaultBackoff.Duration
+	var clientErr error
 
 	for _, instId := range instances {
 		instanceIds[instId] = true
 	}
 
-	for i := 0; i < defaultBackoff.Steps; i++ {
-		if i != 0 {
-			adjusted := duration
-			if defaultBackoff.Jitter > 0.0 {
-				adjusted = Jitter(duration, defaultBackoff.Jitter)
-			}
-			fmt.Println(" sleeping for: ", adjusted)
-			time.Sleep(adjusted)
-			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+			return r.client.KillTasks(key, instanceIds)
+		})
+		if clientErr == RetryConnErr {
+			return false, nil
+		} else {
+			return false, clientErr
 		}
-		if resp, err = r.client.KillTasks(key, instanceIds); err == nil {
-			return response.ResponseCodeCheck(resp)
-		}
-		err1 := r.ReestablishConn()
-		if err1 != nil {
-			fmt.Println("error in ReestablishConn: ", err1)
-		}
+		return true, nil
+	})
 
+	if clientErr != nil {
+		return nil, errors.Wrap(clientErr, retryErr.Error()+": Error sending Kill command to Aurora Scheduler")
 	}
-	return nil, errors.Wrap(err, "Error sending Kill command to Aurora Scheduler")
+	return response.ResponseCodeCheck(resp)
 }
 
 func (r *realisClient) RealisConfig() *RealisConfig {
@@ -632,7 +611,7 @@ func (r *realisClient) RealisConfig() *RealisConfig {
 func (r *realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 
 	var instanceIds map[int32]bool
-	var err error
+	var clientErr, err error
 	var resp *aurora.Response
 	instanceIds, err = r.GetInstanceIds(key, aurora.ACTIVE_STATES)
 	if err != nil {
@@ -640,31 +619,21 @@ func (r *realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 	}
 
 	if len(instanceIds) > 0 {
-		defaultBackoff := r.config.backoff
-		duration := defaultBackoff.Duration
-		for i := 0; i < defaultBackoff.Steps; i++ {
-			if i != 0 {
-				adjusted := duration
-				if defaultBackoff.Jitter > 0.0 {
-					adjusted = Jitter(duration, defaultBackoff.Jitter)
-				}
-				fmt.Println(" sleeping for: ", adjusted)
-				time.Sleep(adjusted)
-				duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+		retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+			resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+				return r.client.KillTasks(key, instanceIds)
+			})
+			if clientErr == RetryConnErr {
+				return false, nil
+			} else {
+				return false, clientErr
 			}
-
-			if resp, err = r.client.KillTasks(key, instanceIds); err == nil {
-				return response.ResponseCodeCheck(resp)
-			}
-
-			err1 := r.ReestablishConn()
-			if err1 != nil {
-				fmt.Println("error in ReestablishConn: ", err1)
-			}
+			return true, nil
+		})
+		if clientErr != nil {
+			return nil, errors.Wrap(err, retryErr.Error()+"Error sending Kill command to Aurora Scheduler")
 		}
-		if err != nil {
-			return nil, errors.Wrap(err, "Error sending Kill command to Aurora Scheduler")
-		}
+		return response.ResponseCodeCheck(resp)
 	}
 	return nil, errors.New("No tasks in the Active state")
 }
@@ -672,119 +641,94 @@ func (r *realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 // Sends a create job message to the scheduler with a specific job configuration.
 func (r *realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 	var resp *aurora.Response
-	var err error
+	var clientErr error
 
-	defaultBackoff := r.config.backoff
-	duration := defaultBackoff.Duration
-	for i := 0; i < defaultBackoff.Steps; i++ {
-		if i != 0 {
-			fmt.Println(" STEPS: ", i)
-			adjusted := duration
-			if defaultBackoff.Jitter > 0.0 {
-				adjusted = Jitter(duration, defaultBackoff.Jitter)
-			}
-			fmt.Println(" sleeping for: ", adjusted)
-			time.Sleep(adjusted)
-			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+			return r.client.CreateJob(auroraJob.JobConfig())
+		})
+		if clientErr == RetryConnErr {
+			return false, nil
+		} else {
+			return false, clientErr
 		}
-		fmt.Println(" calling  CreateJob")
-		if resp, err = r.client.CreateJob(auroraJob.JobConfig()); err == nil {
-			return response.ResponseCodeCheck(resp)
-		}
-		fmt.Printf("CreateJob err: %+v\n", err)
-		err1 := r.ReestablishConn()
-		if err1 != nil {
-			fmt.Println("error in ReestablishConn: ", err1)
-		}
+		return true, nil
+	})
+
+	if clientErr != nil {
+		return nil, errors.Wrap(clientErr, retryErr.Error()+"Error sending Create command to Aurora Scheduler")
 	}
-	return nil, errors.Wrap(err, "Error sending Create command to Aurora Scheduler")
+	return response.ResponseCodeCheck(resp)
+
 }
 
 func (r *realisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) {
 	var resp *aurora.Response
-	var err error
+	var clientErr error
 
-	defaultBackoff := r.config.backoff
-	duration := defaultBackoff.Duration
-	for i := 0; i < defaultBackoff.Steps; i++ {
-		if i != 0 {
-			adjusted := duration
-			if defaultBackoff.Jitter > 0.0 {
-				adjusted = Jitter(duration, defaultBackoff.Jitter)
-			}
-			fmt.Println(" sleeping for: ", adjusted)
-			time.Sleep(adjusted)
-			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+			return r.client.ScheduleCronJob(auroraJob.JobConfig())
+		})
+		if clientErr == RetryConnErr {
+			return false, nil
+		} else {
+			return false, clientErr
 		}
+		return true, nil
+	})
 
-		if resp, err = r.client.ScheduleCronJob(auroraJob.JobConfig()); err == nil {
-			return response.ResponseCodeCheck(resp)
-		}
-		err1 := r.ReestablishConn()
-		if err1 != nil {
-			fmt.Println("error in ReestablishConn: ", err1)
-		}
+	if clientErr != nil {
+		return nil, errors.Wrap(clientErr, retryErr.Error()+"Error sending Cron Job Schedule message to Aurora Scheduler")
 	}
-	return nil, errors.Wrap(err, "Error sending Cron Job Schedule message to Aurora Scheduler")
+	return response.ResponseCodeCheck(resp)
 }
 
 func (r *realisClient) DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, error) {
 
 	var resp *aurora.Response
-	var err error
+	var clientErr error
 
-	defaultBackoff := r.config.backoff
-	duration := defaultBackoff.Duration
-	for i := 0; i < defaultBackoff.Steps; i++ {
-		if i != 0 {
-			adjusted := duration
-			if defaultBackoff.Jitter > 0.0 {
-				adjusted = Jitter(duration, defaultBackoff.Jitter)
-			}
-			fmt.Println(" sleeping for: ", adjusted)
-			time.Sleep(adjusted)
-			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+			return r.client.DescheduleCronJob(key)
+		})
+		if clientErr == RetryConnErr {
+			return false, nil
+		} else {
+			return false, clientErr
 		}
+		return true, nil
+	})
 
-		if resp, err = r.client.DescheduleCronJob(key); err == nil {
-			return response.ResponseCodeCheck(resp)
-		}
-		err1 := r.ReestablishConn()
-		if err1 != nil {
-			fmt.Println("error in ReestablishConn: ", err1)
-		}
+	if clientErr != nil {
+		return nil, errors.Wrap(clientErr, retryErr.Error()+"Error sending Cron Job De-schedule message to Aurora Scheduler")
 	}
+	return response.ResponseCodeCheck(resp)
 
-	return nil, errors.Wrap(err, "Error sending Cron Job De-schedule message to Aurora Scheduler")
 }
 
 func (r *realisClient) StartCronJob(key *aurora.JobKey) (*aurora.Response, error) {
 	var resp *aurora.Response
-	var err error
+	var clientErr error
 
-	defaultBackoff := r.config.backoff
-	duration := defaultBackoff.Duration
-	for i := 0; i < defaultBackoff.Steps; i++ {
-		if i != 0 {
-			adjusted := duration
-			if defaultBackoff.Jitter > 0.0 {
-				adjusted = Jitter(duration, defaultBackoff.Jitter)
-			}
-			fmt.Println(" sleeping for: ", adjusted)
-			time.Sleep(adjusted)
-			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+			return r.client.StartCronJob(key)
+		})
+		if clientErr == RetryConnErr {
+			return false, nil
+		} else {
+			return false, clientErr
 		}
+		return true, nil
+	})
 
-		if resp, err = r.client.StartCronJob(key); err == nil {
-			return response.ResponseCodeCheck(resp)
-		}
-		err1 := r.ReestablishConn()
-		if err1 != nil {
-			fmt.Println("error in ReestablishConn: ", err1)
-		}
+	if clientErr != nil {
+		return nil, errors.Wrap(clientErr, retryErr.Error()+"Error sending Start Cron Job  message to Aurora Scheduler")
 	}
+	return response.ResponseCodeCheck(resp)
 
-	return nil, errors.Wrap(err, "Error sending Start Cron Job  message to Aurora Scheduler")
 }
 
 // Restarts specific instances specified
@@ -795,31 +739,24 @@ func (r *realisClient) RestartInstances(key *aurora.JobKey, instances ...int32) 
 		instanceIds[instId] = true
 	}
 	var resp *aurora.Response
-	var err error
+	var clientErr error
 
-	defaultBackoff := r.config.backoff
-	duration := defaultBackoff.Duration
-	for i := 0; i < defaultBackoff.Steps; i++ {
-		if i != 0 {
-			adjusted := duration
-			if defaultBackoff.Jitter > 0.0 {
-				adjusted = Jitter(duration, defaultBackoff.Jitter)
-			}
-			fmt.Println(" sleeping for: ", adjusted)
-			time.Sleep(adjusted)
-			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+			return r.client.RestartShards(key, instanceIds)
+		})
+		if clientErr == RetryConnErr {
+			return false, nil
+		} else {
+			return false, clientErr
 		}
+		return true, nil
+	})
 
-		if resp, err = r.client.RestartShards(key, instanceIds); err == nil {
-			return response.ResponseCodeCheck(resp)
-		}
-		err1 := r.ReestablishConn()
-		if err1 != nil {
-			fmt.Println("error in ReestablishConn: ", err1)
-		}
-
+	if clientErr != nil {
+		return nil, errors.Wrap(clientErr, retryErr.Error()+"Error sending Restart command to Aurora Scheduler")
 	}
-	return nil, errors.Wrap(err, "Error sending Restart command to Aurora Scheduler")
+	return response.ResponseCodeCheck(resp)
 }
 
 // Restarts all active tasks under a job configuration.
@@ -829,33 +766,24 @@ func (r *realisClient) RestartJob(key *aurora.JobKey) (*aurora.Response, error) 
 	if err1 != nil {
 		return nil, errors.Wrap(err1, "Could not retrieve relevant task instance IDs")
 	}
-
 	var resp *aurora.Response
-	var err error
+	var clientErr error
 	if len(instanceIds) > 0 {
-		defaultBackoff := r.config.backoff
-		duration := defaultBackoff.Duration
-		for i := 0; i < defaultBackoff.Steps; i++ {
-			if i != 0 {
-				adjusted := duration
-				if defaultBackoff.Jitter > 0.0 {
-					adjusted = Jitter(duration, defaultBackoff.Jitter)
-				}
-				fmt.Println(" sleeping for: ", adjusted)
-				time.Sleep(adjusted)
-				duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+		retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+			resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+				return r.client.RestartShards(key, instanceIds)
+			})
+			if clientErr == RetryConnErr {
+				return false, nil
+			} else {
+				return false, clientErr
 			}
-
-			if resp, err = r.client.RestartShards(key, instanceIds); err == nil {
-				return response.ResponseCodeCheck(resp)
-			}
-			err1 := r.ReestablishConn()
-			if err1 != nil {
-				fmt.Println("error in ReestablishConn: ", err1)
-			}
-
+			return true, nil
+		})
+		if clientErr != nil {
+			return nil, errors.Wrap(clientErr, retryErr.Error()+"Error sending Restart command to Aurora Scheduler")
 		}
-		return nil, errors.Wrap(err, "Error sending Restart command to Aurora Scheduler")
+		return response.ResponseCodeCheck(resp)
 
 	} else {
 		return nil, errors.New("No tasks in the Active state")
@@ -866,60 +794,47 @@ func (r *realisClient) RestartJob(key *aurora.JobKey) (*aurora.Response, error) 
 func (r *realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*aurora.Response, error) {
 
 	var resp *aurora.Response
-	var err error
+	var clientErr error
 
-	defaultBackoff := r.config.backoff
-	duration := defaultBackoff.Duration
-	for i := 0; i < defaultBackoff.Steps; i++ {
-		if i != 0 {
-			adjusted := duration
-			if defaultBackoff.Jitter > 0.0 {
-				adjusted = Jitter(duration, defaultBackoff.Jitter)
-			}
-			fmt.Println(" sleeping for: ", adjusted)
-			time.Sleep(adjusted)
-			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+			return r.client.StartJobUpdate(updateJob.req, message)
+		})
+		if clientErr == RetryConnErr {
+			return false, nil
+		} else {
+			return false, clientErr
 		}
-		if resp, err = r.client.StartJobUpdate(updateJob.req, message); err == nil {
-			return response.ResponseCodeCheck(resp)
-		}
-		err1 := r.ReestablishConn()
-		if err1 != nil {
-			fmt.Println("error in ReestablishConn: ", err1)
-		}
+		return true, nil
+	})
+
+	if clientErr != nil {
+		return nil, errors.Wrap(clientErr, retryErr.Error()+"Error sending StartJobUpdate command to Aurora Scheduler")
 	}
-	return nil, errors.Wrap(err, "Error sending StartJobUpdate command to Aurora Scheduler")
+	return response.ResponseCodeCheck(resp)
 }
 
 // Abort Job Update on Aurora. Requires the updateId which can be obtained on the Aurora web UI.
 func (r *realisClient) AbortJobUpdate(
 	updateKey aurora.JobUpdateKey,
 	message string) (*aurora.Response, error) {
-
 	var resp *aurora.Response
 	var err error
 	defaultBackoff := r.config.backoff
-	duration := defaultBackoff.Duration
-	for i := 0; i < defaultBackoff.Steps; i++ {
-		if i != 0 {
-			adjusted := duration
-			if defaultBackoff.Jitter > 0.0 {
-				adjusted = Jitter(duration, defaultBackoff.Jitter)
+	xerr := ExponentialBackoff(*defaultBackoff, func() (bool, error) {
+		resp, err = r.client.AbortJobUpdate(&updateKey, message)
+		if err != nil {
+			err1 := r.ReestablishConn()
+			if err1 != nil {
+				return false, nil
 			}
-			fmt.Println(" sleeping for: ", adjusted)
-			time.Sleep(adjusted)
-			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
 		}
-		if resp, err = r.client.AbortJobUpdate(&updateKey, message); err == nil {
-			return response.ResponseCodeCheck(resp)
-		}
-		err1 := r.ReestablishConn()
-		if err1 != nil {
-			fmt.Println("error in ReestablishConn: ", err1)
-		}
+		return true, nil
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, xerr.Error()+"Error sending AbortJobUpdate command to Aurora Scheduler")
 	}
-
-	return nil, errors.Wrap(err, "Error sending AbortJobUpdate command to Aurora Scheduler")
+	return response.ResponseCodeCheck(resp)
 }
 
 // Scale up the number of instances under a job configuration using the configuration for specific
@@ -928,27 +843,23 @@ func (r *realisClient) AddInstances(instKey aurora.InstanceKey, count int32) (*a
 
 	var resp *aurora.Response
 	var err error
+
 	defaultBackoff := r.config.backoff
-	duration := defaultBackoff.Duration
-	for i := 0; i < defaultBackoff.Steps; i++ {
-		if i != 0 {
-			adjusted := duration
-			if defaultBackoff.Jitter > 0.0 {
-				adjusted = Jitter(duration, defaultBackoff.Jitter)
+	xerr := ExponentialBackoff(*defaultBackoff, func() (bool, error) {
+		resp, err = r.client.AddInstances(&instKey, count)
+		if err != nil {
+			err1 := r.ReestablishConn()
+			if err1 != nil {
+				return false, nil
 			}
-			fmt.Println(" sleeping for: ", adjusted)
-			time.Sleep(adjusted)
-			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
 		}
-		if resp, err = r.client.AddInstances(&instKey, count); err == nil {
-			return response.ResponseCodeCheck(resp)
-		}
-		err1 := r.ReestablishConn()
-		if err1 != nil {
-			fmt.Println("error in ReestablishConn: ", err1)
-		}
+		return true, nil
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, xerr.Error()+"Error sending AddInstances command to Aurora Scheduler")
 	}
-	return nil, errors.Wrap(err, "Error sending AddInstances command to Aurora Scheduler")
+	return response.ResponseCodeCheck(resp)
+
 }
 
 //Scale down the number of instances under a job configuration using the configuration of a specific instance
@@ -978,29 +889,22 @@ func (r *realisClient) GetTaskStatus(query *aurora.TaskQuery) (tasks []*aurora.S
 
 	var resp *aurora.Response
 	var err error
-	defaultBackoff := r.config.backoff
-	duration := defaultBackoff.Duration
-	for i := 0; i < defaultBackoff.Steps; i++ {
-		if i != 0 {
-			adjusted := duration
-			if defaultBackoff.Jitter > 0.0 {
-				adjusted = Jitter(duration, defaultBackoff.Jitter)
-			}
-			fmt.Println(" sleeping for: ", adjusted)
-			time.Sleep(adjusted)
-			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
-		}
-		if resp, err = r.client.GetTasksStatus(query); err == nil {
-			break
-		}
-		err1 := r.ReestablishConn()
-		if err1 != nil {
-			fmt.Println("error in ReestablishConn: ", err1)
-		}
-	}
 
+	defaultBackoff := r.config.backoff
+	xerr := ExponentialBackoff(*defaultBackoff, func() (bool, error) {
+	start:
+		resp, err = r.client.GetTasksStatus(query)
+		if err != nil {
+			err1 := r.ReestablishConn()
+			if err1 != nil {
+				return false, nil
+			}
+			goto start
+		}
+		return true, nil
+	})
 	if err != nil {
-		return nil, errors.Wrap(err, "Error querying Aurora Scheduler for task status")
+		return nil, errors.Wrap(err, xerr.Error()+"Error querying Aurora Scheduler for task status")
 	}
 	//Check for response code..
 	if resp.GetResponseCode() != aurora.ResponseCode_OK {
@@ -1014,29 +918,22 @@ func (r *realisClient) GetTaskStatus(query *aurora.TaskQuery) (tasks []*aurora.S
 func (r *realisClient) GetTasksWithoutConfigs(query *aurora.TaskQuery) (tasks []*aurora.ScheduledTask, e error) {
 	var resp *aurora.Response
 	var err error
-	defaultBackoff := r.config.backoff
-	duration := defaultBackoff.Duration
-	for i := 0; i < defaultBackoff.Steps; i++ {
-		if i != 0 {
-			adjusted := duration
-			if defaultBackoff.Jitter > 0.0 {
-				adjusted = Jitter(duration, defaultBackoff.Jitter)
-			}
-			fmt.Println(" sleeping for: ", adjusted)
-			time.Sleep(adjusted)
-			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
-		}
-		if resp, err = r.client.GetTasksWithoutConfigs(query); err == nil {
-			break
-		}
-		err1 := r.ReestablishConn()
-		if err1 != nil {
-			fmt.Println("error in ReestablishConn: ", err1)
-		}
-	}
 
+	defaultBackoff := r.config.backoff
+	xerr := ExponentialBackoff(*defaultBackoff, func() (bool, error) {
+	start:
+		resp, err = r.client.GetTasksWithoutConfigs(query)
+		if err != nil {
+			err1 := r.ReestablishConn()
+			if err1 != nil {
+				return false, nil
+			}
+			goto start
+		}
+		return true, nil
+	})
 	if err != nil {
-		return nil, errors.Wrap(err, "Error querying Aurora Scheduler for task status without configs")
+		return nil, errors.Wrap(err, xerr.Error()+"Error querying Aurora Scheduler for task status without configs")
 	}
 	//Check for response code..
 	if resp.GetResponseCode() != aurora.ResponseCode_OK {
@@ -1044,6 +941,7 @@ func (r *realisClient) GetTasksWithoutConfigs(query *aurora.TaskQuery) (tasks []
 	}
 
 	return response.ScheduleStatusResult(resp).GetTasks(), nil
+
 }
 
 func (r *realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error) {
@@ -1061,31 +959,19 @@ func (r *realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.Task
 	var err error
 
 	defaultBackoff := r.config.backoff
-	duration := defaultBackoff.Duration
-	for i := 0; i < defaultBackoff.Steps; i++ {
-		if i != 0 {
-			adjusted := duration
-			if defaultBackoff.Jitter > 0.0 {
-				adjusted = Jitter(duration, defaultBackoff.Jitter)
+	xerr := ExponentialBackoff(*defaultBackoff, func() (bool, error) {
+		resp, err = r.client.GetTasksStatus(taskQ)
+		if err != nil {
+			err1 := r.ReestablishConn()
+			if err1 != nil {
+				return false, nil
 			}
-			fmt.Println(" sleeping for: ", adjusted)
-			time.Sleep(adjusted)
-			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
 		}
-
-		if resp, err = r.client.GetTasksStatus(taskQ); err == nil {
-			break
-		}
-		err1 := r.ReestablishConn()
-		if err1 != nil {
-			fmt.Println("error in ReestablishConn: ", err1)
-		}
-	}
-
+		return true, nil
+	})
 	if err != nil {
-		return nil, errors.Wrap(err, "Error querying Aurora Scheduler for task configuration")
+		return nil, errors.Wrap(err, xerr.Error()+"Error querying Aurora Scheduler for task configuration")
 	}
-
 	//Check for response code..
 	if resp.GetResponseCode() != aurora.ResponseCode_OK {
 		return nil, errors.New(resp.ResponseCode.String() + "--" + response.CombineMessage(resp))
@@ -1111,26 +997,21 @@ func (r *realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aur
 	var err error
 
 	defaultBackoff := r.config.backoff
-	duration := defaultBackoff.Duration
-	for i := 0; i < defaultBackoff.Steps; i++ {
-		if i != 0 {
-			adjusted := duration
-			if defaultBackoff.Jitter > 0.0 {
-				adjusted = Jitter(duration, defaultBackoff.Jitter)
+	xerr := ExponentialBackoff(*defaultBackoff, func() (bool, error) {
+		resp, err = r.client.GetJobUpdateDetails(&updateQuery)
+		if err != nil {
+			err1 := r.ReestablishConn()
+			if err1 != nil {
+				return false, nil
 			}
-			fmt.Println(" sleeping for: ", adjusted)
-			time.Sleep(adjusted)
-			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
 		}
-		if resp, err = r.client.GetJobUpdateDetails(&updateQuery); err == nil {
-			return response.ResponseCodeCheck(resp)
-		}
-		err1 := r.ReestablishConn()
-		if err1 != nil {
-			fmt.Println("error in ReestablishConn: ", err1)
-		}
+		return true, nil
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, xerr.Error()+"Unable to get job update details")
 	}
-	return nil, errors.Wrap(err, "Unable to get job update details")
+	return response.ResponseCodeCheck(resp)
+
 }
 
 func (r *realisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string) (*aurora.Response, error) {
@@ -1138,27 +1019,20 @@ func (r *realisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string
 	var err error
 
 	defaultBackoff := r.config.backoff
-	duration := defaultBackoff.Duration
-	for i := 0; i < defaultBackoff.Steps; i++ {
-		if i != 0 {
-			adjusted := duration
-			if defaultBackoff.Jitter > 0.0 {
-				adjusted = Jitter(duration, defaultBackoff.Jitter)
+	xerr := ExponentialBackoff(*defaultBackoff, func() (bool, error) {
+		resp, err = r.client.RollbackJobUpdate(&key, message)
+		if err != nil {
+			err1 := r.ReestablishConn()
+			if err1 != nil {
+				return false, nil
 			}
-			fmt.Println(" sleeping for: ", adjusted)
-			time.Sleep(adjusted)
-			duration = time.Duration(float64(duration) * defaultBackoff.Factor)
 		}
-		if resp, err = r.client.RollbackJobUpdate(&key, message); err == nil {
-			return response.ResponseCodeCheck(resp)
-		}
-		err1 := r.ReestablishConn()
-		if err1 != nil {
-			fmt.Println("error in ReestablishConn: ", err1)
-		}
+		return true, nil
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, xerr.Error()+"Unable to roll back job update")
 	}
-
-	return nil, errors.Wrap(err, "Unable to roll back job update")
+	return response.ResponseCodeCheck(resp)
 }
 
 // Set a list of nodes to DRAINING. This means nothing will be able to be scheduled on them and any existing
