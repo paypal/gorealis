@@ -17,7 +17,6 @@ package realis
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
@@ -28,6 +27,7 @@ import (
 const (
 	UpdateFailed = "update failed"
 	RolledBack   = "update rolled back"
+	Timeout      = "timeout"
 )
 
 type Monitor struct {
@@ -41,84 +41,86 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 		Key:   &updateKey,
 		Limit: 1,
 	}
-
+	ticker := time.NewTicker(time.Second * time.Duration(interval))
+	defer ticker.Stop()
+	timer := time.NewTimer(time.Second * time.Duration(timeout))
+	defer timer.Stop()
 	var cliErr error
 	var respDetail *aurora.Response
-
-	retryErr := ExponentialBackoff(*m.Client.RealisConfig().backoff, func() (bool, error) {
-		respDetail, cliErr = CheckAndRetryConn(m.Client, func() (*aurora.Response, error) {
-			return m.Client.JobUpdateDetails(updateQ)
-		})
-		if cliErr == RetryConnErr {
-			return false, nil
-		} else {
-			return false, cliErr
-		}
-		updateDetail := response.JobUpdateDetails(respDetail)
-
-		if len(updateDetail) == 0 {
-			fmt.Println("No update found")
-			return false, errors.New("No update found for " + updateKey.String())
-		}
-		status := updateDetail[0].Update.Summary.State.Status
-
-		if _, ok := aurora.ACTIVE_JOB_UPDATE_STATES[status]; !ok {
-
-			// Rolled forward is the only state in which an update has been successfully updated
-			// if we encounter an inactive state and it is not at rolled forward, update failed
-			switch status {
-			case aurora.JobUpdateStatus_ROLLED_FORWARD:
-				fmt.Println("Update succeded")
-				return true, nil
-			case aurora.JobUpdateStatus_FAILED:
-				fmt.Println("Update failed")
-				return false, errors.New(UpdateFailed)
-			case aurora.JobUpdateStatus_ROLLED_BACK:
-				fmt.Println("rolled back")
-				return false, errors.New(RolledBack)
-			default:
-				return false, nil
+	timedout := false
+	for {
+		select {
+		case <-ticker.C:
+			respDetail, cliErr = m.Client.JobUpdateDetails(updateQ)
+			if cliErr != nil {
+				return false, cliErr
 			}
+
+			updateDetail := response.JobUpdateDetails(respDetail)
+
+			if len(updateDetail) == 0 {
+				fmt.Println("No update found")
+				return false, errors.New("No update found for " + updateKey.String())
+			}
+			status := updateDetail[0].Update.Summary.State.Status
+
+			if _, ok := aurora.ACTIVE_JOB_UPDATE_STATES[status]; !ok {
+
+				// Rolled forward is the only state in which an update has been successfully updated
+				// if we encounter an inactive state and it is not at rolled forward, update failed
+				switch status {
+				case aurora.JobUpdateStatus_ROLLED_FORWARD:
+					fmt.Println("Update succeded")
+					return true, nil
+				case aurora.JobUpdateStatus_FAILED:
+					fmt.Println("Update failed")
+					return false, errors.New(UpdateFailed)
+				case aurora.JobUpdateStatus_ROLLED_BACK:
+					fmt.Println("rolled back")
+					return false, errors.New(RolledBack)
+				default:
+					return false, nil
+				}
+			}
+		case <-timer.C:
+			timedout = true
 		}
-		return false, nil
-	})
-	if retryErr != nil {
-		return false, errors.Wrap(cliErr, retryErr.Error())
+		if timedout {
+			break
+		}
 	}
-	return true, nil
+	return false, errors.New(Timeout)
 }
 
 func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval int, timeout int) (bool, error) {
 
 	var cliErr error
 	var live map[int32]bool
+	ticker := time.NewTicker(time.Second * time.Duration(interval))
+	defer ticker.Stop()
+	timer := time.NewTimer(time.Second * time.Duration(timeout))
+	defer timer.Stop()
 
-	retryErr := ExponentialBackoff(*m.Client.RealisConfig().backoff, func() (bool, error) {
-		live, cliErr = m.Client.GetInstanceIds(key, aurora.LIVE_STATES)
-		if strings.Contains(cliErr.Error(), ConnRefusedErr) || strings.Contains(cliErr.Error(), NoLeaderFoundErr) {
-			// TODO try this condition only if the error is connection related
-			conErr := m.Client.ReestablishConn()
-			if conErr != nil {
-				// TODO: identify specific type of connection errors
-				return false, nil
+	timedout := false
+	for {
+		select {
+		case <-ticker.C:
+			live, cliErr = m.Client.GetInstanceIds(key, aurora.LIVE_STATES)
+
+			if cliErr != nil {
+				return false, errors.Wrap(cliErr, "Unable to communicate with Aurora")
 			}
-			return false, nil
+			if len(live) == int(instances) {
+				return true, nil
+			}
+		case <-timer.C:
+			timedout = true
 		}
-		if cliErr != nil {
-			return false, errors.Wrap(cliErr, "Unable to communicate with Aurora")
+		if timedout {
+			break
 		}
-		if len(live) == int(instances) {
-			return true, nil
-		}
-		return false, nil
-	})
-	if cliErr != nil {
-		return false, cliErr
 	}
-	if retryErr != nil {
-		return false, retryErr
-	}
-	return true, nil
+	return false, errors.New(Timeout)
 }
 
 // Monitor host status until all hosts match the status provided. Returns a map where the value is true if the host
@@ -174,5 +176,5 @@ func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode
 		hostResult[host] = false
 	}
 
-	return hostResult, errors.New("Timed out")
+	return hostResult, errors.New(Timeout)
 }

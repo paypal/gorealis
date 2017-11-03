@@ -16,12 +16,12 @@
 package realis
 
 import (
+	"crypto/tls"
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"net/http/cookiejar"
 	"time"
-
-	"fmt"
 
 	"math/rand"
 
@@ -307,7 +307,7 @@ func GetDefaultClusterFromZKUrl(zkurl string) *Cluster {
 //This api would create default cluster object..
 func NewDefaultClientUsingZKUrl(zkUrl, user, passwd string) (Realis, error) {
 
-	fmt.Println(" zkUrl: %s", zkUrl)
+	fmt.Printf(" zkUrl: %s\n", zkUrl)
 	cluster := GetDefaultClusterFromZKUrl(zkUrl)
 
 	url, err := LeaderFromZK(*cluster)
@@ -369,9 +369,11 @@ func defaultTTransport(urlstr string, timeoutms int) (thrift.TTransport, error) 
 	if err != nil {
 		return &thrift.THttpClient{}, errors.Wrap(err, "Error creating Cookie Jar")
 	}
-
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
 	trans, err := thrift.NewTHttpPostClientWithOptions(urlstr+"/api",
-		thrift.THttpClientOptions{Client: &http.Client{Timeout: time.Millisecond * time.Duration(timeoutms), Jar: jar}})
+		thrift.THttpClientOptions{Client: &http.Client{Timeout: time.Millisecond * time.Duration(timeoutms), Transport: transport, Jar: jar}})
 
 	if err != nil {
 		return &thrift.THttpClient{}, errors.Wrap(err, "Error creating transport")
@@ -527,9 +529,10 @@ func (r *realisClient) GetInstanceIds(key *aurora.JobKey, states map[aurora.Sche
 		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
 			return r.client.GetTasksWithoutConfigs(taskQ)
 		})
-		if clientErr == RetryConnErr {
+		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
 			return false, nil
-		} else {
+		}
+		if clientErr != nil {
 			return false, clientErr
 		}
 		return true, nil
@@ -559,9 +562,10 @@ func (r *realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQue
 		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
 			return r.readonlyClient.GetJobUpdateSummaries(jobUpdateQuery)
 		})
-		if clientErr == RetryConnErr {
+		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
 			return false, nil
-		} else {
+		}
+		if clientErr != nil {
 			return false, clientErr
 		}
 		return true, nil
@@ -589,9 +593,10 @@ func (r *realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*a
 		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
 			return r.client.KillTasks(key, instanceIds)
 		})
-		if clientErr == RetryConnErr {
+		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
 			return false, nil
-		} else {
+		}
+		if clientErr != nil {
 			return false, clientErr
 		}
 		return true, nil
@@ -623,9 +628,10 @@ func (r *realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 			resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
 				return r.client.KillTasks(key, instanceIds)
 			})
-			if clientErr == RetryConnErr {
+			if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
 				return false, nil
-			} else {
+			}
+			if clientErr != nil {
 				return false, clientErr
 			}
 			return true, nil
@@ -647,9 +653,10 @@ func (r *realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
 			return r.client.CreateJob(auroraJob.JobConfig())
 		})
-		if clientErr == RetryConnErr {
+		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
 			return false, nil
-		} else {
+		}
+		if clientErr != nil {
 			return false, clientErr
 		}
 		return true, nil
@@ -670,9 +677,10 @@ func (r *realisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) 
 		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
 			return r.client.ScheduleCronJob(auroraJob.JobConfig())
 		})
-		if clientErr == RetryConnErr {
+		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
 			return false, nil
-		} else {
+		}
+		if clientErr != nil {
 			return false, clientErr
 		}
 		return true, nil
@@ -693,9 +701,10 @@ func (r *realisClient) DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, 
 		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
 			return r.client.DescheduleCronJob(key)
 		})
-		if clientErr == RetryConnErr {
+		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
 			return false, nil
-		} else {
+		}
+		if clientErr != nil {
 			return false, clientErr
 		}
 		return true, nil
@@ -716,9 +725,10 @@ func (r *realisClient) StartCronJob(key *aurora.JobKey) (*aurora.Response, error
 		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
 			return r.client.StartCronJob(key)
 		})
-		if clientErr == RetryConnErr {
+		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
 			return false, nil
-		} else {
+		}
+		if clientErr != nil {
 			return false, clientErr
 		}
 		return true, nil
@@ -745,9 +755,10 @@ func (r *realisClient) RestartInstances(key *aurora.JobKey, instances ...int32) 
 		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
 			return r.client.RestartShards(key, instanceIds)
 		})
-		if clientErr == RetryConnErr {
+		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
 			return false, nil
-		} else {
+		}
+		if clientErr != nil {
 			return false, clientErr
 		}
 		return true, nil
@@ -773,9 +784,10 @@ func (r *realisClient) RestartJob(key *aurora.JobKey) (*aurora.Response, error) 
 			resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
 				return r.client.RestartShards(key, instanceIds)
 			})
-			if clientErr == RetryConnErr {
+			if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
 				return false, nil
-			} else {
+			}
+			if clientErr != nil {
 				return false, clientErr
 			}
 			return true, nil
@@ -800,9 +812,10 @@ func (r *realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*au
 		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
 			return r.client.StartJobUpdate(updateJob.req, message)
 		})
-		if clientErr == RetryConnErr {
+		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
 			return false, nil
-		} else {
+		}
+		if clientErr != nil {
 			return false, clientErr
 		}
 		return true, nil
@@ -819,20 +832,23 @@ func (r *realisClient) AbortJobUpdate(
 	updateKey aurora.JobUpdateKey,
 	message string) (*aurora.Response, error) {
 	var resp *aurora.Response
-	var err error
-	defaultBackoff := r.config.backoff
-	xerr := ExponentialBackoff(*defaultBackoff, func() (bool, error) {
-		resp, err = r.client.AbortJobUpdate(&updateKey, message)
-		if err != nil {
-			err1 := r.ReestablishConn()
-			if err1 != nil {
-				return false, nil
-			}
+	var clientErr error
+
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+			return r.client.AbortJobUpdate(&updateKey, message)
+		})
+		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
+			return false, nil
+		}
+		if clientErr != nil {
+			return false, clientErr
 		}
 		return true, nil
 	})
-	if err != nil {
-		return nil, errors.Wrap(err, xerr.Error()+"Error sending AbortJobUpdate command to Aurora Scheduler")
+
+	if clientErr != nil {
+		return nil, errors.Wrap(clientErr, retryErr.Error()+"Error sending AbortJobUpdate command to Aurora Scheduler")
 	}
 	return response.ResponseCodeCheck(resp)
 }
@@ -842,21 +858,23 @@ func (r *realisClient) AbortJobUpdate(
 func (r *realisClient) AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error) {
 
 	var resp *aurora.Response
-	var err error
+	var clientErr error
 
-	defaultBackoff := r.config.backoff
-	xerr := ExponentialBackoff(*defaultBackoff, func() (bool, error) {
-		resp, err = r.client.AddInstances(&instKey, count)
-		if err != nil {
-			err1 := r.ReestablishConn()
-			if err1 != nil {
-				return false, nil
-			}
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+			return r.client.AddInstances(&instKey, count)
+		})
+		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
+			return false, nil
+		}
+		if clientErr != nil {
+			return false, clientErr
 		}
 		return true, nil
 	})
-	if err != nil {
-		return nil, errors.Wrap(err, xerr.Error()+"Error sending AddInstances command to Aurora Scheduler")
+
+	if clientErr != nil {
+		return nil, errors.Wrap(clientErr, retryErr.Error()+"Error sending AddInstances command to Aurora Scheduler")
 	}
 	return response.ResponseCodeCheck(resp)
 
@@ -888,23 +906,23 @@ func (r *realisClient) RemoveInstances(key *aurora.JobKey, count int32) (*aurora
 func (r *realisClient) GetTaskStatus(query *aurora.TaskQuery) (tasks []*aurora.ScheduledTask, e error) {
 
 	var resp *aurora.Response
-	var err error
+	var clientErr error
 
-	defaultBackoff := r.config.backoff
-	xerr := ExponentialBackoff(*defaultBackoff, func() (bool, error) {
-	start:
-		resp, err = r.client.GetTasksStatus(query)
-		if err != nil {
-			err1 := r.ReestablishConn()
-			if err1 != nil {
-				return false, nil
-			}
-			goto start
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+			return r.client.GetTasksStatus(query)
+		})
+		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
+			return false, nil
+		}
+		if clientErr != nil {
+			return false, clientErr
 		}
 		return true, nil
 	})
-	if err != nil {
-		return nil, errors.Wrap(err, xerr.Error()+"Error querying Aurora Scheduler for task status")
+
+	if clientErr != nil {
+		return nil, errors.Wrap(clientErr, retryErr.Error()+"Error querying Aurora Scheduler for task status")
 	}
 	//Check for response code..
 	if resp.GetResponseCode() != aurora.ResponseCode_OK {
@@ -917,23 +935,23 @@ func (r *realisClient) GetTaskStatus(query *aurora.TaskQuery) (tasks []*aurora.S
 // Get information about task including without a task configuration object
 func (r *realisClient) GetTasksWithoutConfigs(query *aurora.TaskQuery) (tasks []*aurora.ScheduledTask, e error) {
 	var resp *aurora.Response
-	var err error
+	var clientErr error
 
-	defaultBackoff := r.config.backoff
-	xerr := ExponentialBackoff(*defaultBackoff, func() (bool, error) {
-	start:
-		resp, err = r.client.GetTasksWithoutConfigs(query)
-		if err != nil {
-			err1 := r.ReestablishConn()
-			if err1 != nil {
-				return false, nil
-			}
-			goto start
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+			return r.client.GetTasksWithoutConfigs(query)
+		})
+		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
+			return false, nil
+		}
+		if clientErr != nil {
+			return false, clientErr
 		}
 		return true, nil
 	})
-	if err != nil {
-		return nil, errors.Wrap(err, xerr.Error()+"Error querying Aurora Scheduler for task status without configs")
+
+	if clientErr != nil {
+		return nil, errors.Wrap(clientErr, retryErr.Error()+"Error querying Aurora Scheduler for task status without configs")
 	}
 	//Check for response code..
 	if resp.GetResponseCode() != aurora.ResponseCode_OK {
@@ -956,21 +974,23 @@ func (r *realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.Task
 		Statuses:    aurora.ACTIVE_STATES}
 
 	var resp *aurora.Response
-	var err error
+	var clientErr error
 
-	defaultBackoff := r.config.backoff
-	xerr := ExponentialBackoff(*defaultBackoff, func() (bool, error) {
-		resp, err = r.client.GetTasksStatus(taskQ)
-		if err != nil {
-			err1 := r.ReestablishConn()
-			if err1 != nil {
-				return false, nil
-			}
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+			return r.client.GetTasksStatus(taskQ)
+		})
+		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
+			return false, nil
+		}
+		if clientErr != nil {
+			return false, clientErr
 		}
 		return true, nil
 	})
-	if err != nil {
-		return nil, errors.Wrap(err, xerr.Error()+"Error querying Aurora Scheduler for task configuration")
+
+	if clientErr != nil {
+		return nil, errors.Wrap(clientErr, retryErr.Error()+"Error querying Aurora Scheduler for task configuration")
 	}
 	//Check for response code..
 	if resp.GetResponseCode() != aurora.ResponseCode_OK {
@@ -994,21 +1014,23 @@ func (r *realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.Task
 func (r *realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aurora.Response, error) {
 
 	var resp *aurora.Response
-	var err error
+	var clientErr error
 
-	defaultBackoff := r.config.backoff
-	xerr := ExponentialBackoff(*defaultBackoff, func() (bool, error) {
-		resp, err = r.client.GetJobUpdateDetails(&updateQuery)
-		if err != nil {
-			err1 := r.ReestablishConn()
-			if err1 != nil {
-				return false, nil
-			}
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+			return r.client.GetJobUpdateDetails(&updateQuery)
+		})
+		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
+			return false, nil
+		}
+		if clientErr != nil {
+			return false, clientErr
 		}
 		return true, nil
 	})
-	if err != nil {
-		return nil, errors.Wrap(err, xerr.Error()+"Unable to get job update details")
+
+	if clientErr != nil {
+		return nil, errors.Wrap(clientErr, retryErr.Error()+"Unable to get job update details")
 	}
 	return response.ResponseCodeCheck(resp)
 
@@ -1016,21 +1038,23 @@ func (r *realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aur
 
 func (r *realisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string) (*aurora.Response, error) {
 	var resp *aurora.Response
-	var err error
+	var clientErr error
 
-	defaultBackoff := r.config.backoff
-	xerr := ExponentialBackoff(*defaultBackoff, func() (bool, error) {
-		resp, err = r.client.RollbackJobUpdate(&key, message)
-		if err != nil {
-			err1 := r.ReestablishConn()
-			if err1 != nil {
-				return false, nil
-			}
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+			return r.client.RollbackJobUpdate(&key, message)
+		})
+		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
+			return false, nil
+		}
+		if clientErr != nil {
+			return false, clientErr
 		}
 		return true, nil
 	})
-	if err != nil {
-		return nil, errors.Wrap(err, xerr.Error()+"Unable to roll back job update")
+
+	if clientErr != nil {
+		return nil, errors.Wrap(clientErr, retryErr.Error()+"Unable to roll back job update")
 	}
 	return response.ResponseCodeCheck(resp)
 }
@@ -1042,7 +1066,7 @@ func (r *realisClient) DrainHosts(hosts ...string) (*aurora.Response, *aurora.Dr
 
 	var resp *aurora.Response
 	var result *aurora.DrainHostsResult_
-	var returnErr, clientErr, payloadErr error
+	var clientErr error
 
 	if len(hosts) == 0 {
 		return nil, nil, errors.New("no hosts provided to drain")
@@ -1054,48 +1078,25 @@ func (r *realisClient) DrainHosts(hosts ...string) (*aurora.Response, *aurora.Dr
 		drainList.HostNames[host] = true
 	}
 
-	retryErr := ExponentialBackoff(defaultBackoff, func() (bool, error) {
-
-		// Send thrift call, if we have a thrift send error, attempt to reconnect
-		// and continue trying to resend command
-		if resp, clientErr = r.adminClient.DrainHosts(drainList); clientErr != nil {
-			// Experienced an connection error
-			err1 := r.ReestablishConn()
-			if err1 != nil {
-				fmt.Println("error in re-establishing connection: ", err1)
-			}
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+			return r.adminClient.DrainHosts(drainList)
+		})
+		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
 			return false, nil
 		}
-
-		// If error is NOT due to connection
-		if _, payloadErr = response.ResponseCodeCheck(resp); payloadErr != nil {
-			// TODO(rdelvalle): an leader election may cause the response to have
-			// failed when it should have succeeded. Retry everything for now until
-			// we figure out a more concrete fix.
-			return false, nil
+		if clientErr != nil {
+			return false, clientErr
 		}
-
-		// Successful call
 		return true, nil
-
 	})
+
+	if clientErr != nil {
+		return nil, nil, errors.Wrap(clientErr, retryErr.Error()+"Unable to recover connection")
+	}
 
 	if resp != nil && resp.GetResult_() != nil {
 		result = resp.GetResult_().GetDrainHostsResult_()
-	}
-
-	// Prioritize returning a bad payload error over a client error as a bad payload error indicates
-	// a deeper issue
-	if payloadErr != nil {
-		returnErr = payloadErr
-	} else {
-		returnErr = clientErr
-	}
-
-	// Timed out on retries. *Note that when we fix the unexpected errors with a correct payload,
-	// this will can become either a timeout error or a payload error
-	if retryErr != nil {
-		return resp, result, errors.Wrap(returnErr, "Unable to recover connection")
 	}
 
 	return resp, result, nil
@@ -1105,7 +1106,7 @@ func (r *realisClient) EndMaintenance(hosts ...string) (*aurora.Response, *auror
 
 	var resp *aurora.Response
 	var result *aurora.EndMaintenanceResult_
-	var returnErr, clientErr, payloadErr error
+	var clientErr error
 
 	if len(hosts) == 0 {
 		return nil, nil, errors.New("no hosts provided to end maintenance on")
@@ -1117,48 +1118,25 @@ func (r *realisClient) EndMaintenance(hosts ...string) (*aurora.Response, *auror
 		hostList.HostNames[host] = true
 	}
 
-	retryErr := ExponentialBackoff(defaultBackoff, func() (bool, error) {
-
-		// Send thrift call, if we have a thrift send error, attempt to reconnect
-		// and continue trying to resend command
-		if resp, clientErr = r.adminClient.EndMaintenance(hostList); clientErr != nil {
-			// Experienced an connection error
-			err1 := r.ReestablishConn()
-			if err1 != nil {
-				fmt.Println("error in re-establishing connection: ", err1)
-			}
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
+			return r.adminClient.EndMaintenance(hostList)
+		})
+		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
 			return false, nil
 		}
-
-		// If error is NOT due to connection
-		if _, payloadErr = response.ResponseCodeCheck(resp); payloadErr != nil {
-			// TODO(rdelvalle): an leader election may cause the response to have
-			// failed when it should have succeeded. Retry everything for now until
-			// we figure out a more concrete fix.
-			return false, nil
+		if clientErr != nil {
+			return false, clientErr
 		}
-
-		// Successful call
 		return true, nil
-
 	})
+
+	if clientErr != nil {
+		return nil, nil, errors.Wrap(clientErr, retryErr.Error()+"Unable to recover connection")
+	}
 
 	if resp != nil && resp.GetResult_() != nil {
 		result = resp.GetResult_().GetEndMaintenanceResult_()
-	}
-
-	// Prioritize returning a bad payload error over a client error as a bad payload error indicates
-	// a deeper issue
-	if payloadErr != nil {
-		returnErr = payloadErr
-	} else {
-		returnErr = clientErr
-	}
-
-	// Timed out on retries. *Note that when we fix the unexpected errors with a correct payload,
-	// this will can become either a timeout error or a payload error
-	if retryErr != nil {
-		return resp, result, errors.Wrap(returnErr, "Unable to recover connection")
 	}
 
 	return resp, result, nil
