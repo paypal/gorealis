@@ -20,7 +20,6 @@ package realis
 
 import (
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
@@ -72,7 +71,7 @@ func ExponentialBackoff(backoff Backoff, condition ConditionFunc) error {
 // If Error is retyable return resp and RetryConnErr error.
 func CheckAndRetryConn(r Realis, auroraCall AuroraThriftCall) (*aurora.Response, error) {
 	resp, cliErr := auroraCall()
-	if cliErr != nil && (strings.Contains(cliErr.Error(), ConnRefusedErr) || strings.Contains(cliErr.Error(), NoLeaderFoundErr)) {
+	if cliErr != nil /*&& (strings.Contains(cliErr.Error(), ConnRefusedErr) || strings.Contains(cliErr.Error(), NoLeaderFoundErr))*/ {
 		r.ReestablishConn()
 		return resp, RetryConnErr
 	}
