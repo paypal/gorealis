@@ -19,13 +19,24 @@ limitations under the License.
 package realis
 
 import (
-	"time"
 	"errors"
+	"time"
+
+	"github.com/paypal/gorealis/gen-go/apache/aurora"
 )
+
+const (
+	ConnRefusedErr   = "connection refused"
+	NoLeaderFoundErr = "No leader found"
+)
+
+var RetryConnErr = errors.New("error occured during with aurora retrying")
 
 // ConditionFunc returns true if the condition is satisfied, or an error
 // if the loop should be aborted.
 type ConditionFunc func() (done bool, err error)
+
+type AuroraThriftCall func() (resp *aurora.Response, err error)
 
 // ExponentialBackoff repeats a condition check with exponential backoff.
 //
@@ -53,4 +64,19 @@ func ExponentialBackoff(backoff Backoff, condition ConditionFunc) error {
 		}
 	}
 	return errors.New("Timed out while retrying")
+}
+
+// CheckAndRetryConn function takes realis client and a trhift API function to call and returns response and error
+// If Error from the APi call is Retry able . THe functions re establishes the connection with aurora by getting the latest aurora master from zookeeper.
+// If Error is retyable return resp and RetryConnErr error.
+func CheckAndRetryConn(r Realis, auroraCall AuroraThriftCall) (*aurora.Response, error) {
+	resp, cliErr := auroraCall()
+	if cliErr != nil /*&& (strings.Contains(cliErr.Error(), ConnRefusedErr) || strings.Contains(cliErr.Error(), NoLeaderFoundErr))*/ {
+		r.ReestablishConn()
+		return resp, RetryConnErr
+	}
+	if resp != nil && resp.GetResponseCode() == aurora.ResponseCode_ERROR_TRANSIENT {
+		return resp, RetryConnErr
+	}
+	return resp, cliErr
 }
