@@ -19,11 +19,11 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"net/http/cookiejar"
+	"strings"
 	"time"
-
-	"math/rand"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
@@ -156,6 +156,7 @@ func BackOff(b *Backoff) ClientOption {
 	}
 }
 
+
 // Using the word set to avoid name collision with Interface
 func SetLogger(l Logger) ClientOption {
 	return func(config *RealisConfig) {
@@ -163,8 +164,10 @@ func SetLogger(l Logger) ClientOption {
 	}
 }
 
-func newTJSONTransport(url string, timeout int) (thrift.TTransport, error) {
-	trans, err := defaultTTransport(url, timeout)
+
+func newTJSONTransport(url string, timeout int, secure bool) (thrift.TTransport, error) {
+
+	trans, err := defaultTTransport(url, timeout, secure)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating realis")
 	}
@@ -174,8 +177,8 @@ func newTJSONTransport(url string, timeout int) (thrift.TTransport, error) {
 	return trans, err
 }
 
-func newTBinTransport(url string, timeout int) (thrift.TTransport, error) {
-	trans, err := defaultTTransport(url, timeout)
+func newTBinTransport(url string, timeout int, secure bool) (thrift.TTransport, error) {
+	trans, err := defaultTTransport(url, timeout, secure)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating realis")
 	}
@@ -228,7 +231,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 	}
 
 	if config.jsonTransport {
-		trans, err := newTJSONTransport(url, config.timeoutms)
+		trans, err := newTJSONTransport(url, config.timeoutms, config.secure)
 		if err != nil {
 			return nil, errors.Wrap(err, "Error creating realis")
 		}
@@ -236,7 +239,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		config.protoFactory = thrift.NewTJSONProtocolFactory()
 
 	} else if config.binTransport {
-		trans, err := newTBinTransport(url, config.timeoutms)
+		trans, err := newTBinTransport(url, config.timeoutms, config.secure)
 		if err != nil {
 			return nil, errors.Wrap(err, "Error creating realis")
 		}
@@ -284,16 +287,20 @@ func GetDefaultClusterFromZKUrl(zkurl string) *Cluster {
 }
 
 // Creates a default Thrift Transport object for communications in gorealis using an HTTP Post Client
-func defaultTTransport(urlstr string, timeoutms int) (thrift.TTransport, error) {
+func defaultTTransport(urlstr string, timeoutms int, secure bool) (thrift.TTransport, error) {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return &thrift.THttpClient{}, errors.Wrap(err, "Error creating Cookie Jar")
 	}
-	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	var transport http.Transport
+	if secure {
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: false}
+	} else {
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
+
 	trans, err := thrift.NewTHttpPostClientWithOptions(urlstr+"/api",
-		thrift.THttpClientOptions{Client: &http.Client{Timeout: time.Millisecond * time.Duration(timeoutms), Transport: transport, Jar: jar}})
+		thrift.THttpClientOptions{Client: &http.Client{Timeout: time.Millisecond * time.Duration(timeoutms), Transport: &transport, Jar: jar}})
 
 	if err != nil {
 		return &thrift.THttpClient{}, errors.Wrap(err, "Error creating transport")
@@ -308,13 +315,13 @@ func defaultTTransport(urlstr string, timeoutms int) (thrift.TTransport, error) 
 
 // Create a default configuration of the transport layer, requires a URL to test connection with.
 // Uses HTTP Post as transport layer and Thrift JSON as the wire protocol by default.
-func newDefaultConfig(url string, timeoutms int) (*RealisConfig, error) {
-	return newTJSONConfig(url, timeoutms)
+func newDefaultConfig(url string, timeoutms int, secure bool) (*RealisConfig, error) {
+	return newTJSONConfig(url, timeoutms, secure)
 }
 
 // Creates a realis config object using HTTP Post and Thrift JSON protocol to communicate with Aurora.
-func newTJSONConfig(url string, timeoutms int) (*RealisConfig, error) {
-	trans, err := defaultTTransport(url, timeoutms)
+func newTJSONConfig(url string, timeoutms int, secure bool) (*RealisConfig, error) {
+	trans, err := defaultTTransport(url, timeoutms, secure)
 	if err != nil {
 		return &RealisConfig{}, errors.Wrap(err, "Error creating realis config")
 	}
@@ -327,8 +334,8 @@ func newTJSONConfig(url string, timeoutms int) (*RealisConfig, error) {
 }
 
 // Creates a realis config config using HTTP Post and Thrift Binary protocol to communicate with Aurora.
-func newTBinaryConfig(url string, timeoutms int) (*RealisConfig, error) {
-	trans, err := defaultTTransport(url, timeoutms)
+func newTBinaryConfig(url string, timeoutms int, secure bool) (*RealisConfig, error) {
+	trans, err := defaultTTransport(url, timeoutms, secure)
 	if err != nil {
 		return &RealisConfig{}, errors.Wrap(err, "Error creating realis config")
 	}
@@ -350,6 +357,11 @@ func AddBasicAuth(config *RealisConfig, username string, password string) {
 	config.password = password
 	httpTrans := (config.transport).(*thrift.THttpClient)
 	httpTrans.SetHeader("Authorization", "Basic "+basicAuth(username, password))
+}
+
+//
+func Secure(config *RealisConfig, secure bool) {
+	config.secure = secure
 }
 
 func basicAuth(username, password string) string {
@@ -374,14 +386,14 @@ func (r *realisClient) ReestablishConn() error {
 		}
 		r.logger.Println("ReestablishConn url: ", url)
 		if r.config.jsonTransport {
-			trans, err := newTJSONTransport(url, r.config.timeoutms)
+			trans, err := newTJSONTransport(url, r.config.timeoutms, r.config.secure)
 			if err != nil {
 				return errors.Wrap(err, "Error creating realis")
 			}
 			r.config.transport = trans
 			r.config.protoFactory = thrift.NewTJSONProtocolFactory()
 		} else if r.config.binTransport {
-			trans, err := newTBinTransport(url, r.config.timeoutms)
+			trans, err := newTBinTransport(url, r.config.timeoutms, r.config.secure)
 			if err != nil {
 				return errors.Wrap(err, "Error creating realis")
 			}
@@ -400,14 +412,14 @@ func (r *realisClient) ReestablishConn() error {
 		//Re-establish using scheduler url.
 		r.logger.Println("ReestablishConn url: ", r.config.url)
 		if r.config.jsonTransport {
-			trans, err := newTJSONTransport(url, r.config.timeoutms)
+			trans, err := newTJSONTransport(url, r.config.timeoutms, r.config.secure)
 			if err != nil {
 				return errors.Wrap(err, "Error creating realis")
 			}
 			r.config.transport = trans
 			r.config.protoFactory = thrift.NewTJSONProtocolFactory()
 		} else if r.config.binTransport {
-			trans, err := newTBinTransport(url, r.config.timeoutms)
+			trans, err := newTBinTransport(url, r.config.timeoutms, r.config.secure)
 			if err != nil {
 				return errors.Wrap(err, "Error creating realis")
 			}
