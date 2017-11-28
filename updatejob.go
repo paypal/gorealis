@@ -60,7 +60,6 @@ func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 	req.Settings.MaxPerInstanceFailures = 0
 	req.Settings.MaxFailedInstances = 0
 	req.Settings.RollbackOnFailure = true
-	req.Settings.WaitForBatchCompletion = false
 
 	//TODO(rdelvalle): Deep copy job struct to avoid unexpected behavior
 	return &UpdateJob{job, req}

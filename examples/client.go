@@ -45,11 +45,10 @@ func init() {
 	flag.StringVar(&zkUrl, "zkurl", "", "zookeeper url")
 	flag.StringVar(&hostList, "hostList", "", "Comma separated list of hosts to operate on")
 	flag.Parse()
-}
 
-func main() {
-
-	// Attempt to load leader from zookeeper
+	// Attempt to load leader from zookeeper using a
+	// cluster.json file used for the default aurora client if provided.
+	// This will override the provided url in the arguments
 	if clustersConfig != "" {
 		clusters, err := realis.LoadClusters(clustersConfig)
 		if err != nil {
@@ -59,7 +58,7 @@ func main() {
 
 		cluster, ok := clusters[clusterName]
 		if !ok {
-			fmt.Printf("Cluster %s chosen doesn't exist\n", clusterName)
+			fmt.Printf("Cluster %s doesn't exist in the file provided\n", clusterName)
 			os.Exit(1)
 		}
 
@@ -69,17 +68,25 @@ func main() {
 			os.Exit(1)
 		}
 	}
+}
+
+func main() {
 
 	var job realis.Job
 	var err error
 	var monitor *realis.Monitor
 	var r realis.Realis
 
-	var defaultBackoff = &realis.Backoff{
-		Steps:    2,
-		Duration: 10 * time.Second,
-		Factor:   2.0,
-		Jitter:   0.1,
+	clientOptions := []realis.ClientOption{
+		realis.BasicAuth(username, password),
+		realis.ThriftJSON(),
+		realis.TimeoutMS(CONNECTION_TIMEOUT),
+		realis.BackOff(&realis.Backoff{
+			Steps:    2,
+			Duration: 10 * time.Second,
+			Factor:   2.0,
+			Jitter:   0.1,
+		}),
 	}
 
 	//check if zkUrl is available.
@@ -93,32 +100,17 @@ func main() {
 			AgentRoot:     "/var/lib/mesos",
 		}
 		fmt.Printf("cluster: %+v \n", cluster)
-
-		r, err = realis.NewRealisClient(realis.ZKUrl(zkUrl),
-			realis.BasicAuth(username, password),
-			realis.ThriftJSON(),
-			realis.TimeoutMS(CONNECTION_TIMEOUT),
-			realis.BackOff(defaultBackoff))
-
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		monitor = &realis.Monitor{r}
-
+		clientOptions = append(clientOptions, realis.ZKUrl(zkUrl))
 	} else {
-		r, err = realis.NewRealisClient(realis.SchedulerUrl(url),
-			realis.BasicAuth(username, password),
-			realis.ThriftJSON(),
-			realis.TimeoutMS(CONNECTION_TIMEOUT),
-			realis.BackOff(defaultBackoff))
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		monitor = &realis.Monitor{r}
+		clientOptions = append(clientOptions, realis.SchedulerUrl(url))
 	}
+
+	r, err = realis.NewRealisClient(clientOptions...)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	monitor = &realis.Monitor{r}
 	defer r.Close()
 
 	switch executor {

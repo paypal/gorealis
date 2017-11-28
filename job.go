@@ -151,8 +151,6 @@ func (j *AuroraJob) RAM(ram int64) Job {
 	*j.resources["ram"].RamMb = ram
 	j.jobConfig.TaskConfig.RamMb = ram //Will be deprecated soon
 
-
-
 	return j
 }
 
