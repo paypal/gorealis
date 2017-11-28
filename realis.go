@@ -27,13 +27,13 @@ import (
 
 	"log"
 
-	"bytes"
+	"io/ioutil"
+	"os"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/paypal/gorealis/response"
 	"github.com/pkg/errors"
-	"os"
 )
 
 const VERSION = "1.0.4"
@@ -85,7 +85,6 @@ type RealisConfig struct {
 	backoff                     *Backoff
 	transport                   thrift.TTransport
 	protoFactory                thrift.TProtocolFactory
-	logger                      *log.Logger
 }
 
 type Backoff struct {
@@ -187,26 +186,31 @@ func newTBinTransport(url string, timeout int) (thrift.TTransport, error) {
 
 func NewRealisClient(options ...ClientOption) (Realis, error) {
 	config := &RealisConfig{}
+
+	// Default configs
+	config.timeoutms = 10000
+	config.backoff = &defaultBackoff
+
+	// Override default configs where necessary
 	for _, opt := range options {
 		opt(config)
 	}
 
-	if config.logger == nil {
-		buf := new(bytes.Buffer)
-		config.logger = log.New(buf, "gorealis debug: ", 0)
-		config.logger.SetOutput(os.Stdout)
+	// Use a no-op logger if we didn't compile in debug mode.
+	var logger *log.Logger
+	if realisDebug {
+		logger = log.New(os.Stdout, "gorealis: ", log.Ltime|log.Ldate)
+	} else {
+		logger = log.New(ioutil.Discard, "", 0)
 	}
 
-	config.logger.Println("Number of options applied to config: ", len(options))
+	logger.Println("Number of options applied to config: ", len(options))
 
-	//Default timeout
-	if config.timeoutms == 0 {
-		config.timeoutms = 10000
-	}
 	//Set default Transport to JSON if needed.
 	if !config.jsonTransport && !config.binTransport {
 		config.jsonTransport = true
 	}
+
 	var url string
 	var err error
 
@@ -218,10 +222,10 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "LeaderFromZK error")
 		}
-		config.logger.Println("Scheduler URL from ZK: ", url)
+		logger.Println("Scheduler URL from ZK: ", url)
 	} else if config.url != "" {
 		url = config.url
-		config.logger.Println("Scheduler URL: ", url)
+		logger.Println("Scheduler URL: ", url)
 	} else {
 		return nil, errors.New("Incomplete Options -- url or cluster required")
 	}
@@ -231,9 +235,9 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "Error creating realis")
 		}
-
 		config.transport = trans
 		config.protoFactory = thrift.NewTJSONProtocolFactory()
+
 	} else if config.binTransport {
 		trans, err := newTBinTransport(url, config.timeoutms)
 		if err != nil {
@@ -243,26 +247,19 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		config.protoFactory = thrift.NewTBinaryProtocolFactoryDefault()
 	}
 
+	logger.Printf("gorealis config url: %+v\n", config.url)
+
 	//Basic Authentication.
 	if config.username != "" && config.password != "" {
 		AddBasicAuth(config, config.username, config.password)
 	}
 
-	//Set defaultBackoff if required.
-	if config.backoff == nil {
-		config.backoff = &defaultBackoff
-	} else {
-		defaultBackoff = *config.backoff
-		config.logger.Printf("Updating default backoff : %+v\n", *config.backoff)
-	}
-
-	config.logger.Printf("gorealis config url: %+v\n", config.url)
-
 	return &realisClient{
 		config:         config,
 		client:         aurora.NewAuroraSchedulerManagerClientFactory(config.transport, config.protoFactory),
 		readonlyClient: aurora.NewReadOnlySchedulerClientFactory(config.transport, config.protoFactory),
-		adminClient:    aurora.NewAuroraAdminClientFactory(config.transport, config.protoFactory)}, nil
+		adminClient:    aurora.NewAuroraAdminClientFactory(config.transport, config.protoFactory),
+		logger:         logger}, nil
 
 }
 
@@ -365,7 +362,7 @@ func basicAuth(username, password string) string {
 
 func (r *realisClient) ReestablishConn() error {
 	//close existing connection..
-	r.config.logger.Println("ReestablishConn begin ....")
+	r.logger.Println("ReestablishConn begin ....")
 	r.Close()
 	//First check cluster object for re-establish; if not available then try with scheduler url.
 	//var config *RealisConfig
@@ -378,7 +375,7 @@ func (r *realisClient) ReestablishConn() error {
 		if err != nil {
 			fmt.Errorf("LeaderFromZK error: %+v\n ", err)
 		}
-		r.config.logger.Println("ReestablishConn url: ", url)
+		r.logger.Println("ReestablishConn url: ", url)
 		if r.config.jsonTransport {
 			trans, err := newTJSONTransport(url, r.config.timeoutms)
 			if err != nil {
@@ -395,7 +392,7 @@ func (r *realisClient) ReestablishConn() error {
 			r.config.protoFactory = thrift.NewTBinaryProtocolFactoryDefault()
 		}
 		if err != nil {
-			r.config.logger.Println("error creating config: ", err)
+			r.logger.Println("error creating config: ", err)
 		}
 		// Configured for basic-auth
 		AddBasicAuth(r.config, r.config.username, r.config.password)
@@ -404,7 +401,7 @@ func (r *realisClient) ReestablishConn() error {
 		r.adminClient = aurora.NewAuroraAdminClientFactory(r.config.transport, r.config.protoFactory)
 	} else if r.config.url != "" && r.config.username != "" && r.config.password != "" {
 		//Re-establish using scheduler url.
-		r.config.logger.Println("ReestablishConn url: ", r.config.url)
+		r.logger.Println("ReestablishConn url: ", r.config.url)
 		if r.config.jsonTransport {
 			trans, err := newTJSONTransport(url, r.config.timeoutms)
 			if err != nil {
@@ -425,14 +422,14 @@ func (r *realisClient) ReestablishConn() error {
 		r.readonlyClient = aurora.NewReadOnlySchedulerClientFactory(r.config.transport, r.config.protoFactory)
 		r.adminClient = aurora.NewAuroraAdminClientFactory(r.config.transport, r.config.protoFactory)
 	} else {
-		r.config.logger.Println(" Missing Data for ReestablishConn ")
-		r.config.logger.Println(" r.config.cluster: ", r.config.cluster)
-		r.config.logger.Println(" r.config.username: ", r.config.username)
-		r.config.logger.Println(" r.config.passwd: ", r.config.password)
-		r.config.logger.Println(" r.config.url: ", r.config.url)
+		r.logger.Println(" Missing Data for ReestablishConn ")
+		r.logger.Println(" r.config.cluster: ", r.config.cluster)
+		r.logger.Println(" r.config.username: ", r.config.username)
+		r.logger.Println(" r.config.passwd: ", r.config.password)
+		r.logger.Println(" r.config.url: ", r.config.url)
 		return errors.New(" Missing Data for ReestablishConn ")
 	}
-	r.config.logger.Printf(" config url before return: %+v\n", r.config.url)
+	r.logger.Printf(" config url before return: %+v\n", r.config.url)
 	return nil
 }
 
@@ -1096,7 +1093,7 @@ func (r *realisClient) MaintenanceStatus(hosts ...string) (*aurora.Response, *au
 			// Experienced an connection error
 			err1 := r.ReestablishConn()
 			if err1 != nil {
-				r.config.logger.Println("error in re-establishing connection: ", err1)
+				r.logger.Println("error in re-establishing connection: ", err1)
 			}
 			return false, nil
 		}
