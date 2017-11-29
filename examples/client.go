@@ -92,14 +92,6 @@ func main() {
 	//check if zkUrl is available.
 	if zkUrl != "" {
 		fmt.Println("zkUrl: ", zkUrl)
-		cluster := &realis.Cluster{Name: "example",
-			AuthMechanism: "UNAUTHENTICATED",
-			ZK:            zkUrl,
-			SchedZKPath:   "/aurora/scheduler",
-			AgentRunDir:   "latest",
-			AgentRoot:     "/var/lib/mesos",
-		}
-		fmt.Printf("cluster: %+v \n", cluster)
 		clientOptions = append(clientOptions, realis.ZKUrl(zkUrl))
 	} else {
 		clientOptions = append(clientOptions, realis.SchedulerUrl(url))
