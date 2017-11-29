@@ -55,6 +55,14 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestLeaderFromZK(t *testing.T) {
+	cluster := realis.GetDefaultClusterFromZKUrl("192.168.33.7:2181")
+	url, err := realis.LeaderFromZK(*cluster)
+
+	assert.NoError(t, err)
+	assert.Equal(t, url, "http://aurora.local:8081")
+}
+
 func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 
 	job := realis.NewJob().

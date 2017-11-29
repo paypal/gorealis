@@ -44,81 +44,66 @@ func (NoopLogger) Printf(format string, a ...interface{}) {
 // Retrieves current Aurora leader from ZK.
 func LeaderFromZK(cluster Cluster) (string, error) {
 
-	var err error
 	var zkurl string
 
-	duration := defaultBackoff.Duration
-	for step := 0; step < defaultBackoff.Steps; step++ {
+	retryErr := ExponentialBackoff(defaultBackoff, func() (bool, error) {
 
-		// Attempt to find leader
-		zkurl, err = leaderFromZK(cluster)
-		if err == nil {
-			return zkurl, err
+		endpoints := strings.Split(cluster.ZK, ",")
+
+		//TODO (rdelvalle): When enabling debugging, change logger here
+		c, _, err := zk.Connect(endpoints, time.Second*10, func(c *zk.Conn) { c.SetLogger(NoopLogger{}) })
+		if err != nil {
+			return false, errors.Wrap(err, "Failed to connect to Zookeeper at "+cluster.ZK)
 		}
 
-		// Backoff if we failed to determine leader
-		adjusted := duration
-		if defaultBackoff.Jitter > 0.0 {
-			adjusted = Jitter(duration, defaultBackoff.Jitter)
+		defer c.Close()
+
+		// Open up descriptor for the ZK path given
+		children, _, _, err := c.ChildrenW(cluster.SchedZKPath)
+		if err != nil {
+			return false, errors.Wrapf(err, "Path %s doesn't exist on Zookeeper ", cluster.SchedZKPath)
 		}
-		fmt.Printf("Error determining Aurora leader: %v; retrying in %v\n", err, adjusted)
-		time.Sleep(adjusted)
-		duration = time.Duration(float64(duration) * defaultBackoff.Factor)
-	}
 
-	return "", errors.Wrapf(err, "Failed to determine leader after %v attempts", defaultBackoff.Steps)
-}
+		// Search for the leader through all the children in the given path
+		serviceInst := new(ServiceInstance)
+		for _, child := range children {
 
-func leaderFromZK(cluster Cluster) (string, error) {
+			// Only the leader will start with member_
+			if strings.HasPrefix(child, "member_") {
 
-	endpoints := strings.Split(cluster.ZK, ",")
+				data, _, err := c.Get(cluster.SchedZKPath + "/" + child)
+				if err != nil {
+					return false, errors.Wrap(err, "Error fetching contents of leader")
+				}
 
-	//TODO (rdelvalle): When enabling debugging, change logger here
-	c, _, err := zk.Connect(endpoints, time.Second*10, func(c *zk.Conn) { c.SetLogger(NoopLogger{}) })
-	if err != nil {
-		return "", errors.Wrap(err, "Failed to connect to Zookeeper at "+cluster.ZK)
-	}
+				err = json.Unmarshal([]byte(data), serviceInst)
+				if err != nil {
+					return false, errors.Wrap(err, "Unable to unmarshall contents of leader")
+				}
 
-	defer c.Close()
+				// Should only be one endpoint
+				if len(serviceInst.AdditionalEndpoints) > 1 {
+					fmt.Errorf("Ambiguous end points schemes")
+				}
 
-	children, _, _, err := c.ChildrenW(cluster.SchedZKPath)
-	if err != nil {
-		return "", errors.Wrapf(err, "Path %s doesn't exist on Zookeeper ", cluster.SchedZKPath)
-	}
+				var scheme, host, port string
+				for k, v := range serviceInst.AdditionalEndpoints {
+					scheme = k
+					host = v.Host
+					port = strconv.Itoa(v.Port)
+				}
 
-	serviceInst := new(ServiceInstance)
-
-	for _, child := range children {
-
-		// Only the leader will start with member_
-		if strings.HasPrefix(child, "member_") {
-
-			data, _, err := c.Get(cluster.SchedZKPath + "/" + child)
-			if err != nil {
-				return "", errors.Wrap(err, "Error fetching contents of leader")
+				zkurl = scheme + "://" + host + ":" + port
+				return true, nil
 			}
-
-			err = json.Unmarshal([]byte(data), serviceInst)
-			if err != nil {
-				return "", errors.Wrap(err, "Unable to unmarshall contents of leader")
-			}
-
-			// Should only be one endpoint
-			if len(serviceInst.AdditionalEndpoints) > 1 {
-				fmt.Errorf("Ambiguous end points schemes")
-			}
-
-			var scheme, host, port string
-			for k, v := range serviceInst.AdditionalEndpoints {
-				scheme = k
-				host = v.Host
-				port = strconv.Itoa(v.Port)
-			}
-
-			return scheme + "://" + host + ":" + port, nil
 		}
+
+		return false, errors.New("No leader found")
+	})
+
+	if retryErr != nil {
+		return "", errors.Wrapf(retryErr, "Failed to determine leader after %v attempts", defaultBackoff.Steps)
 	}
 
-	return "", errors.New("No leader found")
-
+	return zkurl, nil
 }
