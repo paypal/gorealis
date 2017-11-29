@@ -42,6 +42,7 @@ type Realis interface {
 	AbortJobUpdate(updateKey aurora.JobUpdateKey, message string) (*aurora.Response, error)
 	AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error)
 	CreateJob(auroraJob Job) (*aurora.Response, error)
+	CreateService(auroraJob Job, settings UpdateSettings) (*aurora.Response, *aurora.StartJobUpdateResult_, error)
 	DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, error)
 	FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error)
 	GetInstanceIds(key *aurora.JobKey, states map[aurora.ScheduleStatus]bool) (map[int32]bool, error)
@@ -593,6 +594,24 @@ func (r *realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 	}
 	return response.ResponseCodeCheck(resp)
 
+}
+
+// This API uses an update thrift call to create the services giving a few more robust features.
+func (r *realisClient) CreateService(auroraJob Job, settings UpdateSettings) (*aurora.Response, *aurora.StartJobUpdateResult_, error) {
+	// Create a new job update object and ship it to the StartJobUpdate api
+	update := NewUpdateJob(auroraJob.TaskConfig(), &settings.settings)
+	update.InstanceCount(auroraJob.GetInstanceCount())
+
+	resp, err := r.StartJobUpdate(update, "")
+	if err != nil {
+		return resp, nil, errors.Wrap(err, "unable to create service")
+	}
+
+	if resp != nil && resp.GetResult_() != nil {
+		return resp, resp.GetResult_().GetStartJobUpdateResult_(), nil
+	}
+
+	return resp, nil, errors.New("results object is nil")
 }
 
 func (r *realisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) {

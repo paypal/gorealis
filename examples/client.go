@@ -182,6 +182,29 @@ func main() {
 
 		}
 		break
+	case "createService":
+		// Create a service with three instances using the update API instead of the createJob API
+		fmt.Println("Creating service")
+		settings := realis.NewUpdateSettings()
+		job.InstanceCount(3)
+		_, resp, err := r.CreateService(job, *settings)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		fmt.Println(resp.String())
+
+		if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 5, 50); !ok || err != nil {
+			_, err := r.KillJob(job.JobKey())
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			fmt.Println("ok: ", ok)
+			fmt.Println("err: ", err)
+		}
+
+		break
 	case "createDocker":
 		fmt.Println("Creating a docker based job")
 		container := realis.NewDockerContainer().Image("python:2.7").AddParameter("network", "host")
@@ -336,7 +359,6 @@ func main() {
 		}
 		fmt.Println(resp.String())
 		break
-
 	case "flexDown":
 		fmt.Println("Flexing down job")
 
@@ -391,7 +413,6 @@ func main() {
 
 		jobUpdateKey := response.JobUpdateKey(resp)
 		monitor.JobUpdate(*jobUpdateKey, 5, 500)
-
 		break
 	case "updateDetails":
 		resp, err := r.JobUpdateDetails(aurora.JobUpdateQuery{
@@ -441,9 +462,7 @@ func main() {
 		}
 		print(config.String())
 		break
-
 	case "updatesummary":
-
 		fmt.Println("Getting job update summary")
 		jobquery := &aurora.JobUpdateQuery{
 			Role:   &job.JobKey().Role,
@@ -455,7 +474,6 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println(updatesummary)
-
 	case "taskStatus":
 		fmt.Println("Getting task status")
 		taskQ := &aurora.TaskQuery{Role: job.JobKey().Role,
@@ -469,7 +487,6 @@ func main() {
 		}
 		fmt.Printf("length: %d\n ", len(tasks))
 		fmt.Printf("tasks: %+v\n", tasks)
-
 	case "tasksWithoutConfig":
 		fmt.Println("Getting task status")
 		taskQ := &aurora.TaskQuery{Role: job.JobKey().Role,
@@ -483,7 +500,6 @@ func main() {
 		}
 		fmt.Printf("length: %d\n ", len(tasks))
 		fmt.Printf("tasks: %+v\n", tasks)
-
 	case "drainHosts":
 		fmt.Println("Setting hosts to DRAINING")
 		if hostList == "" {
@@ -515,7 +531,6 @@ func main() {
 		}
 
 		fmt.Print(result.String())
-
 	case "endMaintenance":
 		fmt.Println("Setting hosts to ACTIVE")
 		if hostList == "" {
@@ -547,7 +562,6 @@ func main() {
 		}
 
 		fmt.Print(result.String())
-
 	default:
 		fmt.Println("Command not supported")
 		os.Exit(1)
