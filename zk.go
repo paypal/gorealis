@@ -36,10 +36,6 @@ type ServiceInstance struct {
 	Status              string              `json:"status"`
 }
 
-type NoopLogger struct{}
-
-func (NoopLogger) Printf(format string, a ...interface{}) {
-}
 
 // Retrieves current Aurora leader from ZK.
 func LeaderFromZK(cluster Cluster) (string, error) {

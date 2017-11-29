@@ -25,11 +25,6 @@ import (
 
 	"math/rand"
 
-	"log"
-
-	"io/ioutil"
-	"os"
-
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/paypal/gorealis/response"
@@ -74,7 +69,7 @@ type realisClient struct {
 	client         *aurora.AuroraSchedulerManagerClient
 	readonlyClient *aurora.ReadOnlySchedulerClient
 	adminClient    *aurora.AuroraAdminClient
-	logger         *log.Logger
+	logger         Logger
 }
 
 type RealisConfig struct {
@@ -86,6 +81,7 @@ type RealisConfig struct {
 	backoff                     *Backoff
 	transport                   thrift.TTransport
 	protoFactory                thrift.TProtocolFactory
+	logger                      Logger
 }
 
 type Backoff struct {
@@ -160,6 +156,13 @@ func BackOff(b *Backoff) ClientOption {
 	}
 }
 
+// Using the word set to avoid name collision with Interface
+func SetLogger(l Logger) ClientOption {
+	return func(config *RealisConfig) {
+		config.logger = l
+	}
+}
+
 func newTJSONTransport(url string, timeout int) (thrift.TTransport, error) {
 	trans, err := defaultTTransport(url, timeout)
 	if err != nil {
@@ -191,21 +194,14 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 	// Default configs
 	config.timeoutms = 10000
 	config.backoff = &defaultBackoff
+	config.logger = NoopLogger{}
 
 	// Override default configs where necessary
 	for _, opt := range options {
 		opt(config)
 	}
 
-	// Use a no-op logger if we didn't compile in debug mode.
-	var logger *log.Logger
-	if realisDebug {
-		logger = log.New(os.Stdout, "gorealis: ", log.Ltime|log.Ldate)
-	} else {
-		logger = log.New(ioutil.Discard, "", 0)
-	}
-
-	logger.Println("Number of options applied to config: ", len(options))
+	config.logger.Println("Number of options applied to config: ", len(options))
 
 	//Set default Transport to JSON if needed.
 	if !config.jsonTransport && !config.binTransport {
@@ -223,10 +219,10 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "LeaderFromZK error")
 		}
-		logger.Println("Scheduler URL from ZK: ", url)
+		config.logger.Println("Scheduler URL from ZK: ", url)
 	} else if config.url != "" {
 		url = config.url
-		logger.Println("Scheduler URL: ", url)
+		config.logger.Println("Scheduler URL: ", url)
 	} else {
 		return nil, errors.New("Incomplete Options -- url or cluster required")
 	}
@@ -248,7 +244,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		config.protoFactory = thrift.NewTBinaryProtocolFactoryDefault()
 	}
 
-	logger.Printf("gorealis config url: %+v\n", config.url)
+	config.logger.Printf("gorealis config url: %+v\n", config.url)
 
 	//Basic Authentication.
 	if config.username != "" && config.password != "" {
@@ -260,7 +256,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		client:         aurora.NewAuroraSchedulerManagerClientFactory(config.transport, config.protoFactory),
 		readonlyClient: aurora.NewReadOnlySchedulerClientFactory(config.transport, config.protoFactory),
 		adminClient:    aurora.NewAuroraAdminClientFactory(config.transport, config.protoFactory),
-		logger:         logger}, nil
+		logger:         config.logger}, nil
 
 }
 

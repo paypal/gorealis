@@ -27,6 +27,7 @@ import (
 	"github.com/paypal/gorealis"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/paypal/gorealis/response"
+	"log"
 )
 
 var cmd, executor, url, clustersConfig, clusterName, updateId, username, password, zkUrl, hostList string
@@ -87,6 +88,7 @@ func main() {
 			Factor:   2.0,
 			Jitter:   0.1,
 		}),
+		realis.SetLogger(log.New(os.Stdout, "realis-debug: ", log.Ldate)),
 	}
 
 	//check if zkUrl is available.
