@@ -196,7 +196,7 @@ func main() {
 		}
 		fmt.Println(resp.String())
 
-		if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 5, 50); !ok || err != nil {
+		if ok, err := monitor.JobUpdate(*resp.GetKey(),  5, 50); !ok || err != nil {
 			_, err := r.KillJob(job.JobKey())
 			if err != nil {
 				fmt.Println(err)
