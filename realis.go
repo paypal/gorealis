@@ -31,7 +31,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const VERSION = "1.0.4"
+const VERSION = "1.1.0"
 
 type Realis interface {
 	AbortJobUpdate(updateKey aurora.JobUpdateKey, message string) (*aurora.Response, error)
