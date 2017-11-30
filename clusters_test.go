@@ -12,17 +12,18 @@
  * limitations under the License.
  */
 
-package realis
+package realis_test
 
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"github.com/paypal/gorealis"
 )
 
 func TestLoadClusters(t *testing.T) {
 
-	clusters, err := LoadClusters("examples/clusters.json")
+	clusters, err := realis.LoadClusters("examples/clusters.json")
 	if err != nil {
 		fmt.Print(err)
 	}

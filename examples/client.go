@@ -27,6 +27,7 @@ import (
 	"github.com/paypal/gorealis"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/paypal/gorealis/response"
+	"log"
 )
 
 var cmd, executor, url, clustersConfig, clusterName, updateId, username, password, zkUrl, hostList string
@@ -45,11 +46,10 @@ func init() {
 	flag.StringVar(&zkUrl, "zkurl", "", "zookeeper url")
 	flag.StringVar(&hostList, "hostList", "", "Comma separated list of hosts to operate on")
 	flag.Parse()
-}
 
-func main() {
-
-	// Attempt to load leader from zookeeper
+	// Attempt to load leader from zookeeper using a
+	// cluster.json file used for the default aurora client if provided.
+	// This will override the provided url in the arguments
 	if clustersConfig != "" {
 		clusters, err := realis.LoadClusters(clustersConfig)
 		if err != nil {
@@ -59,7 +59,7 @@ func main() {
 
 		cluster, ok := clusters[clusterName]
 		if !ok {
-			fmt.Printf("Cluster %s chosen doesn't exist\n", clusterName)
+			fmt.Printf("Cluster %s doesn't exist in the file provided\n", clusterName)
 			os.Exit(1)
 		}
 
@@ -69,56 +69,42 @@ func main() {
 			os.Exit(1)
 		}
 	}
+}
+
+func main() {
 
 	var job realis.Job
 	var err error
 	var monitor *realis.Monitor
 	var r realis.Realis
 
-	var defaultBackoff = &realis.Backoff{
-		Steps:    2,
-		Duration: 10 * time.Second,
-		Factor:   2.0,
-		Jitter:   0.1,
+	clientOptions := []realis.ClientOption{
+		realis.BasicAuth(username, password),
+		realis.ThriftJSON(),
+		realis.TimeoutMS(CONNECTION_TIMEOUT),
+		realis.BackOff(&realis.Backoff{
+			Steps:    2,
+			Duration: 10 * time.Second,
+			Factor:   2.0,
+			Jitter:   0.1,
+		}),
+		realis.SetLogger(log.New(os.Stdout, "realis-debug: ", log.Ldate)),
 	}
 
 	//check if zkUrl is available.
 	if zkUrl != "" {
 		fmt.Println("zkUrl: ", zkUrl)
-		cluster := &realis.Cluster{Name: "example",
-			AuthMechanism: "UNAUTHENTICATED",
-			ZK:            zkUrl,
-			SchedZKPath:   "/aurora/scheduler",
-			AgentRunDir:   "latest",
-			AgentRoot:     "/var/lib/mesos",
-		}
-		fmt.Printf("cluster: %+v \n", cluster)
-
-		r, err = realis.NewRealisClient(realis.ZKUrl(zkUrl),
-			realis.BasicAuth(username, password),
-			realis.ThriftJSON(),
-			realis.TimeoutMS(CONNECTION_TIMEOUT),
-			realis.BackOff(defaultBackoff))
-
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		monitor = &realis.Monitor{r}
-
+		clientOptions = append(clientOptions, realis.ZKUrl(zkUrl))
 	} else {
-		r, err = realis.NewRealisClient(realis.SchedulerUrl(url),
-			realis.BasicAuth(username, password),
-			realis.ThriftJSON(),
-			realis.TimeoutMS(CONNECTION_TIMEOUT),
-			realis.BackOff(defaultBackoff))
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		monitor = &realis.Monitor{r}
+		clientOptions = append(clientOptions, realis.SchedulerUrl(url))
 	}
+
+	r, err = realis.NewRealisClient(clientOptions...)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	monitor = &realis.Monitor{r}
 	defer r.Close()
 
 	switch executor {
@@ -197,6 +183,29 @@ func main() {
 			}
 
 		}
+		break
+	case "createService":
+		// Create a service with three instances using the update API instead of the createJob API
+		fmt.Println("Creating service")
+		settings := realis.NewUpdateSettings()
+		job.InstanceCount(3)
+		_, resp, err := r.CreateService(job, *settings)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		fmt.Println(resp.String())
+
+		if ok, err := monitor.JobUpdate(*resp.GetKey(),  5, 50); !ok || err != nil {
+			_, err := r.KillJob(job.JobKey())
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			fmt.Println("ok: ", ok)
+			fmt.Println("err: ", err)
+		}
+
 		break
 	case "createDocker":
 		fmt.Println("Creating a docker based job")
@@ -352,7 +361,6 @@ func main() {
 		}
 		fmt.Println(resp.String())
 		break
-
 	case "flexDown":
 		fmt.Println("Flexing down job")
 
@@ -407,7 +415,6 @@ func main() {
 
 		jobUpdateKey := response.JobUpdateKey(resp)
 		monitor.JobUpdate(*jobUpdateKey, 5, 500)
-
 		break
 	case "updateDetails":
 		resp, err := r.JobUpdateDetails(aurora.JobUpdateQuery{
@@ -457,9 +464,7 @@ func main() {
 		}
 		print(config.String())
 		break
-
 	case "updatesummary":
-
 		fmt.Println("Getting job update summary")
 		jobquery := &aurora.JobUpdateQuery{
 			Role:   &job.JobKey().Role,
@@ -471,7 +476,6 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println(updatesummary)
-
 	case "taskStatus":
 		fmt.Println("Getting task status")
 		taskQ := &aurora.TaskQuery{Role: job.JobKey().Role,
@@ -485,7 +489,6 @@ func main() {
 		}
 		fmt.Printf("length: %d\n ", len(tasks))
 		fmt.Printf("tasks: %+v\n", tasks)
-
 	case "tasksWithoutConfig":
 		fmt.Println("Getting task status")
 		taskQ := &aurora.TaskQuery{Role: job.JobKey().Role,
@@ -499,7 +502,6 @@ func main() {
 		}
 		fmt.Printf("length: %d\n ", len(tasks))
 		fmt.Printf("tasks: %+v\n", tasks)
-
 	case "drainHosts":
 		fmt.Println("Setting hosts to DRAINING")
 		if hostList == "" {
@@ -531,7 +533,6 @@ func main() {
 		}
 
 		fmt.Print(result.String())
-
 	case "endMaintenance":
 		fmt.Println("Setting hosts to ACTIVE")
 		if hostList == "" {
@@ -563,7 +564,6 @@ func main() {
 		}
 
 		fmt.Print(result.String())
-
 	default:
 		fmt.Println("Command not supported")
 		os.Exit(1)
