@@ -53,7 +53,8 @@ type AuroraSchedulerManager interface {
 	// Parameters:
 	//  - Job
 	//  - Instances
-	KillTasks(job *JobKey, instances map[int32]bool) (r *Response, err error)
+	//  - Message
+	KillTasks(job *JobKey, instances map[int32]bool, message string) (r *Response, err error)
 	// Adds new instances with the TaskConfig of the existing instance pointed by the key.
 	//
 	// Parameters:
@@ -524,14 +525,15 @@ func (p *AuroraSchedulerManagerClient) recvRestartShards() (value *Response, err
 // Parameters:
 //  - Job
 //  - Instances
-func (p *AuroraSchedulerManagerClient) KillTasks(job *JobKey, instances map[int32]bool) (r *Response, err error) {
-	if err = p.sendKillTasks(job, instances); err != nil {
+//  - Message
+func (p *AuroraSchedulerManagerClient) KillTasks(job *JobKey, instances map[int32]bool, message string) (r *Response, err error) {
+	if err = p.sendKillTasks(job, instances, message); err != nil {
 		return
 	}
 	return p.recvKillTasks()
 }
 
-func (p *AuroraSchedulerManagerClient) sendKillTasks(job *JobKey, instances map[int32]bool) (err error) {
+func (p *AuroraSchedulerManagerClient) sendKillTasks(job *JobKey, instances map[int32]bool, message string) (err error) {
 	oprot := p.OutputProtocol
 	if oprot == nil {
 		oprot = p.ProtocolFactory.GetProtocol(p.Transport)
@@ -544,6 +546,7 @@ func (p *AuroraSchedulerManagerClient) sendKillTasks(job *JobKey, instances map[
 	args := AuroraSchedulerManagerKillTasksArgs{
 		Job:       job,
 		Instances: instances,
+		Message:   message,
 	}
 	if err = args.Write(oprot); err != nil {
 		return
@@ -1530,7 +1533,7 @@ func (p *auroraSchedulerManagerProcessorKillTasks) Process(seqId int32, iprot, o
 	result := AuroraSchedulerManagerKillTasksResult{}
 	var retval *Response
 	var err2 error
-	if retval, err2 = p.handler.KillTasks(args.Job, args.Instances); err2 != nil {
+	if retval, err2 = p.handler.KillTasks(args.Job, args.Instances, args.Message); err2 != nil {
 		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing killTasks: "+err2.Error())
 		oprot.WriteMessageBegin("killTasks", thrift.EXCEPTION, seqId)
 		x.Write(oprot)
@@ -3007,10 +3010,12 @@ func (p *AuroraSchedulerManagerRestartShardsResult) String() string {
 // Attributes:
 //  - Job
 //  - Instances
+//  - Message
 type AuroraSchedulerManagerKillTasksArgs struct {
 	// unused fields # 1 to 3
 	Job       *JobKey        `thrift:"job,4" json:"job"`
 	Instances map[int32]bool `thrift:"instances,5" json:"instances"`
+	Message   string         `thrift:"message,6" json:"message"`
 }
 
 func NewAuroraSchedulerManagerKillTasksArgs() *AuroraSchedulerManagerKillTasksArgs {
@@ -3028,6 +3033,10 @@ func (p *AuroraSchedulerManagerKillTasksArgs) GetJob() *JobKey {
 
 func (p *AuroraSchedulerManagerKillTasksArgs) GetInstances() map[int32]bool {
 	return p.Instances
+}
+
+func (p *AuroraSchedulerManagerKillTasksArgs) GetMessage() string {
+	return p.Message
 }
 func (p *AuroraSchedulerManagerKillTasksArgs) IsSetJob() bool {
 	return p.Job != nil
@@ -3053,6 +3062,10 @@ func (p *AuroraSchedulerManagerKillTasksArgs) Read(iprot thrift.TProtocol) error
 			}
 		case 5:
 			if err := p.readField5(iprot); err != nil {
+				return err
+			}
+		case 6:
+			if err := p.readField6(iprot); err != nil {
 				return err
 			}
 		default:
@@ -3100,6 +3113,15 @@ func (p *AuroraSchedulerManagerKillTasksArgs) readField5(iprot thrift.TProtocol)
 	return nil
 }
 
+func (p *AuroraSchedulerManagerKillTasksArgs) readField6(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadString(); err != nil {
+		return thrift.PrependError("error reading field 6: ", err)
+	} else {
+		p.Message = v
+	}
+	return nil
+}
+
 func (p *AuroraSchedulerManagerKillTasksArgs) Write(oprot thrift.TProtocol) error {
 	if err := oprot.WriteStructBegin("killTasks_args"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
@@ -3108,6 +3130,9 @@ func (p *AuroraSchedulerManagerKillTasksArgs) Write(oprot thrift.TProtocol) erro
 		return err
 	}
 	if err := p.writeField5(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField6(oprot); err != nil {
 		return err
 	}
 	if err := oprot.WriteFieldStop(); err != nil {
@@ -3149,6 +3174,19 @@ func (p *AuroraSchedulerManagerKillTasksArgs) writeField5(oprot thrift.TProtocol
 	}
 	if err := oprot.WriteFieldEnd(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write field end error 5:instances: ", p), err)
+	}
+	return err
+}
+
+func (p *AuroraSchedulerManagerKillTasksArgs) writeField6(oprot thrift.TProtocol) (err error) {
+	if err := oprot.WriteFieldBegin("message", thrift.STRING, 6); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 6:message: ", p), err)
+	}
+	if err := oprot.WriteString(string(p.Message)); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T.message (6) field write error: ", p), err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 6:message: ", p), err)
 	}
 	return err
 }

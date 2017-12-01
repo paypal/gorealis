@@ -27,8 +27,8 @@ enum ResponseCode {
   ERROR           = 2,
   WARNING         = 3,
   AUTH_FAILED     = 4,
-  /** Raised when a Lock-protected operation failed due to lock validation. */
-  LOCK_ERROR      = 5,
+  /** Raised when an operation was unable to proceed due to an in-progress job update. */
+  JOB_UPDATING_ERROR = 5,
   /** Raised when a scheduler is transiently unavailable and later retry is recommended. */
   ERROR_TRANSIENT = 6
 }
@@ -203,6 +203,8 @@ union Image {
 struct MesosContainer {
   /** the optional filesystem image to use when launching this task. */
   1: optional Image image
+  /** the optional list of volumes to mount into the task. */
+  2: optional list<Volume> volumes
 }
 
 /** Describes a parameter passed to docker cli */
@@ -617,6 +619,10 @@ const set<JobUpdateStatus> ACTIVE_JOB_UPDATE_STATES = [JobUpdateStatus.ROLLING_F
                                                        JobUpdateStatus.ROLL_BACK_PAUSED,
                                                        JobUpdateStatus.ROLL_FORWARD_AWAITING_PULSE,
                                                        JobUpdateStatus.ROLL_BACK_AWAITING_PULSE]
+
+/** States the job update can be in while waiting for a pulse. */
+const set<JobUpdateStatus> AWAITNG_PULSE_JOB_UPDATE_STATES = [JobUpdateStatus.ROLL_FORWARD_AWAITING_PULSE,
+                                                              JobUpdateStatus.ROLL_BACK_AWAITING_PULSE]
 
 /** Job update actions that can be applied to job instances. */
 enum JobUpdateAction {
@@ -1073,7 +1079,7 @@ service AuroraSchedulerManager extends ReadOnlyScheduler {
   Response restartShards(5: JobKey job, 3: set<i32> shardIds)
 
   /** Initiates a kill on tasks. */
-  Response killTasks(4: JobKey job, 5: set<i32> instances)
+  Response killTasks(4: JobKey job, 5: set<i32> instances, 6: string message)
 
   /**
    * Adds new instances with the TaskConfig of the existing instance pointed by the key.
@@ -1134,31 +1140,6 @@ service AuroraSchedulerManager extends ReadOnlyScheduler {
   Response pulseJobUpdate(1: JobUpdateKey key)
 }
 
-struct InstanceConfigRewrite {
-  /** Key for the task to rewrite. */
-  1: InstanceKey instanceKey
-  /** The original configuration. */
-  2: TaskConfig oldTask
-  /** The rewritten configuration. */
-  3: TaskConfig rewrittenTask
-}
-
-struct JobConfigRewrite {
-  /** The original job configuration. */
-  1: JobConfiguration oldJob
-  /** The rewritten job configuration. */
-  2: JobConfiguration rewrittenJob
-}
-
-union ConfigRewrite {
-  1: JobConfigRewrite jobRewrite
-  2: InstanceConfigRewrite instanceRewrite
-}
-
-struct RewriteConfigsRequest {
-  1: list<ConfigRewrite> rewriteCommands
-}
-
 struct ExplicitReconciliationSettings {
   1: optional i32 batchSize
 }
@@ -1214,20 +1195,18 @@ service AuroraAdmin extends AuroraSchedulerManager {
   /** Start a storage snapshot and block until it completes. */
   Response snapshot()
 
-  /**
-   * Forcibly rewrites the stored definition of user configurations.  This is intended to be used
-   * in a controlled setting, primarily to migrate pieces of configurations that are opaque to the
-   * scheduler (e.g. executorConfig).
-   * The scheduler may do some validation of the rewritten configurations, but it is important
-   * that the caller take care to provide valid input and alter only necessary fields.
-   */
-  Response rewriteConfigs(1: RewriteConfigsRequest request)
-
   /** Tell scheduler to trigger an explicit task reconciliation with the given settings. */
   Response triggerExplicitTaskReconciliation(1: ExplicitReconciliationSettings settings)
 
   /** Tell scheduler to trigger an implicit task reconciliation. */
   Response triggerImplicitTaskReconciliation()
+
+  /**
+   * Force prune any (terminal) tasks that match the query. If no statuses are supplied with the
+   * query, it will default to all terminal task states. If statuses are supplied, they must be
+   * terminal states.
+   */
+  Response pruneTasks(1: TaskQuery query)
 }
 
 // The name of the header that should be sent to bypass leader redirection in the Scheduler.

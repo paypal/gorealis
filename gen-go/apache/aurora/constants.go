@@ -26,6 +26,7 @@ const GOOD_IDENTIFIER_PATTERN_JVM = "^[\\w\\-\\.]+$"
 const GOOD_IDENTIFIER_PATTERN_PYTHON = "^[\\w\\-\\.]+$"
 
 var ACTIVE_JOB_UPDATE_STATES map[JobUpdateStatus]bool
+var AWAITNG_PULSE_JOB_UPDATE_STATES map[JobUpdateStatus]bool
 
 const BYPASS_LEADER_REDIRECT_HEADER_NAME = "Bypass-Leader-Redirect"
 const TASK_FILESYSTEM_MOUNT_POINT = "taskfs"
@@ -73,6 +74,11 @@ func init() {
 		1:  true,
 		2:  true,
 		3:  true,
+		9:  true,
+		10: true,
+	}
+
+	AWAITNG_PULSE_JOB_UPDATE_STATES = map[JobUpdateStatus]bool{
 		9:  true,
 		10: true,
 	}
