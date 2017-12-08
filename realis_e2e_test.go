@@ -16,13 +16,14 @@ package realis_test
 
 import (
 	"fmt"
-	"github.com/paypal/gorealis"
-	"github.com/paypal/gorealis/gen-go/apache/aurora"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/paypal/gorealis"
+	"github.com/paypal/gorealis/gen-go/apache/aurora"
+	"github.com/stretchr/testify/assert"
 )
 
 var r realis.Realis
@@ -61,6 +62,13 @@ func TestLeaderFromZK(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, url, "http://aurora.local:8081")
+}
+
+func TestGetCacerts(t *testing.T) {
+	certs, err := realis.Getcerts("./examples/certs")
+	assert.NoError(t, err)
+	assert.Equal(t, len(certs.Subjects()), 1)
+
 }
 
 func TestRealisClient_CreateJob_Thermos(t *testing.T) {

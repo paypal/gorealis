@@ -84,7 +84,7 @@ type RealisConfig struct {
 	transport                   thrift.TTransport
 	protoFactory                thrift.TProtocolFactory
 	logger                      Logger
-	Insecure                    bool
+	InsecureSkipVerify          bool
 	certspath                   string
 }
 
@@ -160,6 +160,17 @@ func BackOff(b *Backoff) ClientOption {
 	}
 }
 
+func InsecureSkipVerify(InsecureSkipVerify bool) ClientOption {
+	return func(config *RealisConfig) {
+		config.InsecureSkipVerify = InsecureSkipVerify
+	}
+}
+
+func Certspath(certspath string) ClientOption {
+	return func(config *RealisConfig) {
+		config.certspath = certspath
+	}
+}
 
 // Using the word set to avoid name collision with Interface
 func SetLogger(l Logger) ClientOption {
@@ -265,7 +276,6 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 
 }
 
-
 // Jitter returns a time.Duration between duration and duration + maxFactor *
 // duration.
 //
@@ -279,7 +289,6 @@ func Jitter(duration time.Duration, maxFactor float64) time.Duration {
 	return wait
 }
 
-
 func GetDefaultClusterFromZKUrl(zkurl string) *Cluster {
 	return &Cluster{Name: "defaultCluster",
 		AuthMechanism: "UNAUTHENTICATED",
@@ -290,7 +299,7 @@ func GetDefaultClusterFromZKUrl(zkurl string) *Cluster {
 	}
 }
 
-func getcerts(certpath string) (*x509.CertPool, error) {
+func Getcerts(certpath string) (*x509.CertPool, error) {
 	globalRootCAs := x509.NewCertPool()
 	caFiles, err := ioutil.ReadDir(certpath)
 	if err != nil {
@@ -315,12 +324,12 @@ func defaultTTransport(urlstr string, timeoutms int, config *RealisConfig) (thri
 	}
 	var transport http.Transport
 	if config != nil {
-		var tlsConfig *tls.Config
-		if config.Insecure {
-			tlsConfig = &tls.Config{InsecureSkipVerify: true}
+		tlsConfig:= &tls.Config{}
+		if config.InsecureSkipVerify {
+			tlsConfig.InsecureSkipVerify = true
 		}
 		if config.certspath != "" {
-			rootCAs, err := getcerts(config.certspath)
+			rootCAs, err := Getcerts(config.certspath)
 			if err != nil {
 				fmt.Println("error occured couldn't fetch certs")
 				return nil, err
@@ -343,8 +352,6 @@ func defaultTTransport(urlstr string, timeoutms int, config *RealisConfig) (thri
 
 	return trans, nil
 }
-
-
 
 // Create a default configuration of the transport layer, requires a URL to test connection with.
 // Uses HTTP Post as transport layer and Thrift JSON as the wire protocol by default.
@@ -390,15 +397,6 @@ func AddBasicAuth(config *RealisConfig, username string, password string) {
 	config.password = password
 	httpTrans := (config.transport).(*thrift.THttpClient)
 	httpTrans.SetHeader("Authorization", "Basic "+basicAuth(username, password))
-}
-
-//
-func Secure(config *RealisConfig, insecure bool) {
-	config.Insecure = insecure
-}
-
-func Certpath(config *RealisConfig, certspath string) {
-	config.certspath = certspath
 }
 
 func basicAuth(username, password string) string {
