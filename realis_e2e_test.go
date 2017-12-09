@@ -67,7 +67,7 @@ func TestLeaderFromZK(t *testing.T) {
 func TestGetCacerts(t *testing.T) {
 	certs, err := realis.Getcerts("./examples/certs")
 	assert.NoError(t, err)
-	assert.Equal(t, len(certs.Subjects()), 1)
+	assert.Equal(t, len(certs.Subjects()), 2)
 
 }
 

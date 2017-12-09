@@ -86,6 +86,7 @@ type RealisConfig struct {
 	logger                      Logger
 	InsecureSkipVerify          bool
 	certspath                   string
+	clientkey, clientcert       string
 }
 
 type Backoff struct {
@@ -169,6 +170,12 @@ func InsecureSkipVerify(InsecureSkipVerify bool) ClientOption {
 func Certspath(certspath string) ClientOption {
 	return func(config *RealisConfig) {
 		config.certspath = certspath
+	}
+}
+
+func ClientCerts(clientKey, clientCert string) ClientOption {
+	return func(config *RealisConfig) {
+		config.clientkey, config.clientcert = clientKey, clientCert
 	}
 }
 
@@ -324,17 +331,31 @@ func defaultTTransport(urlstr string, timeoutms int, config *RealisConfig) (thri
 	}
 	var transport http.Transport
 	if config != nil {
-		tlsConfig:= &tls.Config{}
+		tlsConfig := &tls.Config{}
 		if config.InsecureSkipVerify {
 			tlsConfig.InsecureSkipVerify = true
 		}
 		if config.certspath != "" {
-			rootCAs, err := Getcerts(config.certspath)
+			rootCAs, err := Getcerts("examples/certs")
 			if err != nil {
-				fmt.Println("error occured couldn't fetch certs")
+				config.logger.Println("error occured couldn't fetch certs")
 				return nil, err
 			}
 			tlsConfig.RootCAs = rootCAs
+		}
+		if config.clientkey != "" && config.clientcert == "" {
+			return nil, fmt.Errorf("have to provide both client key,cert. Only client key provided ")
+		}
+		if config.clientkey == "" && config.clientcert != "" {
+			return nil, fmt.Errorf("have to provide both client key,cert. Only client cert provided ")
+		}
+		if config.clientkey != "" && config.clientcert != "" {
+			cert, err := tls.LoadX509KeyPair(config.clientcert, config.clientkey)
+			if err != nil {
+				config.logger.Println("error occured loading client certs and keys")
+				return nil, err
+			}
+			tlsConfig.Certificates = []tls.Certificate{cert}
 		}
 		transport.TLSClientConfig = tlsConfig
 	}
@@ -417,7 +438,7 @@ func (r *realisClient) ReestablishConn() error {
 		//Re-establish using cluster object.
 		url, err = LeaderFromZK(*r.config.cluster)
 		if err != nil {
-			fmt.Errorf("LeaderFromZK error: %+v\n ", err)
+			r.config.logger.Println("LeaderFromZK error: %+v\n ", err)
 		}
 		r.logger.Println("ReestablishConn url: ", url)
 		if r.config.jsonTransport {
@@ -898,7 +919,6 @@ func (r *realisClient) GetTaskStatus(query *aurora.TaskQuery) (tasks []*aurora.S
 
 	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
 		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
-			fmt.Println(clientErr)
 			return r.client.GetTasksStatus(query)
 		})
 		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
