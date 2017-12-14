@@ -267,7 +267,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		config.protoFactory = thrift.NewTBinaryProtocolFactoryDefault()
 	}
 
-	config.logger.Printf("gorealis config url: %+v\n", config.url)
+	config.logger.Printf("gorealis config url: %+v\n", url)
 
 	//Basic Authentication.
 	if config.username != "" && config.password != "" {
@@ -579,7 +579,7 @@ func (r *realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*a
 
 	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
 		resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
-			return r.client.KillTasks(key, instanceIds)
+			return r.client.KillTasks(key, instanceIds, "")
 		})
 		if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
 			return false, nil
@@ -614,7 +614,7 @@ func (r *realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 	if len(instanceIds) > 0 {
 		retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
 			resp, clientErr = CheckAndRetryConn(r, func() (*aurora.Response, error) {
-				return r.client.KillTasks(key, instanceIds)
+				return r.client.KillTasks(key, instanceIds, "")
 			})
 			if clientErr != nil && clientErr.Error() == RetryConnErr.Error() {
 				return false, nil
