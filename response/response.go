@@ -18,8 +18,8 @@ package response
 import (
 	"bytes"
 
-	"github.com/pkg/errors"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
+	"github.com/pkg/errors"
 )
 
 // Get key from a response created by a StartJobUpdate call
