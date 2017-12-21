@@ -15,7 +15,7 @@ until the end of step 4 (Start the local cluster) and skip to configuring Docker
 Follow the guide at http://aurora.apache.org/documentation/latest/operations/installation/
 
 ### Configuring Scheduler to use Docker-Compose executor
-In order use the docker compose executor with Aurora, we must first give the scheduler
+In order to use the docker compose executor with Aurora, we must first give the scheduler
 a configuration file that contains information on how to run the executor.
 
 #### Configuration file
