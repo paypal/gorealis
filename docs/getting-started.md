@@ -91,7 +91,7 @@ $ sudo service aurora-scheduler restart
 ```
 
 ### Using a custom client
-Pystachio does yet support launching tasks using custom executors. Therefore, a custom
+Pystachio does not yet support launching tasks using custom executors. Therefore, a custom
 client must be used in order to launch tasks using a custom executor. In this case,
 we will be using [gorealis](https://github.com/paypal/gorealis) to launch a task with
 the compose executor on Aurora.
