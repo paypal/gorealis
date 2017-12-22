@@ -44,7 +44,10 @@ func (c DockerContainer) Image(image string) DockerContainer {
 }
 
 func (c DockerContainer) AddParameter(name, value string) DockerContainer {
-	c.container.Parameters = append(c.container.Parameters, &aurora.DockerParameter{name, value})
+	c.container.Parameters = append(c.container.Parameters, &aurora.DockerParameter{
+		Name: name,
+		Value: value,
+	})
 	return c
 }
 
@@ -61,7 +64,7 @@ func (c MesosContainer) DockerImage(name, tag string) MesosContainer {
 		c.container.Image = aurora.NewImage()
 	}
 
-	c.container.Image.Docker = &aurora.DockerImage{name, tag}
+	c.container.Image.Docker = &aurora.DockerImage{Name: name, Tag: tag}
 	return c
 }
 
@@ -70,6 +73,6 @@ func (c MesosContainer) AppcImage(name, imageId string) MesosContainer {
 		c.container.Image = aurora.NewImage()
 	}
 
-	c.container.Image.Appc = &aurora.AppcImage{name, imageId}
+	c.container.Image.Appc = &aurora.AppcImage{Name: name, ImageId: imageId}
 	return c
 }

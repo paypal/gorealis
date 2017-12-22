@@ -63,7 +63,7 @@ func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 	req.Settings.RollbackOnFailure = true
 
 	//TODO(rdelvalle): Deep copy job struct to avoid unexpected behavior
-	return &UpdateJob{job, req}
+	return &UpdateJob{Job: job, req: req}
 }
 
 func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings) *UpdateJob {
@@ -94,7 +94,7 @@ func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings)
 	}
 
 	//TODO(rdelvalle): Deep copy job struct to avoid unexpected behavior
-	return &UpdateJob{job, req}
+	return &UpdateJob{Job: job, req: req}
 }
 
 // Set instance count the job will have after the update.

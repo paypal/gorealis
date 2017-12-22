@@ -348,7 +348,10 @@ func main() {
 			instId = k
 			break
 		}
-		resp, err := r.AddInstances(aurora.InstanceKey{job.JobKey(), instId}, numOfInstances)
+		resp, err := r.AddInstances(aurora.InstanceKey{
+			JobKey: job.JobKey(),
+			InstanceId: instId,
+		}, numOfInstances)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -399,7 +402,10 @@ func main() {
 			instId = k
 			break
 		}
-		taskConfig, err := r.FetchTaskConfig(aurora.InstanceKey{job.JobKey(), instId})
+		taskConfig, err := r.FetchTaskConfig(aurora.InstanceKey{
+			JobKey: job.JobKey(),
+			InstanceId: instId,
+		})
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -418,7 +424,12 @@ func main() {
 		break
 	case "updateDetails":
 		resp, err := r.JobUpdateDetails(aurora.JobUpdateQuery{
-			Key: &aurora.JobUpdateKey{job.JobKey(), updateId}, Limit: 1})
+			Key: &aurora.JobUpdateKey{
+				Job: job.JobKey(),
+				ID: updateId,
+			},
+			Limit: 1,
+		})
 
 		if err != nil {
 			fmt.Println(err)
@@ -428,7 +439,10 @@ func main() {
 		break
 	case "abortUpdate":
 		fmt.Println("Abort update")
-		resp, err := r.AbortJobUpdate(aurora.JobUpdateKey{job.JobKey(), updateId}, "")
+		resp, err := r.AbortJobUpdate(aurora.JobUpdateKey{
+			Job: job.JobKey(),
+			ID: updateId,
+		}, "")
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -437,7 +451,10 @@ func main() {
 		break
 	case "rollbackUpdate":
 		fmt.Println("Abort update")
-		resp, err := r.RollbackJobUpdate(aurora.JobUpdateKey{job.JobKey(), updateId}, "")
+		resp, err := r.RollbackJobUpdate(aurora.JobUpdateKey{
+			Job: job.JobKey(),
+			ID: updateId,
+		}, "")
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -456,7 +473,10 @@ func main() {
 			instId = k
 			break
 		}
-		config, err := r.FetchTaskConfig(aurora.InstanceKey{job.JobKey(), instId})
+		config, err := r.FetchTaskConfig(aurora.InstanceKey{
+			JobKey: job.JobKey(),
+			InstanceId: instId,
+		})
 
 		if err != nil {
 			fmt.Println(err)
@@ -478,7 +498,8 @@ func main() {
 		fmt.Println(updatesummary)
 	case "taskStatus":
 		fmt.Println("Getting task status")
-		taskQ := &aurora.TaskQuery{Role: job.JobKey().Role,
+		taskQ := &aurora.TaskQuery{
+			Role: job.JobKey().Role,
 			Environment: job.JobKey().Environment,
 			JobName:     job.JobKey().Name,
 		}
@@ -491,7 +512,8 @@ func main() {
 		fmt.Printf("tasks: %+v\n", tasks)
 	case "tasksWithoutConfig":
 		fmt.Println("Getting task status")
-		taskQ := &aurora.TaskQuery{Role: job.JobKey().Role,
+		taskQ := &aurora.TaskQuery{
+			Role: job.JobKey().Role,
 			Environment: job.JobKey().Environment,
 			JobName:     job.JobKey().Name,
 		}
