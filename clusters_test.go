@@ -16,9 +16,10 @@ package realis_test
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
 	"github.com/paypal/gorealis"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLoadClusters(t *testing.T) {

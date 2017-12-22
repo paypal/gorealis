@@ -87,7 +87,6 @@ func NewJob() Job {
 	taskConfig.Resources[ramMb] = true
 	taskConfig.Resources[diskMb] = true
 
-
 	numCpus.NumCpus = new(float64)
 	ramMb.RamMb = new(int64)
 	diskMb.DiskMb = new(int64)

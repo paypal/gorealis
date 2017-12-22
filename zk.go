@@ -36,7 +36,6 @@ type ServiceInstance struct {
 	Status              string              `json:"status"`
 }
 
-
 // Retrieves current Aurora leader from ZK.
 func LeaderFromZK(cluster Cluster) (string, error) {
 

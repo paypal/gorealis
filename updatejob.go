@@ -24,8 +24,6 @@ type UpdateJob struct {
 	req *aurora.JobUpdateRequest
 }
 
-
-
 // Create a default UpdateJob object.
 func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 
@@ -140,7 +138,6 @@ func (u *UpdateJob) RollbackOnFail(rollback bool) *UpdateJob {
 	u.req.Settings.RollbackOnFailure = rollback
 	return u
 }
-
 
 // TODO(rdelvalle): Integrate this struct with the JobUpdate struct so that we don't repeat code
 type UpdateSettings struct {

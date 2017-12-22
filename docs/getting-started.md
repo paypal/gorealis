@@ -15,7 +15,7 @@ until the end of step 4 (Start the local cluster) and skip to configuring Docker
 Follow the guide at http://aurora.apache.org/documentation/latest/operations/installation/
 
 ### Configuring Scheduler to use Docker-Compose executor
-In order use the docker compose executor with Aurora, we must first give the scheduler
+In order to use the docker compose executor with Aurora, we must first give the scheduler
 a configuration file that contains information on how to run the executor.
 
 #### Configuration file
@@ -91,7 +91,7 @@ $ sudo service aurora-scheduler restart
 ```
 
 ### Using a custom client
-Pystachio does yet support launching tasks using custom executors. Therefore, a custom
+Pystachio does not yet support launching tasks using custom executors. Therefore, a custom
 client must be used in order to launch tasks using a custom executor. In this case,
 we will be using [gorealis](https://github.com/paypal/gorealis) to launch a task with
 the compose executor on Aurora.
