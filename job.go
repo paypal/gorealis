@@ -91,7 +91,11 @@ func NewJob() Job {
 	ramMb.RamMb = new(int64)
 	diskMb.DiskMb = new(int64)
 
-	return &AuroraJob{jobConfig, resources, 0}
+	return &AuroraJob{
+		jobConfig: jobConfig,
+		resources: resources,
+		portCount: 0,
+	}
 }
 
 // Set Job Key environment.
@@ -105,7 +109,7 @@ func (j *AuroraJob) Role(role string) Job {
 	j.jobConfig.Key.Role = role
 
 	//Will be deprecated
-	identity := &aurora.Identity{role}
+	identity := &aurora.Identity{User: role}
 	j.jobConfig.Owner = identity
 	j.jobConfig.TaskConfig.Owner = identity
 	return j
@@ -211,9 +215,11 @@ func (j *AuroraJob) TaskConfig() *aurora.TaskConfig {
 // --enable_mesos_fetcher flag enabled. Currently there is no duplicate detection.
 func (j *AuroraJob) AddURIs(extract bool, cache bool, values ...string) Job {
 	for _, value := range values {
-		j.jobConfig.
-			TaskConfig.
-			MesosFetcherUris[&aurora.MesosFetcherURI{value, &extract, &cache}] = true
+		j.jobConfig.TaskConfig.MesosFetcherUris[&aurora.MesosFetcherURI{
+			Value:   value,
+			Extract: &extract,
+			Cache:   &cache,
+		}] = true
 	}
 	return j
 }
@@ -221,7 +227,7 @@ func (j *AuroraJob) AddURIs(extract bool, cache bool, values ...string) Job {
 // Adds a Mesos label to the job. Note that Aurora will add the
 // prefix "org.apache.aurora.metadata." to the beginning of each key.
 func (j *AuroraJob) AddLabel(key string, value string) Job {
-	j.jobConfig.TaskConfig.Metadata[&aurora.Metadata{key, value}] = true
+	j.jobConfig.TaskConfig.Metadata[&aurora.Metadata{Key: key, Value: value}] = true
 	return j
 }
 
@@ -261,8 +267,16 @@ func (j *AuroraJob) AddValueConstraint(name string, negated bool, values ...stri
 	for _, value := range values {
 		constraintValues[value] = true
 	}
-	j.jobConfig.TaskConfig.Constraints[&aurora.Constraint{name,
-		&aurora.TaskConstraint{&aurora.ValueConstraint{negated, constraintValues}, nil}}] = true
+	j.jobConfig.TaskConfig.Constraints[&aurora.Constraint{
+		Name: name,
+		Constraint: &aurora.TaskConstraint{
+			Value: &aurora.ValueConstraint{
+				Negated: negated,
+				Values:  constraintValues,
+			},
+			Limit: nil,
+		},
+	}] = true
 
 	return j
 }
@@ -271,8 +285,13 @@ func (j *AuroraJob) AddValueConstraint(name string, negated bool, values ...stri
 // A constraint that specifies the maximum number of active tasks on a host with
 // a matching attribute that may be scheduled simultaneously.
 func (j *AuroraJob) AddLimitConstraint(name string, limit int32) Job {
-	j.jobConfig.TaskConfig.Constraints[&aurora.Constraint{name,
-		&aurora.TaskConstraint{nil, &aurora.LimitConstraint{limit}}}] = true
+	j.jobConfig.TaskConfig.Constraints[&aurora.Constraint{
+		Name: name,
+		Constraint: &aurora.TaskConstraint{
+			Value: nil,
+			Limit: &aurora.LimitConstraint{Limit: limit},
+		},
+	}] = true
 
 	return j
 }

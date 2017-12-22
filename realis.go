@@ -297,7 +297,8 @@ func Jitter(duration time.Duration, maxFactor float64) time.Duration {
 }
 
 func GetDefaultClusterFromZKUrl(zkurl string) *Cluster {
-	return &Cluster{Name: "defaultCluster",
+	return &Cluster{
+		Name:          "defaultCluster",
 		AuthMechanism: "UNAUTHENTICATED",
 		ZK:            zkurl,
 		SchedZKPath:   "/aurora/scheduler",
@@ -506,10 +507,12 @@ func (r *realisClient) Close() {
 
 // Uses predefined set of states to retrieve a set of active jobs in Apache Aurora.
 func (r *realisClient) GetInstanceIds(key *aurora.JobKey, states map[aurora.ScheduleStatus]bool) (map[int32]bool, error) {
-	taskQ := &aurora.TaskQuery{Role: key.Role,
+	taskQ := &aurora.TaskQuery{
+		Role:        key.Role,
 		Environment: key.Environment,
 		JobName:     key.Name,
-		Statuses:    states}
+		Statuses:    states,
+	}
 
 	var resp *aurora.Response
 	var clientErr error
@@ -977,11 +980,13 @@ func (r *realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.Task
 	ids := make(map[int32]bool)
 
 	ids[instKey.InstanceId] = true
-	taskQ := &aurora.TaskQuery{Role: instKey.JobKey.Role,
+	taskQ := &aurora.TaskQuery{
+		Role:        instKey.JobKey.Role,
 		Environment: instKey.JobKey.Environment,
 		JobName:     instKey.JobKey.Name,
 		InstanceIds: ids,
-		Statuses:    aurora.ACTIVE_STATES}
+		Statuses:    aurora.ACTIVE_STATES,
+	}
 
 	var resp *aurora.Response
 	var clientErr error
