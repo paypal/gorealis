@@ -45,7 +45,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// Create monitor
-	monitor = &realis.Monitor{r}
+	monitor = &realis.Monitor{Client: r}
 
 	thermosPayload, err = ioutil.ReadFile("examples/thermos_payload.json")
 	if err != nil {
