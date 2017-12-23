@@ -351,7 +351,9 @@ func main() {
 		resp, err := r.AddInstances(aurora.InstanceKey{
 			JobKey:     job.JobKey(),
 			InstanceId: instId,
-		}, numOfInstances)
+		},
+			numOfInstances)
+
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -442,7 +444,9 @@ func main() {
 		resp, err := r.AbortJobUpdate(aurora.JobUpdateKey{
 			Job: job.JobKey(),
 			ID:  updateId,
-		}, "")
+		},
+			"")
+
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -454,7 +458,9 @@ func main() {
 		resp, err := r.RollbackJobUpdate(aurora.JobUpdateKey{
 			Job: job.JobKey(),
 			ID:  updateId,
-		}, "")
+		},
+			"")
+
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
