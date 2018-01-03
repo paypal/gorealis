@@ -24,10 +24,11 @@ import (
 
 	"strings"
 
+	"log"
+
 	"github.com/paypal/gorealis"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/paypal/gorealis/response"
-	"log"
 )
 
 var cmd, executor, url, clustersConfig, clusterName, updateId, username, password, zkUrl, hostList string

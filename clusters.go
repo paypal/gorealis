@@ -16,8 +16,9 @@ package realis
 
 import (
 	"encoding/json"
-	"github.com/pkg/errors"
 	"os"
+
+	"github.com/pkg/errors"
 )
 
 type Cluster struct {

@@ -15,8 +15,9 @@
 package realis
 
 import (
-	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"strconv"
+
+	"github.com/paypal/gorealis/gen-go/apache/aurora"
 )
 
 type Job interface {
