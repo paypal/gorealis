@@ -61,7 +61,7 @@ func TestLeaderFromZK(t *testing.T) {
 	url, err := realis.LeaderFromZK(*cluster)
 
 	assert.NoError(t, err)
-	assert.Equal(t, url, "http://aurora.local:8081")
+	assert.Equal(t, "http://aurora.local:8081", url)
 }
 
 func TestGetCacerts(t *testing.T) {

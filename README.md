@@ -14,7 +14,6 @@ library has been tested.
 
 ## To Do
 * Create or import a custom transport that uses https://github.com/jmcvetta/napping to improve efficiency
-* End to end testing with Vagrant setup
 
 ## Contributions
 Contributions are always welcome. Please raise an issue so that the contribution may be discussed before it's made.

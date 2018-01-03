@@ -1,6 +1,6 @@
 # Running custom executors on Aurora
 
-In this document, we will be using the docker-compose executor to demonstrate
+In this document we will be using the docker-compose executor to demonstrate
 how Aurora can use multiple executors on a single Scheduler. For this guide,
 we will be using a vagrant instance to demonstrate the setup process. Many of the same
 steps also apply to an Aurora installation made via a package manager. Differences in how to configure
@@ -26,14 +26,14 @@ under the custom executors section.
 
 A sample config file for the docker-compose executor looks like this:
 ```
-[  
-  {  
-    "executor":{  
-      "command":{  
+[
+  {
+    "executor":{
+      "command":{
         "value":"java -jar docker-compose-executor_0.1.0.jar",
         "shell":"true",
-        "uris":[  
-          {  
+        "uris":[
+          {
             "cache":false,
             "executable":true,
             "extract":false,
@@ -47,9 +47,7 @@ A sample config file for the docker-compose executor looks like this:
     "task_prefix":"compose-"
   }
 ]
-
 ```
-
 
 #### Configuring the Scheduler to run a custom executor
 ##### Setting the proper flags
