@@ -18,8 +18,9 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/paypal/gorealis"
 	"os"
+
+	"github.com/paypal/gorealis"
 )
 
 type URIJson struct {
