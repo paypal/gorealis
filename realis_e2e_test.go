@@ -94,6 +94,11 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 	fmt.Printf("Create call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 
+	// Test Instances Monitor
+	success, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 1, 50)
+	assert.True(t, success)
+	assert.NoError(t, err)
+
 	// Tasks must exist for it to be killed
 	t.Run("TestRealisClient_KillJob_Thermos", func(t *testing.T) {
 		start := time.Now()
@@ -166,8 +171,8 @@ func TestRealisClient_DrainHosts(t *testing.T) {
 	hostResults, err := monitor.HostMaintenance(
 		hosts,
 		[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
-		5,
-		10)
+		1,
+		50)
 	assert.Equal(t, map[string]bool{"192.168.33.7": true}, hostResults)
 	assert.NoError(t, err)
 
