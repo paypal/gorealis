@@ -36,13 +36,13 @@ func TestMain(m *testing.M) {
 	// New configuration to connect to Vagrant image
 	r, err = realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
 		realis.BasicAuth("aurora", "secret"),
-		realis.ThriftJSON(),
-		realis.TimeoutMS(20000),
-		realis.BackOff(&realis.Backoff{Steps: 2, Duration: 10 * time.Second, Factor: 2.0, Jitter: 0.1}))
+		realis.TimeoutMS(20000))
 	if err != nil {
 		fmt.Println("Please run vagrant box before running test suite")
 		os.Exit(1)
 	}
+
+	defer r.Close()
 
 	// Create monitor
 	monitor = &realis.Monitor{Client: r}
@@ -62,6 +62,14 @@ func TestLeaderFromZK(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "http://aurora.local:8081", url)
+}
+
+func TestRealisClient_ReestablishConn(t *testing.T) {
+
+	// Test that we're able to tear down the old connection and create a new one.
+	err := r.ReestablishConn()
+
+	assert.NoError(t, err)
 }
 
 func TestGetCacerts(t *testing.T) {

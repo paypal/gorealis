@@ -48,7 +48,7 @@ func LeaderFromZK(cluster Cluster) (string, error) {
 		//TODO (rdelvalle): When enabling debugging, change logger here
 		c, _, err := zk.Connect(endpoints, time.Second*10, func(c *zk.Conn) { c.SetLogger(NoopLogger{}) })
 		if err != nil {
-			return false, errors.Wrap(err, "Failed to connect to Zookeeper at "+cluster.ZK)
+			return false, NewTemporaryError(errors.Wrap(err, "Failed to connect to Zookeeper at "+cluster.ZK))
 		}
 
 		defer c.Close()
@@ -73,7 +73,7 @@ func LeaderFromZK(cluster Cluster) (string, error) {
 
 				err = json.Unmarshal([]byte(data), serviceInst)
 				if err != nil {
-					return false, errors.Wrap(err, "Unable to unmarshall contents of leader")
+					return false, NewTemporaryError(errors.Wrap(err, "Unable to unmarshall contents of leader"))
 				}
 
 				// Should only be one endpoint

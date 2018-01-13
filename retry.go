@@ -14,8 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Modified version of the Kubernetes exponential-backoff code
-
 package realis
 
 import (
@@ -38,6 +36,7 @@ type ConditionFunc func() (done bool, err error)
 
 type AuroraThriftCall func() (resp *aurora.Response, err error)
 
+// Modified version of the Kubernetes exponential-backoff code.
 // ExponentialBackoff repeats a condition check with exponential backoff.
 //
 // It checks the condition up to Steps times, increasing the wait by multiplying
@@ -59,11 +58,23 @@ func ExponentialBackoff(backoff Backoff, condition ConditionFunc) error {
 			time.Sleep(adjusted)
 			duration = time.Duration(float64(duration) * backoff.Factor)
 		}
-		if ok, err := condition(); err != nil || ok {
-			return err
+
+		ok, err := condition()
+
+		// If the function executed says it succeeded, stop retrying
+		if ok {
+			return nil
 		}
+
+		// Stop retrying if the error is NOT temporary.
+		if err != nil {
+			if !IsTemporary(err) {
+				return err
+			}
+		}
+
 	}
-	return errors.New("Timed out while retrying")
+	return NewTimeoutError(errors.New("Timed out while retrying"))
 }
 
 // CheckAndRetryConn function takes realis client and a trhift API function to call and returns response and error
@@ -71,12 +82,14 @@ func ExponentialBackoff(backoff Backoff, condition ConditionFunc) error {
 // If Error is retyable return resp and RetryConnErr error.
 func CheckAndRetryConn(r Realis, auroraCall AuroraThriftCall) (*aurora.Response, error) {
 	resp, cliErr := auroraCall()
-	if cliErr != nil /*&& (strings.Contains(cliErr.Error(), ConnRefusedErr) || strings.Contains(cliErr.Error(), NoLeaderFoundErr))*/ {
+
+	// TODO: Rerturn different error type based on the error that was returned by the API call
+	if cliErr != nil {
 		r.ReestablishConn()
-		return resp, RetryConnErr
+		return resp, NewPermamentError(RetryConnErr)
 	}
 	if resp != nil && resp.GetResponseCode() == aurora.ResponseCode_ERROR_TRANSIENT {
-		return resp, RetryConnErr
+		return resp, NewTemporaryError(errors.New("Aurora scheduler temporarily unavailable"))
 	}
-	return resp, cliErr
+	return resp, nil
 }
