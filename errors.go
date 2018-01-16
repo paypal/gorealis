@@ -32,12 +32,12 @@ type TimeoutErr struct {
 	timeout bool
 }
 
-func (t TimeoutErr) Timeout() bool {
+func (t *TimeoutErr) Timeout() bool {
 	return t.timeout
 }
 
-func NewTimeoutError(err error) TimeoutErr {
-	return TimeoutErr{error: err, timeout: true}
+func NewTimeoutError(err error) *TimeoutErr {
+	return &TimeoutErr{error: err, timeout: true}
 }
 
 type temporary interface {
@@ -54,13 +54,13 @@ type TemporaryErr struct {
 	temporary bool
 }
 
-func (t TemporaryErr) Temporary() bool {
+func (t *TemporaryErr) Temporary() bool {
 	return t.temporary
 }
 
 // Retrying after receiving this error is advised
-func NewTemporaryError(err error) TemporaryErr {
-	return TemporaryErr{error: err, temporary: true}
+func NewTemporaryError(err error) *TemporaryErr {
+	return &TemporaryErr{error: err, temporary: true}
 }
 
 // Nothing can be done about this error

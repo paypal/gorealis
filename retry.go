@@ -83,7 +83,7 @@ func ExponentialBackoff(backoff Backoff, condition ConditionFunc) error {
 func CheckAndRetryConn(r Realis, auroraCall AuroraThriftCall) (*aurora.Response, error) {
 	resp, cliErr := auroraCall()
 
-	// TODO: Rerturn different error type based on the error that was returned by the API call
+	// TODO: Return different error type based on the error that was returned by the API call
 	if cliErr != nil {
 		r.ReestablishConn()
 		return resp, NewPermamentError(RetryConnErr)
