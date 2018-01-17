@@ -73,7 +73,7 @@ func TestRealisClient_ReestablishConn(t *testing.T) {
 }
 
 func TestGetCacerts(t *testing.T) {
-	certs, err := realis.Getcerts("./examples/certs")
+	certs, err := realis.GetCerts("./examples/certs")
 	assert.NoError(t, err)
 	assert.Equal(t, len(certs.Subjects()), 2)
 
