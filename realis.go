@@ -309,7 +309,7 @@ func GetDefaultClusterFromZKUrl(zkurl string) *Cluster {
 	}
 }
 
-func Getcerts(certpath string) (*x509.CertPool, error) {
+func GetCerts(certpath string) (*x509.CertPool, error) {
 	globalRootCAs := x509.NewCertPool()
 	caFiles, err := ioutil.ReadDir(certpath)
 	if err != nil {
@@ -339,7 +339,7 @@ func defaultTTransport(urlstr string, timeoutms int, config *RealisConfig) (thri
 			tlsConfig.InsecureSkipVerify = true
 		}
 		if config.certspath != "" {
-			rootCAs, err := Getcerts("examples/certs")
+			rootCAs, err := GetCerts("examples/certs")
 			if err != nil {
 				config.logger.Println("error occured couldn't fetch certs")
 				return nil, err
