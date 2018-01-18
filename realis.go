@@ -439,7 +439,7 @@ func (r *realisClient) thriftCallHelper(auroraCall auroraThriftCall) (*aurora.Re
 	r.lock.Unlock()
 
 	if resp == nil {
-		return resp, errors.New("Response is nil")
+		return nil, errors.New("Response is nil")
 	}
 
 	if resp.GetResponseCode() == aurora.ResponseCode_ERROR_TRANSIENT {
@@ -447,7 +447,7 @@ func (r *realisClient) thriftCallHelper(auroraCall auroraThriftCall) (*aurora.Re
 	}
 
 	if resp.GetResponseCode() != aurora.ResponseCode_OK {
-		return resp, errors.New(response.CombineMessage(resp))
+		return nil, errors.New(response.CombineMessage(resp))
 	}
 
 	return resp, nil
@@ -542,7 +542,7 @@ func (r *realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQue
 	})
 
 	if retryErr != nil {
-		return resp, errors.Wrap(clientErr, retryErr.Error()+": Error getting job update summaries from Aurora Scheduler")
+		return nil, errors.Wrap(clientErr, retryErr.Error()+": Error getting job update summaries from Aurora Scheduler")
 	}
 
 	return resp, nil
@@ -572,7 +572,7 @@ func (r *realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*a
 	})
 
 	if retryErr != nil {
-		return resp, errors.Wrap(clientErr, retryErr.Error()+": Error sending Kill command to Aurora Scheduler")
+		return nil, errors.Wrap(clientErr, retryErr.Error()+": Error sending Kill command to Aurora Scheduler")
 	}
 	return resp, nil
 }
@@ -606,7 +606,7 @@ func (r *realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 		})
 
 		if retryErr != nil {
-			return resp, errors.Wrap(err, retryErr.Error()+": Error sending Kill command to Aurora Scheduler")
+			return nil, errors.Wrap(err, retryErr.Error()+": Error sending Kill command to Aurora Scheduler")
 		}
 		return resp, nil
 	}
@@ -634,7 +634,7 @@ func (r *realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 	})
 
 	if retryErr != nil {
-		return resp, errors.Wrap(clientErr, retryErr.Error()+": Error sending Create command to Aurora Scheduler")
+		return nil, errors.Wrap(clientErr, retryErr.Error()+": Error sending Create command to Aurora Scheduler")
 	}
 	return resp, nil
 }
@@ -675,7 +675,7 @@ func (r *realisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) 
 	})
 
 	if retryErr != nil {
-		return resp, errors.Wrap(clientErr, retryErr.Error()+": Error sending Cron Job Schedule message to Aurora Scheduler")
+		return nil, errors.Wrap(clientErr, retryErr.Error()+": Error sending Cron Job Schedule message to Aurora Scheduler")
 	}
 	return resp, nil
 }
@@ -698,7 +698,7 @@ func (r *realisClient) DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, 
 	})
 
 	if retryErr != nil {
-		return resp, errors.Wrap(clientErr, retryErr.Error()+": Error sending Cron Job De-schedule message to Aurora Scheduler")
+		return nil, errors.Wrap(clientErr, retryErr.Error()+": Error sending Cron Job De-schedule message to Aurora Scheduler")
 	}
 	return resp, nil
 
@@ -721,7 +721,7 @@ func (r *realisClient) StartCronJob(key *aurora.JobKey) (*aurora.Response, error
 	})
 
 	if retryErr != nil {
-		return resp, errors.Wrap(clientErr, retryErr.Error()+": Error sending Start Cron Job  message to Aurora Scheduler")
+		return nil, errors.Wrap(clientErr, retryErr.Error()+": Error sending Start Cron Job  message to Aurora Scheduler")
 	}
 	return resp, nil
 
@@ -750,7 +750,7 @@ func (r *realisClient) RestartInstances(key *aurora.JobKey, instances ...int32) 
 	})
 
 	if retryErr != nil {
-		return resp, errors.Wrap(clientErr, retryErr.Error()+": Error sending Restart command to Aurora Scheduler")
+		return nil, errors.Wrap(clientErr, retryErr.Error()+": Error sending Restart command to Aurora Scheduler")
 	}
 	return resp, nil
 }
@@ -778,7 +778,7 @@ func (r *realisClient) RestartJob(key *aurora.JobKey) (*aurora.Response, error) 
 		})
 
 		if retryErr != nil {
-			return resp, errors.Wrap(clientErr, retryErr.Error()+": Error sending Restart command to Aurora Scheduler")
+			return nil, errors.Wrap(clientErr, retryErr.Error()+": Error sending Restart command to Aurora Scheduler")
 		}
 
 		return resp, nil
@@ -806,7 +806,7 @@ func (r *realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*au
 	})
 
 	if retryErr != nil {
-		return resp, errors.Wrap(clientErr, retryErr.Error()+": Error sending StartJobUpdate command to Aurora Scheduler")
+		return nil, errors.Wrap(clientErr, retryErr.Error()+": Error sending StartJobUpdate command to Aurora Scheduler")
 	}
 	return resp, nil
 }
@@ -831,7 +831,7 @@ func (r *realisClient) AbortJobUpdate(
 	})
 
 	if retryErr != nil {
-		return resp, errors.Wrap(clientErr, retryErr.Error()+": Error sending AbortJobUpdate command to Aurora Scheduler")
+		return nil, errors.Wrap(clientErr, retryErr.Error()+": Error sending AbortJobUpdate command to Aurora Scheduler")
 	}
 	return resp, nil
 }
@@ -856,7 +856,7 @@ func (r *realisClient) AddInstances(instKey aurora.InstanceKey, count int32) (*a
 	})
 
 	if retryErr != nil {
-		return resp, errors.Wrap(clientErr, retryErr.Error()+": Error sending AddInstances command to Aurora Scheduler")
+		return nil, errors.Wrap(clientErr, retryErr.Error()+": Error sending AddInstances command to Aurora Scheduler")
 	}
 	return resp, nil
 
@@ -999,7 +999,7 @@ func (r *realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aur
 	})
 
 	if retryErr != nil {
-		return resp, errors.Wrap(clientErr, retryErr.Error()+": Unable to get job update details")
+		return nil, errors.Wrap(clientErr, retryErr.Error()+": Unable to get job update details")
 	}
 	return resp, nil
 
@@ -1022,7 +1022,7 @@ func (r *realisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string
 	})
 
 	if retryErr != nil {
-		return resp, errors.Wrap(clientErr, retryErr.Error()+": Unable to roll back job update")
+		return nil, errors.Wrap(clientErr, retryErr.Error()+": Unable to roll back job update")
 	}
 	return resp, nil
 }
