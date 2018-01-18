@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"sync"
+
 	"github.com/paypal/gorealis"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/stretchr/testify/assert"
@@ -72,7 +74,7 @@ func TestRealisClient_ReestablishConn(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestGetCacerts(t *testing.T) {
+func TestGetCACerts(t *testing.T) {
 	certs, err := realis.GetCerts("./examples/certs")
 	assert.NoError(t, err)
 	assert.Equal(t, len(certs.Subjects()), 2)
@@ -167,6 +169,7 @@ func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
 		fmt.Printf("Deschedule cron call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 	})
 }
+
 func TestRealisClient_DrainHosts(t *testing.T) {
 	hosts := []string{"192.168.33.7"}
 	_, _, err := r.DrainHosts(hosts...)
@@ -213,4 +216,49 @@ func TestRealisClient_DrainHosts(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+}
+
+// Test multiple go routines using a single connection
+func TestRealisClient_SessionThreadSafety(t *testing.T) {
+
+	// Create a single job
+	job := realis.NewJob().
+		Environment("prod").
+		Role("vagrant").
+		Name("create_thermos_job_test_multi").
+		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
+		ExecutorData(string(thermosPayload)).
+		CPU(.25).
+		RAM(4).
+		Disk(10).
+		InstanceCount(100) // Impossible amount to go live in the current vagrant default settings
+
+	resp, err := r.CreateJob(job)
+	assert.NoError(t, err)
+
+	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+
+	wg := sync.WaitGroup{}
+	for i := 0; i < 20; i++ {
+
+		wg.Add(1)
+
+		// Launch multiple monitors that will poll every second
+		go func() {
+			defer wg.Done()
+
+			// Test Schedule status monitor for terminal state and timing out after 30 seconds
+			success, err := monitor.ScheduleStatus(job.JobKey(), job.GetInstanceCount(), aurora.LIVE_STATES, 1, 30)
+			assert.False(t, success)
+			assert.Error(t, err)
+
+			resp, err := r.KillJob(job.JobKey())
+			assert.NoError(t, err)
+
+			assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+
+		}()
+	}
+
+	wg.Wait()
 }
