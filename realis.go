@@ -427,6 +427,7 @@ type auroraThriftCall func() (resp *aurora.Response, err error)
 func (r *realisClient) thriftCallHelper(auroraCall auroraThriftCall) (*aurora.Response, error) {
 	// Only allow one go-routine make use or modify the thrift client connection
 	r.lock.Lock()
+	defer r.lock.Unlock()
 	resp, cliErr := auroraCall()
 
 	if cliErr != nil {
@@ -436,7 +437,6 @@ func (r *realisClient) thriftCallHelper(auroraCall auroraThriftCall) (*aurora.Re
 
 		return resp, retryConnErr
 	}
-	r.lock.Unlock()
 
 	if resp == nil {
 		return nil, errors.New("Response is nil")
