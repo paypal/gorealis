@@ -20,21 +20,25 @@ import (
 	"errors"
 	"time"
 
-	"github.com/paypal/gorealis/gen-go/apache/aurora"
+	"math/rand"
 )
 
-const (
-	ConnRefusedErr   = "connection refused"
-	NoLeaderFoundErr = "No leader found"
-)
-
-var RetryConnErr = errors.New("error occured during with aurora retrying")
+// Jitter returns a time.Duration between duration and duration + maxFactor *
+// duration.
+//
+// This allows clients to avoid converging on periodic behavior. If maxFactor
+// is 0.0, a suggested default value will be chosen.
+func Jitter(duration time.Duration, maxFactor float64) time.Duration {
+	if maxFactor <= 0.0 {
+		maxFactor = 1.0
+	}
+	wait := duration + time.Duration(rand.Float64()*maxFactor*float64(duration))
+	return wait
+}
 
 // ConditionFunc returns true if the condition is satisfied, or an error
 // if the loop should be aborted.
 type ConditionFunc func() (done bool, err error)
-
-type AuroraThriftCall func() (resp *aurora.Response, err error)
 
 // Modified version of the Kubernetes exponential-backoff code.
 // ExponentialBackoff repeats a condition check with exponential backoff.
@@ -75,21 +79,4 @@ func ExponentialBackoff(backoff Backoff, condition ConditionFunc) error {
 
 	}
 	return NewTimeoutError(errors.New("Timed out while retrying"))
-}
-
-// CheckAndRetryConn function takes realis client and a trhift API function to call and returns response and error
-// If Error from the APi call is Retry able . THe functions re establishes the connection with aurora by getting the latest aurora master from zookeeper.
-// If Error is retyable return resp and RetryConnErr error.
-func CheckAndRetryConn(r Realis, auroraCall AuroraThriftCall) (*aurora.Response, error) {
-	resp, cliErr := auroraCall()
-
-	// TODO: Return different error type based on the error that was returned by the API call
-	if cliErr != nil {
-		r.ReestablishConn()
-		return resp, NewPermamentError(RetryConnErr)
-	}
-	if resp != nil && resp.GetResponseCode() == aurora.ResponseCode_ERROR_TRANSIENT {
-		return resp, NewTemporaryError(errors.New("Aurora scheduler temporarily unavailable"))
-	}
-	return resp, nil
 }

@@ -17,9 +17,9 @@ package response
 
 import (
 	"bytes"
+	"errors"
 
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
-	"github.com/pkg/errors"
 )
 
 // Get key from a response created by a StartJobUpdate call
@@ -39,6 +39,7 @@ func JobUpdateSummaries(resp *aurora.Response) []*aurora.JobUpdateSummary {
 	return resp.GetResult_().GetGetJobUpdateSummariesResult_().GetUpdateSummaries()
 }
 
+// Deprecated: Replaced by checks done inside of thriftCallHelper
 func ResponseCodeCheck(resp *aurora.Response) (*aurora.Response, error) {
 	if resp == nil {
 		return resp, errors.New("Response is nil")

@@ -1,5 +1,5 @@
 -----------------------------------------
-## Please read instrucitons below ##
+## Please read instructions below ##
 
 Before submitting, please make sure you run a vagrant box running Aurora with the latest version shown in .auroraversion and run go test from the project root.
 
