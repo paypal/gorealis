@@ -583,34 +583,26 @@ func (r *realisClient) RealisConfig() *RealisConfig {
 
 // Sends a kill message to the scheduler for all active tasks under a job.
 func (r *realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
-
-	var instanceIds map[int32]bool
 	var clientErr, err error
 	var resp *aurora.Response
-	instanceIds, err = r.GetInstanceIds(key, aurora.ACTIVE_STATES)
-	if err != nil {
-		return nil, errors.Wrap(err, "Could not retrieve relevant task instance IDs")
-	}
 
-	if len(instanceIds) > 0 {
-		retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
-			resp, clientErr = r.thriftCallHelper(func() (*aurora.Response, error) {
-				return r.client.KillTasks(key, instanceIds, "")
-			})
-
-			if clientErr != nil {
-				return false, clientErr
-			}
-
-			return true, nil
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = r.thriftCallHelper(func() (*aurora.Response, error) {
+			// Giving the KillTasks thrift call an empty set tells the Aurora scheduler to kill all active shards
+			return r.client.KillTasks(key, nil, "")
 		})
 
-		if retryErr != nil {
-			return nil, errors.Wrap(err, retryErr.Error()+": Error sending Kill command to Aurora Scheduler")
+		if clientErr != nil {
+			return false, clientErr
 		}
-		return resp, nil
+
+		return true, nil
+	})
+
+	if retryErr != nil {
+		return nil, errors.Wrap(err, retryErr.Error()+": Error sending Kill command to Aurora Scheduler")
 	}
-	return nil, errors.New("No tasks in the Active state")
+	return resp, nil
 }
 
 // Sends a create job message to the scheduler with a specific job configuration.
