@@ -83,9 +83,10 @@ func TestGetCACerts(t *testing.T) {
 
 func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 
+	role := "vagrant"
 	job := realis.NewJob().
 		Environment("prod").
-		Role("vagrant").
+		Role(role).
 		Name("create_thermos_job_test").
 		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
 		ExecutorData(string(thermosPayload)).
@@ -109,7 +110,13 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 	assert.True(t, success)
 	assert.NoError(t, err)
 
-	// Tasks must exist for it to be killed
+	//Fetch all obs
+	_, result, err := r.GetJobs(role)
+	fmt.Printf("GetJobs length: %+v \n", len(result.Configs))
+	assert.Equal(t, len(result.Configs), 1)
+	assert.NoError(t, err)
+
+	// Tasks must exist for it to, be killed
 	t.Run("TestRealisClient_KillJob_Thermos", func(t *testing.T) {
 		start := time.Now()
 		resp, err := r.KillJob(job.JobKey())

@@ -47,6 +47,7 @@ type Realis interface {
 	GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQuery) (*aurora.Response, error)
 	GetTaskStatus(query *aurora.TaskQuery) ([]*aurora.ScheduledTask, error)
 	GetTasksWithoutConfigs(query *aurora.TaskQuery) ([]*aurora.ScheduledTask, error)
+	GetJobs(role string) (*aurora.Response, *aurora.GetJobsResult_, error)
 	JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aurora.Response, error)
 	KillJob(key *aurora.JobKey) (*aurora.Response, error)
 	KillInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error)
@@ -548,6 +549,33 @@ func (r *realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQue
 	return resp, nil
 }
 
+func (r *realisClient)	GetJobs(role string) (*aurora.Response, *aurora.GetJobsResult_, error) {
+	var resp *aurora.Response
+	var result *aurora.GetJobsResult_
+	var clientErr error
+
+	retryErr := ExponentialBackoff(*r.config.backoff, func() (bool, error) {
+		resp, clientErr = r.thriftCallHelper(func() (*aurora.Response, error) {
+			return r.readonlyClient.GetJobs(role)
+		})
+
+		if clientErr != nil {
+			return false, clientErr
+		}
+		return true, nil
+	})
+
+	if resp != nil && resp.GetResult_() != nil {
+		result = resp.GetResult_().GetJobsResult_
+	}
+
+	if retryErr != nil {
+		return nil, result, errors.Wrap(clientErr, retryErr.Error()+": Error getting Jobs from Aurora Scheduler")
+	}
+
+	return resp, result, nil
+}
+
 // Kill specific instances of a job.
 func (r *realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error) {
 
@@ -695,6 +723,9 @@ func (r *realisClient) DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, 
 	return resp, nil
 
 }
+
+
+
 
 func (r *realisClient) StartCronJob(key *aurora.JobKey) (*aurora.Response, error) {
 	var resp *aurora.Response

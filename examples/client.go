@@ -31,7 +31,7 @@ import (
 	"github.com/paypal/gorealis/response"
 )
 
-var cmd, executor, url, clustersConfig, clusterName, updateId, username, password, zkUrl, hostList string
+var cmd, executor, url, clustersConfig, clusterName, updateId, username, password, zkUrl, hostList, role string
 
 var CONNECTION_TIMEOUT = 20000
 
@@ -46,6 +46,8 @@ func init() {
 	flag.StringVar(&password, "password", "secret", "Password to use for authorization")
 	flag.StringVar(&zkUrl, "zkurl", "", "zookeeper url")
 	flag.StringVar(&hostList, "hostList", "", "Comma separated list of hosts to operate on")
+	flag.StringVar(&role, "role", "", "owner role to use")
+
 	flag.Parse()
 
 	// Attempt to load leader from zookeeper using a
@@ -593,6 +595,16 @@ func main() {
 		}
 
 		fmt.Print(result.String())
+	case "getJobs":
+		fmt.Println("GetJobs...role: ", role)
+		_, result, err := r.GetJobs(role)
+		if err != nil {
+			fmt.Print("error: %+v\n", err.Error())
+			os.Exit(1)
+		}
+		fmt.Println("map size: ", len(result.Configs))
+		fmt.Println(result.String())
+
 	default:
 		fmt.Println("Command not supported")
 		os.Exit(1)
