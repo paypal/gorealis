@@ -280,35 +280,12 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		AddBasicAuth(config, config.username, config.password)
 	}
 
-	client := &realisClient{
+	return &realisClient{
 		config:         config,
 		client:         aurora.NewAuroraSchedulerManagerClientFactory(config.transport, config.protoFactory),
 		readonlyClient: aurora.NewReadOnlySchedulerClientFactory(config.transport, config.protoFactory),
 		adminClient:    aurora.NewAuroraAdminClientFactory(config.transport, config.protoFactory),
-		logger:         config.logger}
-
-	// Verify that the connection is set up correctly and that the endpoint exists
-	// by making a low cost thrift call using the newly created client. If there is an error, return an empty client.
-	taskQ := &aurora.TaskQuery{
-		Role:        "test",
-		Environment: "test",
-		JobName:     "test",
-	}
-
-	retryErr := ExponentialBackoff(*config.backoff, func() (bool, error) {
-		resp, err := client.readonlyClient.GetTasksWithoutConfigs(taskQ)
-		if resp == nil || err != nil {
-			return false, NewTemporaryError(err)
-		}
-		return true, nil
-	})
-
-	// Unable to successfully make a call even after retrying, return an error
-	if retryErr != nil {
-		return nil, errors.Errorf("Unable to reach scheduler at %v", url)
-	}
-
-	return client, err
+		logger:         config.logger}, nil
 }
 
 func GetDefaultClusterFromZKUrl(zkurl string) *Cluster {
