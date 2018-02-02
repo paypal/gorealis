@@ -553,7 +553,8 @@ func (r *realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQue
 	return resp, nil
 }
 
-func (r *realisClient) GetJobs(role string) (*aurora.Response, *aurora.GetJobsResult_, error) {
+
+func (r *realisClient)	GetJobs(role string) (*aurora.Response, *aurora.GetJobsResult_, error) {
 	var resp *aurora.Response
 	var result *aurora.GetJobsResult_
 	var clientErr error
@@ -727,6 +728,9 @@ func (r *realisClient) DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, 
 	return resp, nil
 
 }
+
+
+
 
 func (r *realisClient) StartCronJob(key *aurora.JobKey) (*aurora.Response, error) {
 	var resp *aurora.Response
