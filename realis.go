@@ -553,7 +553,8 @@ func (r *realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQue
 	return resp, nil
 }
 
-func (r *realisClient) GetJobs(role string) (*aurora.Response, *aurora.GetJobsResult_, error) {
+
+func (r *realisClient)	GetJobs(role string) (*aurora.Response, *aurora.GetJobsResult_, error) {
 	var resp *aurora.Response
 	var result *aurora.GetJobsResult_
 	var clientErr error
@@ -699,7 +700,7 @@ func (r *realisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) 
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(clientErr, retryErr.Error()+": Error sending Cron Job Schedule message to Aurora Scheduler")
+		return nil, errors.Wrap(clientErr, retryErr.Error()+"Error sending Cron Job Schedule message to Aurora Scheduler")
 	}
 	return resp, nil
 }
@@ -722,11 +723,14 @@ func (r *realisClient) DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, 
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(clientErr, retryErr.Error()+": Error sending Cron Job De-schedule message to Aurora Scheduler")
+		return nil, errors.Wrap(clientErr, retryErr.Error()+"Error sending Cron Job De-schedule message to Aurora Scheduler")
 	}
 	return resp, nil
 
 }
+
+
+
 
 func (r *realisClient) StartCronJob(key *aurora.JobKey) (*aurora.Response, error) {
 	var resp *aurora.Response
@@ -898,7 +902,7 @@ func (r *realisClient) ResumeJobUpdate(updateKey *aurora.JobUpdateKey, message s
 		return true, nil
 	})
 	if retryErr != nil {
-		return nil, errors.Wrap(clientErr, retryErr.Error()+": Error sending ResumeJobUpdate command to Aurora Scheduler")
+		return nil, errors.Wrap(retryErr, "Error sending ResumeJobUpdate command to Aurora Scheduler")
 	}
 
 	return resp, nil
@@ -921,7 +925,7 @@ func (r *realisClient) PulseJobUpdate(updateKey *aurora.JobUpdateKey) (*aurora.R
 		return true, nil
 	})
 	if retryErr != nil {
-		return nil, errors.Wrap(clientErr, retryErr.Error()+": Error sending PulseJobUpdate command to Aurora Scheduler")
+		return nil, errors.Wrap(retryErr, "Error sending PulseJobUpdate command to Aurora Scheduler")
 	}
 
 	return resp, nil

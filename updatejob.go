@@ -29,8 +29,7 @@ func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 
 	req := aurora.NewJobUpdateRequest()
 	req.TaskConfig = config
-	s := NewUpdateSettings()
-	req.Settings = s
+	req.Settings = NewUpdateSettings()
 
 	job := NewJob().(*AuroraJob)
 	job.jobConfig.TaskConfig = config
