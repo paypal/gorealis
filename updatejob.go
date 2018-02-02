@@ -29,8 +29,8 @@ func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 
 	req := aurora.NewJobUpdateRequest()
 	req.TaskConfig = config
-	s := NewUpdateSettings().Settings()
-	req.Settings = &s
+	s := NewUpdateSettings()
+	req.Settings = s
 
 	job := NewJob().(*AuroraJob)
 	job.jobConfig.TaskConfig = config
@@ -139,64 +139,18 @@ func (u *UpdateJob) RollbackOnFail(rollback bool) *UpdateJob {
 	return u
 }
 
-// TODO(rdelvalle): Integrate this struct with the JobUpdate struct so that we don't repeat code
-type UpdateSettings struct {
-	settings aurora.JobUpdateSettings
-}
 
-func NewUpdateSettings() *UpdateSettings {
+func NewUpdateSettings() *aurora.JobUpdateSettings {
 
-	us := new(UpdateSettings)
-
+	us := new(aurora.JobUpdateSettings)
 	// Mirrors defaults set by Pystachio
-	us.settings.UpdateOnlyTheseInstances = make(map[*aurora.Range]bool)
-	us.settings.UpdateGroupSize = 1
-	us.settings.WaitForBatchCompletion = false
-	us.settings.MinWaitInInstanceRunningMs = 45000
-	us.settings.MaxPerInstanceFailures = 0
-	us.settings.MaxFailedInstances = 0
-	us.settings.RollbackOnFailure = true
+	us.UpdateOnlyTheseInstances = make(map[*aurora.Range]bool)
+	us.UpdateGroupSize = 1
+	us.WaitForBatchCompletion = false
+	us.MinWaitInInstanceRunningMs = 45000
+	us.MaxPerInstanceFailures = 0
+	us.MaxFailedInstances = 0
+	us.RollbackOnFailure = true
 
 	return us
-}
-
-// Max number of instances being updated at any given moment.
-func (u *UpdateSettings) BatchSize(size int32) *UpdateSettings {
-	u.settings.UpdateGroupSize = size
-	return u
-}
-
-// Minimum number of seconds a shard must remain in RUNNING state before considered a success.
-func (u *UpdateSettings) WatchTime(ms int32) *UpdateSettings {
-	u.settings.MinWaitInInstanceRunningMs = ms
-	return u
-}
-
-// Wait for all instances in a group to be done before moving on.
-func (u *UpdateSettings) WaitForBatchCompletion(batchWait bool) *UpdateSettings {
-	u.settings.WaitForBatchCompletion = batchWait
-	return u
-}
-
-// Max number of instance failures to tolerate before marking instance as FAILED.
-func (u *UpdateSettings) MaxPerInstanceFailures(inst int32) *UpdateSettings {
-	u.settings.MaxPerInstanceFailures = inst
-	return u
-}
-
-// Max number of FAILED instances to tolerate before terminating the update.
-func (u *UpdateSettings) MaxFailedInstances(inst int32) *UpdateSettings {
-	u.settings.MaxFailedInstances = inst
-	return u
-}
-
-// When False, prevents auto rollback of a failed update.
-func (u *UpdateSettings) RollbackOnFail(rollback bool) *UpdateSettings {
-	u.settings.RollbackOnFailure = rollback
-	return u
-}
-
-// Return internal Thrift API structure
-func (u UpdateSettings) Settings() aurora.JobUpdateSettings {
-	return u.settings
 }
