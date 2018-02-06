@@ -135,11 +135,11 @@ func main() {
 		job = realis.NewJob().
 			Environment("prod").
 			Role("vagrant").
-			Name("docker-compose").
+			Name("docker-compose-test").
 			ExecutorName("docker-compose-executor").
 			ExecutorData("{}").
 			CPU(0.25).
-			RAM(64).
+			RAM(512).
 			Disk(100).
 			IsService(true).
 			InstanceCount(1).
@@ -192,14 +192,15 @@ func main() {
 		fmt.Println("Creating service")
 		settings := realis.NewUpdateSettings()
 		job.InstanceCount(3)
-		_, resp, err := r.CreateService(job, *settings)
+		resp, result, err := r.CreateService(job, settings)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("error: ", err)
+			fmt.Println("response: ", resp.String())
 			os.Exit(1)
 		}
-		fmt.Println(resp.String())
+		fmt.Println(result.String())
 
-		if ok, err := monitor.JobUpdate(*resp.GetKey(), 5, 50); !ok || err != nil {
+		if ok, err := monitor.JobUpdate(*result.GetKey(), 5, 50); !ok || err != nil {
 			_, err := r.KillJob(job.JobKey())
 			if err != nil {
 				fmt.Println(err)
@@ -389,7 +390,7 @@ func main() {
 		}
 
 		if resp.ResponseCode == aurora.ResponseCode_OK {
-			if ok, err := monitor.Instances(job.JobKey(), currInstances-numOfInstances, 5, 50); !ok || err != nil {
+			if ok, err := monitor.Instances(job.JobKey(), currInstances-numOfInstances, 5, 100); !ok || err != nil {
 				fmt.Println("flexDown failed")
 			}
 		}
@@ -427,6 +428,39 @@ func main() {
 		jobUpdateKey := response.JobUpdateKey(resp)
 		monitor.JobUpdate(*jobUpdateKey, 5, 500)
 		break
+
+	case "pauseJobUpdate":
+		resp, err := r.PauseJobUpdate(&aurora.JobUpdateKey{
+			Job: job.JobKey(),
+			ID: updateId,
+			}, "")
+
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println("PauseJobUpdate response: ", resp.String())
+
+	case "resumeJobUpdate":
+		resp, err := r.ResumeJobUpdate(&aurora.JobUpdateKey{
+			Job: job.JobKey(),
+			ID: updateId,
+		}, "")
+
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println("ResumeJobUpdate response: ", resp.String())
+
+	case "pulseJobUpdate":
+		resp, err := r.PulseJobUpdate(&aurora.JobUpdateKey{
+			Job: job.JobKey(),
+			ID: updateId,
+			})
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println("PulseJobUpdate response: ", resp.String())
+
 	case "updateDetails":
 		resp, err := r.JobUpdateDetails(aurora.JobUpdateQuery{
 			Key: &aurora.JobUpdateKey{

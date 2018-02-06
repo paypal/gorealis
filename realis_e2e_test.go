@@ -26,6 +26,7 @@ import (
 	"github.com/paypal/gorealis"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/stretchr/testify/assert"
+	"github.com/paypal/gorealis/response"
 )
 
 var r realis.Realis
@@ -126,6 +127,91 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 		fmt.Printf("Kill call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 	})
+}
+
+func TestRealisClient_CreateJobWithPulse_Thermos(t *testing.T) {
+
+	fmt.Println("Creating service")
+	role := "vagrant"
+	job := realis.NewJob().
+		Environment("prod").
+		Role(role).
+		Name("create_thermos_job_test").
+		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
+		ExecutorData(string(thermosPayload)).
+		CPU(1).
+		RAM(64).
+		Disk(100).
+		IsService(true).
+		InstanceCount(1).
+		AddPorts(1).
+		AddLabel("currentTime", time.Now().String())
+
+	pulse := int32(30)
+	timeout := 300
+	settings := realis.NewUpdateSettings()
+	settings.BlockIfNoPulsesAfterMs = &pulse
+	settings.UpdateGroupSize = 1
+	settings.WaitForBatchCompletion = true
+	job.InstanceCount(2)
+	resp, result, err := r.CreateService(job, settings)
+	fmt.Println(result.String())
+
+	assert.NoError(t, err)
+	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+
+
+	updateQ := aurora.JobUpdateQuery{
+	               Key:   result.GetKey(),
+	              Limit: 1,
+			}
+
+	start := time.Now()
+	for i := 0; i*int(pulse) <= timeout; i++ {
+
+		fmt.Println("sending PulseJobUpdate....")
+		resp, err = r.PulseJobUpdate(result.GetKey())
+		assert.NotNil(t, resp)
+		assert.Nil(t, err)
+
+		respDetail, err := r.JobUpdateDetails(updateQ)
+		assert.Nil(t, err)
+
+		updateDetail := response.JobUpdateDetails(respDetail)
+		if len(updateDetail) == 0 {
+			fmt.Println("No update found")
+			assert.NotEqual(t, len(updateDetail), 0)
+		}
+		status := updateDetail[0].Update.Summary.State.Status
+
+		if _, ok := aurora.ACTIVE_JOB_UPDATE_STATES[status]; !ok {
+
+			// Rolled forward is the only state in which an update has been successfully updated
+			// if we encounter an inactive state and it is not at rolled forward, update failed
+			if status == aurora.JobUpdateStatus_ROLLED_FORWARD {
+				fmt.Println("Update succeded")
+				break
+			} else {
+				fmt.Println("Update failed")
+				break
+			}
+		}
+
+		fmt.Println("Polling, update still active...")
+		time.Sleep(time.Duration(pulse) * time.Second)
+	}
+	end := time.Now()
+	fmt.Printf("Update call took %d ns\n", (end.UnixNano() - start.UnixNano()))
+
+	t.Run("TestRealisClient_KillJob_Thermos", func(t *testing.T) {
+		start := time.Now()
+		resp, err := r.KillJob(job.JobKey())
+		end := time.Now()
+		assert.NoError(t, err)
+		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+		fmt.Printf("Kill call took %d ns\n", (end.UnixNano() - start.UnixNano()))
+	})
+
 }
 
 func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
