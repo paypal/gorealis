@@ -59,6 +59,32 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestBadEndpoint(t *testing.T) {
+
+	// Attempt to connect to a bad endpoint
+	r, err := realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081/scheduler/"),
+		realis.TimeoutMS(200),
+		realis.BackOff(&realis.Backoff{ // Reduce penalties for this test to make it quick
+			Steps:    5,
+			Duration: 1 * time.Second,
+			Factor:   1.0,
+			Jitter:   0.1}),
+	)
+	defer r.Close()
+
+	taskQ := &aurora.TaskQuery{
+		Role:        "no",
+		Environment: "task",
+		JobName:     "here",
+	}
+
+	_, err = r.GetTasksWithoutConfigs(taskQ)
+
+	// Check that we do error out of retrying
+	assert.Error(t, err)
+
+}
+
 func TestLeaderFromZK(t *testing.T) {
 	cluster := realis.GetDefaultClusterFromZKUrl("192.168.33.7:2181")
 	url, err := realis.LeaderFromZK(*cluster)

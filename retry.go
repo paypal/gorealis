@@ -17,10 +17,11 @@ limitations under the License.
 package realis
 
 import (
-	"errors"
 	"time"
 
 	"math/rand"
+
+	"github.com/pkg/errors"
 )
 
 // Jitter returns a time.Duration between duration and duration + maxFactor *
@@ -52,6 +53,8 @@ type ConditionFunc func() (done bool, err error)
 // If the condition never returns true, ErrWaitTimeout is returned. All other
 // errors terminate immediately.
 func ExponentialBackoff(backoff Backoff, condition ConditionFunc) error {
+	var err error
+	var ok bool
 	duration := backoff.Duration
 	for i := 0; i < backoff.Steps; i++ {
 		if i != 0 {
@@ -63,7 +66,7 @@ func ExponentialBackoff(backoff Backoff, condition ConditionFunc) error {
 			duration = time.Duration(float64(duration) * backoff.Factor)
 		}
 
-		ok, err := condition()
+		ok, err = condition()
 
 		// If the function executed says it succeeded, stop retrying
 		if ok {
@@ -78,5 +81,11 @@ func ExponentialBackoff(backoff Backoff, condition ConditionFunc) error {
 		}
 
 	}
-	return NewTimeoutError(errors.New("Timed out while retrying"))
+
+	// Provide more information to the user wherever possible
+	if err != nil {
+		return NewTimeoutError(errors.Wrap(err, "Timed out while retrying"))
+	} else {
+		return NewTimeoutError(errors.New("Timed out while retrying"))
+	}
 }
