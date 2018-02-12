@@ -93,11 +93,12 @@ func LeaderFromZK(cluster Cluster) (string, error) {
 			}
 		}
 
-		return false, errors.New("No leader found")
+		// Leader data might not be available yet, try to fetch again.
+		return false, NewTemporaryError(errors.New("No leader found"))
 	})
 
 	if retryErr != nil {
-		return "", errors.Wrapf(retryErr, "Failed to determine leader after %v attempts", defaultBackoff.Steps)
+		return "", NewTimeoutError(errors.Wrapf(retryErr, "Failed to determine leader after %v attempts", defaultBackoff.Steps))
 	}
 
 	return zkurl, nil
