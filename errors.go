@@ -16,6 +16,8 @@ package realis
 
 // Using a pattern described by Dave Cheney to differentiate errors
 // https://dave.cheney.net/2016/04/27/dont-just-check-errors-handle-them-gracefully
+
+// Timeout errors are returned when a function has unsuccessfully retried.
 type timeout interface {
 	Timeout() bool
 }
@@ -38,6 +40,7 @@ func NewTimeoutError(err error) *TimeoutErr {
 	return &TimeoutErr{error: err, timeout: true}
 }
 
+// Temporary errors indicate that the action may and should be retried.
 type temporary interface {
 	Temporary() bool
 }
@@ -59,9 +62,4 @@ func (t *TemporaryErr) Temporary() bool {
 // Retrying after receiving this error is advised
 func NewTemporaryError(err error) *TemporaryErr {
 	return &TemporaryErr{error: err, temporary: true}
-}
-
-// Nothing can be done about this error
-func NewPermamentError(err error) TemporaryErr {
-	return TemporaryErr{error: err, temporary: false}
 }
