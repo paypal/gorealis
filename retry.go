@@ -111,21 +111,26 @@ func (r *realisClient) ThriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 
 	for i := 0; i < backoff.Steps; i++ {
 
-		// If this isn't our first try, backoff before the next try
+		// If this isn't our first try, backoff before the next try.
 		if i != 0 {
 			adjusted := duration
 			if backoff.Jitter > 0.0 {
 				adjusted = Jitter(duration, backoff.Jitter)
 			}
+
+			r.logger.Printf("An error occurred during thrift call, backing off for %v before retrying\n", adjusted)
+
 			time.Sleep(adjusted)
 			duration = time.Duration(float64(duration) * backoff.Factor)
 		}
 
-		// Only allow one go-routine make use or modify the thrift client connection
+		// Only allow one go-routine make use or modify the thrift client connection.
 		r.lock.Lock()
 		resp, clientErr = thriftCall()
 		r.lock.Unlock()
 
+		// Check if our thrift call is returning an error. This is a retriable event as we don't know
+		// if it was caused by network issues.
 		if clientErr != nil {
 			r.ReestablishConn()
 
@@ -134,11 +139,13 @@ func (r *realisClient) ThriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 			continue
 		}
 
+		// If there was no client error, but the response is nil, something went wrong.
+		// Ideally, we'll never encounter this but we're placing a safeguard here.
 		if resp == nil {
 			return nil, errors.New("Response from aurora is nil")
 		}
 
-		// Check Response Code from thrift and make a decision to continue retrying or not
+		// Check Response Code from thrift and make a decision to continue retrying or not.
 		switch responseCode := resp.GetResponseCode(); responseCode {
 
 		// If the thrift call succeeded, stop retrying
@@ -147,17 +154,18 @@ func (r *realisClient) ThriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 
 		// If the response code is transient, continue retrying
 		case aurora.ResponseCode_ERROR_TRANSIENT:
+			r.logger.Println("Aurora replied with Transient error code, retrying")
 			continue
 
-		// Failure scenarios, these indicate a bad payload or config. Stop retrying.
+		// Failure scenarios, these indicate a bad payload or a bad config. Stop retrying.
 		case aurora.ResponseCode_INVALID_REQUEST:
 		case aurora.ResponseCode_ERROR:
 		case aurora.ResponseCode_AUTH_FAILED:
 		case aurora.ResponseCode_JOB_UPDATING_ERROR:
 			return nil, errors.New(response.CombineMessage(resp))
 
-		// The only case that should fall down to here is WARNING. It is currently not used
-		// as a response in the scheduler.
+		// The only case that should fall down to here is a WARNING response code.
+		// It is currently not used as a response in the scheduler so it is unknown how to handle it.
 		default:
 			return nil, errors.Errorf("unhandled response code from Aurora %v", responseCode.String())
 		}
