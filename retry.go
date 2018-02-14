@@ -125,9 +125,13 @@ func (r *realisClient) ThriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 		}
 
 		// Only allow one go-routine make use or modify the thrift client connection.
-		r.lock.Lock()
-		resp, clientErr = thriftCall()
-		r.lock.Unlock()
+		// Placing this in an anonymous function in order to create a new, short-lived stack allowing unlock
+		// to be run in case of a panic inside of thriftCall.
+		func() {
+			r.lock.Lock()
+			defer r.lock.Unlock()
+			resp, clientErr = thriftCall()
+		}()
 
 		// Check if our thrift call is returning an error. This is a retriable event as we don't know
 		// if it was caused by network issues.
