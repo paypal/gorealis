@@ -326,7 +326,7 @@ func defaultTTransport(urlstr string, timeoutms int, config *RealisConfig) (thri
 			tlsConfig.InsecureSkipVerify = true
 		}
 		if config.certspath != "" {
-			rootCAs, err := GetCerts("examples/certs")
+			rootCAs, err := GetCerts(config.certspath)
 			if err != nil {
 				config.logger.Println("error occured couldn't fetch certs")
 				return nil, err
