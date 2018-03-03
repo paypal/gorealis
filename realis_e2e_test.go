@@ -25,8 +25,9 @@ import (
 
 	"github.com/paypal/gorealis"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
-	"github.com/stretchr/testify/assert"
 	"github.com/paypal/gorealis/response"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 var r realis.Realis
@@ -59,16 +60,17 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestBadEndpoint(t *testing.T) {
+func TestNonExistentEndpoint(t *testing.T) {
+	backoff := &realis.Backoff{ // Reduce penalties for this test to make it quick
+		Steps:    5,
+		Duration: 1 * time.Second,
+		Factor:   1.0,
+		Jitter:   0.1}
 
 	// Attempt to connect to a bad endpoint
-	r, err := realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081/scheduler/"),
+	r, err := realis.NewRealisClient(realis.SchedulerUrl("http://127.0.0.1:8081/doesntexist/"),
 		realis.TimeoutMS(200),
-		realis.BackOff(&realis.Backoff{ // Reduce penalties for this test to make it quick
-			Steps:    5,
-			Duration: 1 * time.Second,
-			Factor:   1.0,
-			Jitter:   0.1}),
+		realis.BackOff(backoff),
 	)
 	defer r.Close()
 
@@ -82,6 +84,13 @@ func TestBadEndpoint(t *testing.T) {
 
 	// Check that we do error out of retrying
 	assert.Error(t, err)
+
+	// Check that the error before this one was a a retry error
+	// TODO: Consider bubbling up timeout behaving error all the way up to the user.
+	retryErr := realis.ToRetryCount(errors.Cause(err))
+	assert.NotNil(t, retryErr, "error passed in is not a retry error")
+
+	assert.Equal(t, backoff.Steps, retryErr.RetryCount(), "retry count is incorrect")
 
 }
 
@@ -186,11 +195,10 @@ func TestRealisClient_CreateJobWithPulse_Thermos(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 
-
 	updateQ := aurora.JobUpdateQuery{
-	               Key:   result.GetKey(),
-	              Limit: 1,
-			}
+		Key:   result.GetKey(),
+		Limit: 1,
+	}
 
 	start := time.Now()
 	for i := 0; i*int(pulse) <= timeout; i++ {

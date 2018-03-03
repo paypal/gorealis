@@ -16,7 +16,6 @@ package realis
 
 import (
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -36,27 +35,89 @@ type ServiceInstance struct {
 	Status              string              `json:"status"`
 }
 
+type zkConfig struct {
+	endpoints []string
+	path      string
+	backoff   Backoff
+	timeout   time.Duration
+	logger    Logger
+}
+
+type ZKOpt func(z *zkConfig)
+
+func ZKEndpoints(endpoints ...string) ZKOpt {
+	return func(z *zkConfig) {
+		z.endpoints = endpoints
+	}
+}
+
+func ZKPath(path string) ZKOpt {
+	return func(z *zkConfig) {
+		z.path = path
+	}
+}
+
+func ZKBackoff(b Backoff) ZKOpt {
+	return func(z *zkConfig) {
+		z.backoff = b
+	}
+}
+
+func ZKTimeout(d time.Duration) ZKOpt {
+	return func(z *zkConfig) {
+		z.timeout = d
+	}
+}
+
+func ZKLogger(l Logger) ZKOpt {
+	return func(z *zkConfig) {
+		z.logger = l
+	}
+}
+
 // Retrieves current Aurora leader from ZK.
 func LeaderFromZK(cluster Cluster) (string, error) {
+	return LeaderFromZKOpts(ZKEndpoints(strings.Split(cluster.ZK, ",")...), ZKPath(cluster.SchedZKPath))
+}
 
-	var zkurl string
+// Retrieves current Aurora leader from ZK with a custom configuration.
+func LeaderFromZKOpts(options ...ZKOpt) (string, error) {
+	var leaderURL string
 
-	retryErr := ExponentialBackoff(defaultBackoff, func() (bool, error) {
+	// Load the default configuration for Zookeeper followed by overriding values with those provided by the caller.
+	config := &zkConfig{backoff: defaultBackoff, timeout: time.Second * 10, logger: NoopLogger{}}
+	for _, opt := range options {
+		opt(config)
+	}
 
-		endpoints := strings.Split(cluster.ZK, ",")
+	if len(config.endpoints) == 0 {
+		return "", errors.New("no Zookeeper endpoints supplied")
+	}
 
-		//TODO (rdelvalle): When enabling debugging, change logger here
-		c, _, err := zk.Connect(endpoints, time.Second*10, func(c *zk.Conn) { c.SetLogger(NoopLogger{}) })
+	if config.path == "" {
+		return "", errors.New("no Zookeeper path supplied")
+	}
+
+	// Create a closure that allows us to use the ExponentialBackoff function.
+	retryErr := ExponentialBackoff(config.backoff, config.logger, func() (bool, error) {
+
+		c, _, err := zk.Connect(config.endpoints, config.timeout, func(c *zk.Conn) { c.SetLogger(config.logger) })
 		if err != nil {
-			return false, NewTemporaryError(errors.Wrap(err, "Failed to connect to Zookeeper at "+cluster.ZK))
+			return false, NewTemporaryError(errors.Wrap(err, "Failed to connect to Zookeeper"))
 		}
 
 		defer c.Close()
 
 		// Open up descriptor for the ZK path given
-		children, _, _, err := c.ChildrenW(cluster.SchedZKPath)
+		children, _, _, err := c.ChildrenW(config.path)
 		if err != nil {
-			return false, errors.Wrapf(err, "Path %s doesn't exist on Zookeeper ", cluster.SchedZKPath)
+
+			// Sentinel error check as there is no other way to check.
+			if err == zk.ErrInvalidPath {
+				return false, errors.Wrapf(err, "path %s is an invalid Zookeeper path", config.path)
+			}
+
+			return false, NewTemporaryError(errors.Wrapf(err, "Path %s doesn't exist on Zookeeper ", config.path))
 		}
 
 		// Search for the leader through all the children in the given path
@@ -66,9 +127,14 @@ func LeaderFromZK(cluster Cluster) (string, error) {
 			// Only the leader will start with member_
 			if strings.HasPrefix(child, "member_") {
 
-				data, _, err := c.Get(cluster.SchedZKPath + "/" + child)
+				childPath := config.path + "/" + child
+				data, _, err := c.Get(childPath)
 				if err != nil {
-					return false, errors.Wrap(err, "Error fetching contents of leader")
+					if err == zk.ErrInvalidPath {
+						return false, errors.Wrapf(err, "path %s is an invalid Zookeeper path", childPath)
+					}
+
+					return false, NewTemporaryError(errors.Wrap(err, "Error fetching contents of leader"))
 				}
 
 				err = json.Unmarshal([]byte(data), serviceInst)
@@ -76,9 +142,11 @@ func LeaderFromZK(cluster Cluster) (string, error) {
 					return false, NewTemporaryError(errors.Wrap(err, "Unable to unmarshall contents of leader"))
 				}
 
-				// Should only be one endpoint
+				// Should only be one endpoint.
+				// This should never be encountered as it would indicate Aurora
+				// writing bad info into Zookeeper but is kept here as a safety net.
 				if len(serviceInst.AdditionalEndpoints) > 1 {
-					fmt.Errorf("Ambiguous end points schemes")
+					return false, NewTemporaryError(errors.New("ambiguous endpoints in json blob, Aurora wrote bad info to ZK"))
 				}
 
 				var scheme, host, port string
@@ -88,7 +156,7 @@ func LeaderFromZK(cluster Cluster) (string, error) {
 					port = strconv.Itoa(v.Port)
 				}
 
-				zkurl = scheme + "://" + host + ":" + port
+				leaderURL = scheme + "://" + host + ":" + port
 				return true, nil
 			}
 		}
@@ -98,8 +166,9 @@ func LeaderFromZK(cluster Cluster) (string, error) {
 	})
 
 	if retryErr != nil {
-		return "", NewTimeoutError(errors.Wrapf(retryErr, "Failed to determine leader after %v attempts", defaultBackoff.Steps))
+		config.logger.Printf("Failed to determine leader after %v attempts", config.backoff.Steps)
+		return "", retryErr
 	}
 
-	return zkurl, nil
+	return leaderURL, nil
 }

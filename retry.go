@@ -1,18 +1,16 @@
-/*
-Copyright 2014 The Kubernetes Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package realis
 
@@ -59,22 +57,30 @@ type ConditionFunc func() (done bool, err error)
 // If Jitter is greater than zero, a random amount of each duration is added
 // (between duration and duration*(1+jitter)).
 //
-// If the condition never returns true, ErrWaitTimeout is returned. All other
-// errors terminate immediately.
-func ExponentialBackoff(backoff Backoff, condition ConditionFunc) error {
+// If the condition never returns true, ErrWaitTimeout is returned. Errors
+// do not cause the function to return.
+
+func ExponentialBackoff(backoff Backoff, logger Logger, condition ConditionFunc) error {
 	var err error
 	var ok bool
+	var curStep int
 	duration := backoff.Duration
-	for i := 0; i < backoff.Steps; i++ {
-		if i != 0 {
+
+	for curStep = 0; curStep < backoff.Steps; curStep++ {
+
+		// Only sleep if it's not the first iteration.
+		if curStep != 0 {
 			adjusted := duration
 			if backoff.Jitter > 0.0 {
 				adjusted = Jitter(duration, backoff.Jitter)
 			}
+
+			logger.Printf("A retriable error occurred during function call, backing off for %v before retrying\n", adjusted)
 			time.Sleep(adjusted)
 			duration = time.Duration(float64(duration) * backoff.Factor)
 		}
 
+		// Execute function passed in.
 		ok, err = condition()
 
 		// If the function executed says it succeeded, stop retrying
@@ -82,43 +88,53 @@ func ExponentialBackoff(backoff Backoff, condition ConditionFunc) error {
 			return nil
 		}
 
-		// Stop retrying if the error is NOT temporary.
 		if err != nil {
+
+			// If the error is temporary, continue retrying.
 			if !IsTemporary(err) {
 				return err
+			} else {
+				// Print out the temporary error we experienced.
+				logger.Println(err)
 			}
+
 		}
 
 	}
 
+	if curStep > 1 {
+		logger.Printf("retried this function call %d time(s)", curStep)
+	}
+
 	// Provide more information to the user wherever possible
 	if err != nil {
-		return NewTimeoutError(errors.Wrap(err, "Timed out while retrying"))
+		return newRetryError(errors.Wrap(err, "ran out of retries"), curStep)
 	} else {
-		return NewTimeoutError(errors.New("Timed out while retrying"))
+		return newRetryError(errors.New("ran out of retries"), curStep)
 	}
 }
 
 type auroraThriftCall func() (resp *aurora.Response, err error)
 
 // Duplicates the functionality of ExponentialBackoff but is specifically targeted towards ThriftCalls.
-func (r *realisClient) ThriftCallWithRetries(thriftCall auroraThriftCall) (*aurora.Response, error) {
+func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*aurora.Response, error) {
 	var resp *aurora.Response
 	var clientErr error
+	var curStep int
 
 	backoff := r.config.backoff
 	duration := backoff.Duration
 
-	for i := 0; i < backoff.Steps; i++ {
+	for curStep = 0; curStep < backoff.Steps; curStep++ {
 
 		// If this isn't our first try, backoff before the next try.
-		if i != 0 {
+		if curStep != 0 {
 			adjusted := duration
 			if backoff.Jitter > 0.0 {
 				adjusted = Jitter(duration, backoff.Jitter)
 			}
 
-			r.logger.Printf("An error occurred during thrift call, backing off for %v before retrying\n", adjusted)
+			r.logger.Printf("A retriable error occurred during thrift call, backing off for %v before retrying\n", adjusted)
 
 			time.Sleep(adjusted)
 			duration = time.Duration(float64(duration) * backoff.Factor)
@@ -176,10 +192,14 @@ func (r *realisClient) ThriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 
 	}
 
+	if curStep > 1 {
+		r.config.logger.Printf("retried this thrift call %d time(s)", curStep)
+	}
+
 	// Provide more information to the user wherever possible.
 	if clientErr != nil {
-		return nil, NewTimeoutError(errors.Wrap(clientErr, "Timed out while retrying, including latest error"))
+		return nil, newRetryError(errors.Wrap(clientErr, "ran out of retries, including latest error"), curStep)
 	} else {
-		return nil, NewTimeoutError(errors.New("Timed out while retrying"))
+		return nil, newRetryError(errors.New("ran out of retries"), curStep)
 	}
 }
