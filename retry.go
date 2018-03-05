@@ -152,6 +152,10 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 		// Check if our thrift call is returning an error. This is a retriable event as we don't know
 		// if it was caused by network issues.
 		if clientErr != nil {
+
+			// Print out the error to the user
+			r.logger.Println(clientErr)
+
 			r.ReestablishConn()
 
 			// In the future, reestablish connection should be able to check if it is actually possible
