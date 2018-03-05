@@ -17,27 +17,50 @@ package realis
 // Using a pattern described by Dave Cheney to differentiate errors
 // https://dave.cheney.net/2016/04/27/dont-just-check-errors-handle-them-gracefully
 
-// Timeout errors are returned when a function has unsuccessfully retried.
+// Timeout errors are returned when a function is unable to continue executing due
+// to a time constraint or meeting a set number of retries.
 type timeout interface {
-	Timeout() bool
+	Timedout() bool
 }
 
 func IsTimeout(err error) bool {
 	temp, ok := err.(timeout)
-	return ok && temp.Timeout()
+	return ok && temp.Timedout()
 }
 
-type TimeoutErr struct {
+// retryErr is a superset of timeout which includes extra context
+// with regards to our retry mechanism. This is done in order to make sure
+// that our retry mechanism works as expected through our tests and should
+// never be relied on or used directly. It is not made part of the public API
+// on purpose.
+type retryErr struct {
 	error
-	timeout bool
+	timedout   bool
+	retryCount int // How many times did the mechanism retry the command
 }
 
-func (t *TimeoutErr) Timeout() bool {
-	return t.timeout
+// Retry error is a timeout type error with added context.
+func (r *retryErr) Timedout() bool {
+	return r.timedout
 }
 
-func NewTimeoutError(err error) *TimeoutErr {
-	return &TimeoutErr{error: err, timeout: true}
+func (r *retryErr) RetryCount() int {
+	return r.retryCount
+}
+
+// Helper function for testing verification to avoid whitebox testing
+// as well as keeping retryErr as a private.
+// Should NOT be used under any other context.
+func ToRetryCount(err error) *retryErr {
+	if retryErr, ok := err.(*retryErr); ok {
+		return retryErr
+	} else {
+		return nil
+	}
+}
+
+func newRetryError(err error, retryCount int) *retryErr {
+	return &retryErr{error: err, timedout: true, retryCount: retryCount}
 }
 
 // Temporary errors indicate that the action may and should be retried.

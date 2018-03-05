@@ -456,7 +456,7 @@ func (r *realisClient) GetInstanceIds(key *aurora.JobKey, states map[aurora.Sche
 		Statuses:    states,
 	}
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.GetTasksWithoutConfigs(taskQ)
 	})
 
@@ -476,7 +476,7 @@ func (r *realisClient) GetInstanceIds(key *aurora.JobKey, states map[aurora.Sche
 }
 
 func (r *realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQuery) (*aurora.Response, error) {
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.readonlyClient.GetJobUpdateSummaries(jobUpdateQuery)
 	})
 
@@ -491,7 +491,7 @@ func (r *realisClient) GetJobs(role string) (*aurora.Response, *aurora.GetJobsRe
 
 	var result *aurora.GetJobsResult_
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.readonlyClient.GetJobs(role)
 	})
 
@@ -515,7 +515,7 @@ func (r *realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*a
 		instanceIds[instId] = true
 	}
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.KillTasks(key, instanceIds, "")
 	})
 
@@ -532,7 +532,7 @@ func (r *realisClient) RealisConfig() *RealisConfig {
 // Sends a kill message to the scheduler for all active tasks under a job.
 func (r *realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		// Giving the KillTasks thrift call an empty set tells the Aurora scheduler to kill all active shards
 		return r.client.KillTasks(key, nil, "")
 	})
@@ -549,7 +549,7 @@ func (r *realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 // Use this API to create ad-hoc jobs.
 func (r *realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.CreateJob(auroraJob.JobConfig())
 	})
 
@@ -580,7 +580,7 @@ func (r *realisClient) CreateService(auroraJob Job, settings *aurora.JobUpdateSe
 
 func (r *realisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) {
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.ScheduleCronJob(auroraJob.JobConfig())
 	})
 
@@ -592,7 +592,7 @@ func (r *realisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) 
 
 func (r *realisClient) DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, error) {
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.DescheduleCronJob(key)
 	})
 
@@ -606,7 +606,7 @@ func (r *realisClient) DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, 
 
 func (r *realisClient) StartCronJob(key *aurora.JobKey) (*aurora.Response, error) {
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.StartCronJob(key)
 	})
 
@@ -625,7 +625,7 @@ func (r *realisClient) RestartInstances(key *aurora.JobKey, instances ...int32) 
 		instanceIds[instId] = true
 	}
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.RestartShards(key, instanceIds)
 	})
 
@@ -644,7 +644,7 @@ func (r *realisClient) RestartJob(key *aurora.JobKey) (*aurora.Response, error) 
 	}
 
 	if len(instanceIds) > 0 {
-		resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+		resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 			return r.client.RestartShards(key, instanceIds)
 		})
 
@@ -661,7 +661,7 @@ func (r *realisClient) RestartJob(key *aurora.JobKey) (*aurora.Response, error) 
 // Update all tasks under a job configuration. Currently gorealis doesn't support for canary deployments.
 func (r *realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*aurora.Response, error) {
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.StartJobUpdate(updateJob.req, message)
 	})
 
@@ -674,7 +674,7 @@ func (r *realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*au
 // Abort Job Update on Aurora. Requires the updateId which can be obtained on the Aurora web UI.
 func (r *realisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message string) (*aurora.Response, error) {
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.AbortJobUpdate(&updateKey, message)
 	})
 
@@ -687,7 +687,7 @@ func (r *realisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message str
 //Pause Job Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.
 func (r *realisClient) PauseJobUpdate(updateKey *aurora.JobUpdateKey, message string) (*aurora.Response, error) {
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.PauseJobUpdate(updateKey, message)
 	})
 
@@ -701,7 +701,7 @@ func (r *realisClient) PauseJobUpdate(updateKey *aurora.JobUpdateKey, message st
 //Resume Paused Job Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.
 func (r *realisClient) ResumeJobUpdate(updateKey *aurora.JobUpdateKey, message string) (*aurora.Response, error) {
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.ResumeJobUpdate(updateKey, message)
 	})
 
@@ -715,7 +715,7 @@ func (r *realisClient) ResumeJobUpdate(updateKey *aurora.JobUpdateKey, message s
 //Pulse Job Update on Aurora. UpdateID is returned from StartJobUpdate or the Aurora web UI.
 func (r *realisClient) PulseJobUpdate(updateKey *aurora.JobUpdateKey) (*aurora.Response, error) {
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.PulseJobUpdate(updateKey)
 	})
 
@@ -730,7 +730,7 @@ func (r *realisClient) PulseJobUpdate(updateKey *aurora.JobUpdateKey) (*aurora.R
 // instance to scale up.
 func (r *realisClient) AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error) {
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.AddInstances(&instKey, count)
 	})
 
@@ -766,7 +766,7 @@ func (r *realisClient) RemoveInstances(key *aurora.JobKey, count int32) (*aurora
 // Get information about task including a fully hydrated task configuration object
 func (r *realisClient) GetTaskStatus(query *aurora.TaskQuery) (tasks []*aurora.ScheduledTask, e error) {
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.GetTasksStatus(query)
 	})
 
@@ -780,7 +780,7 @@ func (r *realisClient) GetTaskStatus(query *aurora.TaskQuery) (tasks []*aurora.S
 // Get information about task including without a task configuration object
 func (r *realisClient) GetTasksWithoutConfigs(query *aurora.TaskQuery) (tasks []*aurora.ScheduledTask, e error) {
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.GetTasksWithoutConfigs(query)
 	})
 
@@ -806,7 +806,7 @@ func (r *realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.Task
 		Statuses:    aurora.ACTIVE_STATES,
 	}
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.GetTasksStatus(taskQ)
 	})
 
@@ -830,7 +830,7 @@ func (r *realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.Task
 
 func (r *realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aurora.Response, error) {
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.GetJobUpdateDetails(&updateQuery)
 	})
 
@@ -843,7 +843,7 @@ func (r *realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aur
 
 func (r *realisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string) (*aurora.Response, error) {
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.RollbackJobUpdate(&key, message)
 	})
 
@@ -870,7 +870,7 @@ func (r *realisClient) DrainHosts(hosts ...string) (*aurora.Response, *aurora.Dr
 		drainList.HostNames[host] = true
 	}
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.adminClient.DrainHosts(drainList)
 	})
 
@@ -899,7 +899,7 @@ func (r *realisClient) EndMaintenance(hosts ...string) (*aurora.Response, *auror
 		hostList.HostNames[host] = true
 	}
 
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.adminClient.EndMaintenance(hostList)
 	})
 
@@ -930,7 +930,7 @@ func (r *realisClient) MaintenanceStatus(hosts ...string) (*aurora.Response, *au
 
 	// Make thrift call. If we encounter an error sending the call, attempt to reconnect
 	// and continue trying to resend command until we run out of retries.
-	resp, retryErr := r.ThriftCallWithRetries(func() (*aurora.Response, error) {
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.adminClient.MaintenanceStatus(hostList)
 	})
 
