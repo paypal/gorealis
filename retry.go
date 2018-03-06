@@ -181,7 +181,6 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 
 			// If the thrift call succeeded, stop retrying
 			case aurora.ResponseCode_OK:
-				r.debugLogger.Println("OK reply from Aurora")
 				return resp, nil
 
 				// If the response code is transient, continue retrying
