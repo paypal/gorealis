@@ -61,7 +61,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestNonExistentEndpoint(t *testing.T) {
-	backoff := &realis.Backoff{ // Reduce penalties for this test to make it quick
+	backoff := realis.Backoff{ // Reduce penalties for this test to make it quick
 		Steps:    5,
 		Duration: 1 * time.Second,
 		Factor:   1.0,

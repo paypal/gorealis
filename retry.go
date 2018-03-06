@@ -134,7 +134,7 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 				adjusted = Jitter(duration, backoff.Jitter)
 			}
 
-			r.logger.Printf("A retriable error occurred during thrift call, backing off for %v before retrying\n", adjusted)
+			r.logger.Printf("A retriable error occurred during thrift call, backing off for %v before retry %v\n", adjusted, curStep+1)
 
 			time.Sleep(adjusted)
 			duration = time.Duration(float64(duration) * backoff.Factor)
@@ -146,6 +146,7 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 		func() {
 			r.lock.Lock()
 			defer r.lock.Unlock()
+			r.logger.Println("Beginning Aurora Thrift Call")
 			resp, clientErr = thriftCall()
 		}()
 
@@ -169,6 +170,9 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 			return nil, errors.New("Response from aurora is nil")
 		}
 
+		// Log response code for debugging
+		r.logger.Printf("Aurora replied with code: %v\n", resp.GetResponseCode().String())
+
 		// Check Response Code from thrift and make a decision to continue retrying or not.
 		switch responseCode := resp.GetResponseCode(); responseCode {
 
@@ -191,6 +195,7 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 		// The only case that should fall down to here is a WARNING response code.
 		// It is currently not used as a response in the scheduler so it is unknown how to handle it.
 		default:
+			r.logger.Println("unhandled response code received from Aurora")
 			return nil, errors.Errorf("unhandled response code from Aurora %v", responseCode.String())
 		}
 
