@@ -85,13 +85,13 @@ func main() {
 		realis.BasicAuth(username, password),
 		realis.ThriftJSON(),
 		realis.TimeoutMS(CONNECTION_TIMEOUT),
-		realis.BackOff(&realis.Backoff{
+		realis.BackOff(realis.Backoff{
 			Steps:    2,
 			Duration: 10 * time.Second,
 			Factor:   2.0,
 			Jitter:   0.1,
 		}),
-		realis.SetLogger(log.New(os.Stdout, "realis-debug: ", log.Ldate)),
+		realis.DebugLogger(log.New(os.Stdout, "realis-debug: ", log.Ltime|log.LUTC|log.Ldate)),
 	}
 
 	//check if zkUrl is available.
@@ -432,8 +432,8 @@ func main() {
 	case "pauseJobUpdate":
 		resp, err := r.PauseJobUpdate(&aurora.JobUpdateKey{
 			Job: job.JobKey(),
-			ID: updateId,
-			}, "")
+			ID:  updateId,
+		}, "")
 
 		if err != nil {
 			fmt.Println(err)
@@ -443,7 +443,7 @@ func main() {
 	case "resumeJobUpdate":
 		resp, err := r.ResumeJobUpdate(&aurora.JobUpdateKey{
 			Job: job.JobKey(),
-			ID: updateId,
+			ID:  updateId,
 		}, "")
 
 		if err != nil {
@@ -454,8 +454,8 @@ func main() {
 	case "pulseJobUpdate":
 		resp, err := r.PulseJobUpdate(&aurora.JobUpdateKey{
 			Job: job.JobKey(),
-			ID: updateId,
-			})
+			ID:  updateId,
+		})
 		if err != nil {
 			fmt.Println(err)
 		}

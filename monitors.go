@@ -58,7 +58,7 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 			updateDetail := response.JobUpdateDetails(respDetail)
 
 			if len(updateDetail) == 0 {
-				m.Client.RealisConfig().logger.Println("No update found")
+				m.Client.RealisConfig().infoLogger.Println("No update found")
 				return false, errors.New("No update found for " + updateKey.String())
 			}
 			status := updateDetail[0].Update.Summary.State.Status
@@ -69,13 +69,13 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 				// if we encounter an inactive state and it is not at rolled forward, update failed
 				switch status {
 				case aurora.JobUpdateStatus_ROLLED_FORWARD:
-					m.Client.RealisConfig().logger.Println("Update succeded")
+					m.Client.RealisConfig().infoLogger.Println("Update succeded")
 					return true, nil
 				case aurora.JobUpdateStatus_FAILED:
-					m.Client.RealisConfig().logger.Println("Update failed")
+					m.Client.RealisConfig().infoLogger.Println("Update failed")
 					return false, errors.New(UpdateFailed)
 				case aurora.JobUpdateStatus_ROLLED_BACK:
-					m.Client.RealisConfig().logger.Println("rolled back")
+					m.Client.RealisConfig().infoLogger.Println("rolled back")
 					return false, errors.New(RolledBack)
 				default:
 					return false, nil
