@@ -392,23 +392,34 @@ func TestRealisClient_SessionThreadSafety(t *testing.T) {
 
 // Test setting and getting the quota
 func TestRealisClient_SetQuota(t *testing.T) {
-	var cpu = 2.5
-	var ram int64 = 10240
+	var cpu = 3.5
+	var ram int64 = 20480
 	var disk int64 = 10240
-	resp, err := r.SetQuota("vagrant", cpu, ram, disk)
+	resp, err := r.SetQuota("vagrant", &cpu, &ram, &disk)
 	assert.NoError(t, err)
 	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-
-	// Test GetQuota based on previously set values
-	var result *aurora.GetQuotaResult_
-	resp, err = r.GetQuota("vagrant")
-	if resp.GetResult_() != nil {
-		result = resp.GetResult_().GetQuotaResult_
-	}
-	assert.NoError(t, err)
-	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-	assert.Equal(t, cpu, result.Quota.NumCpus)
-	assert.Equal(t, ram, result.Quota.RamMb)
-	assert.Equal(t, disk, result.Quota.DiskMb)
-	fmt.Print("GetQuota Result", result.String())
+	t.Run("TestRealisClient_GetQuota", func(t *testing.T) {
+		// Test GetQuota based on previously set values
+		var result *aurora.GetQuotaResult_
+		resp, err = r.GetQuota("vagrant")
+		if resp.GetResult_() != nil {
+			result = resp.GetResult_().GetQuotaResult_
+		}
+		assert.NoError(t, err)
+		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+		for res := range result.Quota.GetResources() {
+			switch true {
+			case res.DiskMb != nil:
+				assert.Equal(t, disk, *res.DiskMb)
+				break
+			case res.NumCpus != nil:
+				assert.Equal(t, cpu, *res.NumCpus)
+				break
+			case res.RamMb != nil:
+				assert.Equal(t, ram, *res.RamMb)
+				break
+			}
+		}
+		fmt.Print("GetQuota Result", result.String())
+	})
 }
