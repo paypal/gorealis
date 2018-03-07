@@ -147,8 +147,6 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 			r.lock.Lock()
 			defer r.lock.Unlock()
 
-			r.debugLogger.Println("Beginning Aurora Thrift Call")
-
 			resp, clientErr = thriftCall()
 
 			r.debugLogger.Printf("Aurora Thrift Call ended resp: %v clientErr: %v\n", resp, clientErr)
