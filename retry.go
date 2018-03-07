@@ -173,9 +173,6 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 				return nil, errors.New("Response from aurora is nil")
 			}
 
-			// Log response code for debugging
-			r.debugLogger.Printf("Aurora replied with code: %v\n", resp.GetResponseCode().String())
-
 			// Check Response Code from thrift and make a decision to continue retrying or not.
 			switch responseCode := resp.GetResponseCode(); responseCode {
 

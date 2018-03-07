@@ -69,7 +69,7 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 				// if we encounter an inactive state and it is not at rolled forward, update failed
 				switch status {
 				case aurora.JobUpdateStatus_ROLLED_FORWARD:
-					m.Client.RealisConfig().infoLogger.Println("Update succeded")
+					m.Client.RealisConfig().infoLogger.Println("Update succeeded")
 					return true, nil
 				case aurora.JobUpdateStatus_FAILED:
 					m.Client.RealisConfig().infoLogger.Println("Update failed")
