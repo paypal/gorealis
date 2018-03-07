@@ -71,6 +71,8 @@ type Realis interface {
 	DrainHosts(hosts ...string) (*aurora.Response, *aurora.DrainHostsResult_, error)
 	EndMaintenance(hosts ...string) (*aurora.Response, *aurora.EndMaintenanceResult_, error)
 	MaintenanceStatus(hosts ...string) (*aurora.Response, *aurora.MaintenanceStatusResult_, error)
+	SetQuota(role string, cpu float64, ram int64, disk int64) (*aurora.Response, error)
+	GetQuota(role string) (*aurora.Response, error)
 }
 
 type realisClient struct {
@@ -943,4 +945,35 @@ func (r *realisClient) MaintenanceStatus(hosts ...string) (*aurora.Response, *au
 	}
 
 	return resp, result, nil
+}
+
+// SetQuota sets a quota aggregate for the given role
+func (r *realisClient) SetQuota(role string, cpu float64, ramMb int64, diskMb int64) (*aurora.Response, error) {
+	quota := &aurora.ResourceAggregate{
+		NumCpus: cpu,
+		RamMb:   ramMb,
+		DiskMb:  diskMb,
+	}
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
+		return r.adminClient.SetQuota(role, quota)
+	})
+
+	if retryErr != nil {
+		return nil, errors.Wrap(retryErr, "Unable to set role quota")
+	}
+	return resp, nil
+
+}
+
+// GetQuota returns the resource aggregate for the given role
+func (r *realisClient) GetQuota(role string) (*aurora.Response, error) {
+
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
+		return r.adminClient.GetQuota(role)
+	})
+
+	if retryErr != nil {
+		return nil, errors.Wrap(retryErr, "Unable to get role quota")
+	}
+	return resp, nil
 }

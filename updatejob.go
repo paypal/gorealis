@@ -138,7 +138,6 @@ func (u *UpdateJob) RollbackOnFail(rollback bool) *UpdateJob {
 	return u
 }
 
-
 func NewUpdateSettings() *aurora.JobUpdateSettings {
 
 	us := new(aurora.JobUpdateSettings)
