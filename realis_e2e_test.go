@@ -389,3 +389,37 @@ func TestRealisClient_SessionThreadSafety(t *testing.T) {
 
 	wg.Wait()
 }
+
+// Test setting and getting the quota
+func TestRealisClient_SetQuota(t *testing.T) {
+	var cpu = 3.5
+	var ram int64 = 20480
+	var disk int64 = 10240
+	resp, err := r.SetQuota("vagrant", &cpu, &ram, &disk)
+	assert.NoError(t, err)
+	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+	t.Run("TestRealisClient_GetQuota", func(t *testing.T) {
+		// Test GetQuota based on previously set values
+		var result *aurora.GetQuotaResult_
+		resp, err = r.GetQuota("vagrant")
+		if resp.GetResult_() != nil {
+			result = resp.GetResult_().GetQuotaResult_
+		}
+		assert.NoError(t, err)
+		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+		for res := range result.Quota.GetResources() {
+			switch true {
+			case res.DiskMb != nil:
+				assert.Equal(t, disk, *res.DiskMb)
+				break
+			case res.NumCpus != nil:
+				assert.Equal(t, cpu, *res.NumCpus)
+				break
+			case res.RamMb != nil:
+				assert.Equal(t, ram, *res.RamMb)
+				break
+			}
+		}
+		fmt.Print("GetQuota Result", result.String())
+	})
+}

@@ -71,6 +71,8 @@ type Realis interface {
 	DrainHosts(hosts ...string) (*aurora.Response, *aurora.DrainHostsResult_, error)
 	EndMaintenance(hosts ...string) (*aurora.Response, *aurora.EndMaintenanceResult_, error)
 	MaintenanceStatus(hosts ...string) (*aurora.Response, *aurora.MaintenanceStatusResult_, error)
+	SetQuota(role string, cpu *float64, ram *int64, disk *int64) (*aurora.Response, error)
+	GetQuota(role string) (*aurora.Response, error)
 }
 
 type realisClient struct {
@@ -943,4 +945,45 @@ func (r *realisClient) MaintenanceStatus(hosts ...string) (*aurora.Response, *au
 	}
 
 	return resp, result, nil
+}
+
+// SetQuota sets a quota aggregate for the given role
+// TODO(zircote) Currently investigating an error that is returned from thrift calls that include resources for `NamedPort` and `NumGpu`
+func (r *realisClient) SetQuota(role string, cpu *float64, ramMb *int64, diskMb *int64) (*aurora.Response, error) {
+	ram := aurora.NewResource()
+	ram.RamMb = ramMb
+	c := aurora.NewResource()
+	c.NumCpus = cpu
+	d := aurora.NewResource()
+	d.DiskMb = diskMb
+	quota := aurora.NewResourceAggregate()
+	quota.Resources = make(map[*aurora.Resource]bool)
+	quota.Resources[ram] = true
+	quota.Resources[c] = true
+	quota.Resources[d] = true
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
+		resp, retryErr := r.adminClient.SetQuota(role, quota)
+
+		if retryErr != nil {
+			return nil, errors.Wrap(retryErr, "Unable to set role quota")
+		}
+		return resp, nil
+	})
+	return resp, retryErr
+
+}
+
+// GetQuota returns the resource aggregate for the given role
+func (r *realisClient) GetQuota(role string) (*aurora.Response, error) {
+
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
+		resp, retryErr :=r.adminClient.GetQuota(role)
+
+		if retryErr != nil {
+			return nil, errors.Wrap(retryErr, "Unable to get role quota")
+		}
+		return resp, nil
+	})
+
+	return resp, retryErr
 }
