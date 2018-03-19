@@ -706,14 +706,25 @@ struct JobUpdateSettings {
    */
   8: bool waitForBatchCompletion
 
- /**
+  /**
   * If set, requires external calls to pulseJobUpdate RPC within the specified rate for the
   * update to make progress. If no pulses received within specified interval the update will
   * block. A blocked update is unable to continue but retains its current status. It may only get
   * unblocked by a fresh pulseJobUpdate call.
   */
   9: optional i32 blockIfNoPulsesAfterMs
-}
+
+  /**
+   * This list contains the number of instances that each batch will complete before moving on to
+   * the next. This field can only be used with waitForBatchCompletion set as true.
+  **/
+  10: optional list<i32> variableUpdateGroupSize
+
+  /**
+   * Pauses the deployment of further tasks after each batch completes
+   * until the user sends an resume call.
+   **/
+  11: bool autoPause}
 
 /** Event marking a state transition in job update lifecycle. */
 struct JobUpdateEvent {

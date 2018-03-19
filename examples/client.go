@@ -191,7 +191,8 @@ func main() {
 		// Create a service with three instances using the update API instead of the createJob API
 		fmt.Println("Creating service")
 		settings := realis.NewUpdateSettings()
-		job.InstanceCount(3)
+		settings.VariableUpdateGroupSize = []int32{1, 2, 3}
+		job.InstanceCount(6).RAM(16).CPU(.1)
 		resp, result, err := r.CreateService(job, settings)
 		if err != nil {
 			fmt.Println("error: ", err)
@@ -416,8 +417,8 @@ func main() {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		updateJob := realis.NewDefaultUpdateJob(taskConfig)
-		updateJob.InstanceCount(5).RAM(128)
+		updateJob := realis.NewDefaultUpdateJob(taskConfig).WaitForBatchCompletion(true).BatchSize(2)
+		updateJob.InstanceCount(6).RAM(32).CPU(.2)
 
 		resp, err := r.StartJobUpdate(updateJob, "")
 		if err != nil {

@@ -165,19 +165,19 @@ func main() {
 		}
 		argvalue0 := flag.Arg(1)
 		value0 := argvalue0
-		arg353 := flag.Arg(2)
-		mbTrans354 := thrift.NewTMemoryBufferLen(len(arg353))
-		defer mbTrans354.Close()
-		_, err355 := mbTrans354.WriteString(arg353)
-		if err355 != nil {
+		arg354 := flag.Arg(2)
+		mbTrans355 := thrift.NewTMemoryBufferLen(len(arg354))
+		defer mbTrans355.Close()
+		_, err356 := mbTrans355.WriteString(arg354)
+		if err356 != nil {
 			Usage()
 			return
 		}
-		factory356 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt357 := factory356.GetProtocol(mbTrans354)
+		factory357 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt358 := factory357.GetProtocol(mbTrans355)
 		argvalue1 := aurora.NewResourceAggregate()
-		err358 := argvalue1.Read(jsProt357)
-		if err358 != nil {
+		err359 := argvalue1.Read(jsProt358)
+		if err359 != nil {
 			Usage()
 			return
 		}
@@ -233,19 +233,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "QueryRecovery requires 1 args")
 			flag.Usage()
 		}
-		arg361 := flag.Arg(1)
-		mbTrans362 := thrift.NewTMemoryBufferLen(len(arg361))
-		defer mbTrans362.Close()
-		_, err363 := mbTrans362.WriteString(arg361)
-		if err363 != nil {
+		arg362 := flag.Arg(1)
+		mbTrans363 := thrift.NewTMemoryBufferLen(len(arg362))
+		defer mbTrans363.Close()
+		_, err364 := mbTrans363.WriteString(arg362)
+		if err364 != nil {
 			Usage()
 			return
 		}
-		factory364 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt365 := factory364.GetProtocol(mbTrans362)
+		factory365 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt366 := factory365.GetProtocol(mbTrans363)
 		argvalue0 := aurora.NewTaskQuery()
-		err366 := argvalue0.Read(jsProt365)
-		if err366 != nil {
+		err367 := argvalue0.Read(jsProt366)
+		if err367 != nil {
 			Usage()
 			return
 		}
@@ -258,19 +258,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "DeleteRecoveryTasks requires 1 args")
 			flag.Usage()
 		}
-		arg367 := flag.Arg(1)
-		mbTrans368 := thrift.NewTMemoryBufferLen(len(arg367))
-		defer mbTrans368.Close()
-		_, err369 := mbTrans368.WriteString(arg367)
-		if err369 != nil {
+		arg368 := flag.Arg(1)
+		mbTrans369 := thrift.NewTMemoryBufferLen(len(arg368))
+		defer mbTrans369.Close()
+		_, err370 := mbTrans369.WriteString(arg368)
+		if err370 != nil {
 			Usage()
 			return
 		}
-		factory370 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt371 := factory370.GetProtocol(mbTrans368)
+		factory371 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt372 := factory371.GetProtocol(mbTrans369)
 		argvalue0 := aurora.NewTaskQuery()
-		err372 := argvalue0.Read(jsProt371)
-		if err372 != nil {
+		err373 := argvalue0.Read(jsProt372)
+		if err373 != nil {
 			Usage()
 			return
 		}
@@ -299,19 +299,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "StartMaintenance requires 1 args")
 			flag.Usage()
 		}
-		arg373 := flag.Arg(1)
-		mbTrans374 := thrift.NewTMemoryBufferLen(len(arg373))
-		defer mbTrans374.Close()
-		_, err375 := mbTrans374.WriteString(arg373)
-		if err375 != nil {
+		arg374 := flag.Arg(1)
+		mbTrans375 := thrift.NewTMemoryBufferLen(len(arg374))
+		defer mbTrans375.Close()
+		_, err376 := mbTrans375.WriteString(arg374)
+		if err376 != nil {
 			Usage()
 			return
 		}
-		factory376 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt377 := factory376.GetProtocol(mbTrans374)
+		factory377 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt378 := factory377.GetProtocol(mbTrans375)
 		argvalue0 := aurora.NewHosts()
-		err378 := argvalue0.Read(jsProt377)
-		if err378 != nil {
+		err379 := argvalue0.Read(jsProt378)
+		if err379 != nil {
 			Usage()
 			return
 		}
@@ -324,19 +324,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "DrainHosts requires 1 args")
 			flag.Usage()
 		}
-		arg379 := flag.Arg(1)
-		mbTrans380 := thrift.NewTMemoryBufferLen(len(arg379))
-		defer mbTrans380.Close()
-		_, err381 := mbTrans380.WriteString(arg379)
-		if err381 != nil {
+		arg380 := flag.Arg(1)
+		mbTrans381 := thrift.NewTMemoryBufferLen(len(arg380))
+		defer mbTrans381.Close()
+		_, err382 := mbTrans381.WriteString(arg380)
+		if err382 != nil {
 			Usage()
 			return
 		}
-		factory382 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt383 := factory382.GetProtocol(mbTrans380)
+		factory383 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt384 := factory383.GetProtocol(mbTrans381)
 		argvalue0 := aurora.NewHosts()
-		err384 := argvalue0.Read(jsProt383)
-		if err384 != nil {
+		err385 := argvalue0.Read(jsProt384)
+		if err385 != nil {
 			Usage()
 			return
 		}
@@ -349,19 +349,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "MaintenanceStatus requires 1 args")
 			flag.Usage()
 		}
-		arg385 := flag.Arg(1)
-		mbTrans386 := thrift.NewTMemoryBufferLen(len(arg385))
-		defer mbTrans386.Close()
-		_, err387 := mbTrans386.WriteString(arg385)
-		if err387 != nil {
+		arg386 := flag.Arg(1)
+		mbTrans387 := thrift.NewTMemoryBufferLen(len(arg386))
+		defer mbTrans387.Close()
+		_, err388 := mbTrans387.WriteString(arg386)
+		if err388 != nil {
 			Usage()
 			return
 		}
-		factory388 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt389 := factory388.GetProtocol(mbTrans386)
+		factory389 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt390 := factory389.GetProtocol(mbTrans387)
 		argvalue0 := aurora.NewHosts()
-		err390 := argvalue0.Read(jsProt389)
-		if err390 != nil {
+		err391 := argvalue0.Read(jsProt390)
+		if err391 != nil {
 			Usage()
 			return
 		}
@@ -374,19 +374,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "EndMaintenance requires 1 args")
 			flag.Usage()
 		}
-		arg391 := flag.Arg(1)
-		mbTrans392 := thrift.NewTMemoryBufferLen(len(arg391))
-		defer mbTrans392.Close()
-		_, err393 := mbTrans392.WriteString(arg391)
-		if err393 != nil {
+		arg392 := flag.Arg(1)
+		mbTrans393 := thrift.NewTMemoryBufferLen(len(arg392))
+		defer mbTrans393.Close()
+		_, err394 := mbTrans393.WriteString(arg392)
+		if err394 != nil {
 			Usage()
 			return
 		}
-		factory394 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt395 := factory394.GetProtocol(mbTrans392)
+		factory395 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt396 := factory395.GetProtocol(mbTrans393)
 		argvalue0 := aurora.NewHosts()
-		err396 := argvalue0.Read(jsProt395)
-		if err396 != nil {
+		err397 := argvalue0.Read(jsProt396)
+		if err397 != nil {
 			Usage()
 			return
 		}
@@ -407,19 +407,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "TriggerExplicitTaskReconciliation requires 1 args")
 			flag.Usage()
 		}
-		arg397 := flag.Arg(1)
-		mbTrans398 := thrift.NewTMemoryBufferLen(len(arg397))
-		defer mbTrans398.Close()
-		_, err399 := mbTrans398.WriteString(arg397)
-		if err399 != nil {
+		arg398 := flag.Arg(1)
+		mbTrans399 := thrift.NewTMemoryBufferLen(len(arg398))
+		defer mbTrans399.Close()
+		_, err400 := mbTrans399.WriteString(arg398)
+		if err400 != nil {
 			Usage()
 			return
 		}
-		factory400 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt401 := factory400.GetProtocol(mbTrans398)
+		factory401 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt402 := factory401.GetProtocol(mbTrans399)
 		argvalue0 := aurora.NewExplicitReconciliationSettings()
-		err402 := argvalue0.Read(jsProt401)
-		if err402 != nil {
+		err403 := argvalue0.Read(jsProt402)
+		if err403 != nil {
 			Usage()
 			return
 		}
@@ -440,19 +440,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "PruneTasks requires 1 args")
 			flag.Usage()
 		}
-		arg403 := flag.Arg(1)
-		mbTrans404 := thrift.NewTMemoryBufferLen(len(arg403))
-		defer mbTrans404.Close()
-		_, err405 := mbTrans404.WriteString(arg403)
-		if err405 != nil {
+		arg404 := flag.Arg(1)
+		mbTrans405 := thrift.NewTMemoryBufferLen(len(arg404))
+		defer mbTrans405.Close()
+		_, err406 := mbTrans405.WriteString(arg404)
+		if err406 != nil {
 			Usage()
 			return
 		}
-		factory406 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt407 := factory406.GetProtocol(mbTrans404)
+		factory407 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt408 := factory407.GetProtocol(mbTrans405)
 		argvalue0 := aurora.NewTaskQuery()
-		err408 := argvalue0.Read(jsProt407)
-		if err408 != nil {
+		err409 := argvalue0.Read(jsProt408)
+		if err409 != nil {
 			Usage()
 			return
 		}
@@ -465,19 +465,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "CreateJob requires 1 args")
 			flag.Usage()
 		}
-		arg409 := flag.Arg(1)
-		mbTrans410 := thrift.NewTMemoryBufferLen(len(arg409))
-		defer mbTrans410.Close()
-		_, err411 := mbTrans410.WriteString(arg409)
-		if err411 != nil {
+		arg410 := flag.Arg(1)
+		mbTrans411 := thrift.NewTMemoryBufferLen(len(arg410))
+		defer mbTrans411.Close()
+		_, err412 := mbTrans411.WriteString(arg410)
+		if err412 != nil {
 			Usage()
 			return
 		}
-		factory412 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt413 := factory412.GetProtocol(mbTrans410)
+		factory413 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt414 := factory413.GetProtocol(mbTrans411)
 		argvalue0 := aurora.NewJobConfiguration()
-		err414 := argvalue0.Read(jsProt413)
-		if err414 != nil {
+		err415 := argvalue0.Read(jsProt414)
+		if err415 != nil {
 			Usage()
 			return
 		}
@@ -490,19 +490,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "ScheduleCronJob requires 1 args")
 			flag.Usage()
 		}
-		arg415 := flag.Arg(1)
-		mbTrans416 := thrift.NewTMemoryBufferLen(len(arg415))
-		defer mbTrans416.Close()
-		_, err417 := mbTrans416.WriteString(arg415)
-		if err417 != nil {
+		arg416 := flag.Arg(1)
+		mbTrans417 := thrift.NewTMemoryBufferLen(len(arg416))
+		defer mbTrans417.Close()
+		_, err418 := mbTrans417.WriteString(arg416)
+		if err418 != nil {
 			Usage()
 			return
 		}
-		factory418 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt419 := factory418.GetProtocol(mbTrans416)
+		factory419 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt420 := factory419.GetProtocol(mbTrans417)
 		argvalue0 := aurora.NewJobConfiguration()
-		err420 := argvalue0.Read(jsProt419)
-		if err420 != nil {
+		err421 := argvalue0.Read(jsProt420)
+		if err421 != nil {
 			Usage()
 			return
 		}
@@ -515,19 +515,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "DescheduleCronJob requires 1 args")
 			flag.Usage()
 		}
-		arg421 := flag.Arg(1)
-		mbTrans422 := thrift.NewTMemoryBufferLen(len(arg421))
-		defer mbTrans422.Close()
-		_, err423 := mbTrans422.WriteString(arg421)
-		if err423 != nil {
+		arg422 := flag.Arg(1)
+		mbTrans423 := thrift.NewTMemoryBufferLen(len(arg422))
+		defer mbTrans423.Close()
+		_, err424 := mbTrans423.WriteString(arg422)
+		if err424 != nil {
 			Usage()
 			return
 		}
-		factory424 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt425 := factory424.GetProtocol(mbTrans422)
+		factory425 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt426 := factory425.GetProtocol(mbTrans423)
 		argvalue0 := aurora.NewJobKey()
-		err426 := argvalue0.Read(jsProt425)
-		if err426 != nil {
+		err427 := argvalue0.Read(jsProt426)
+		if err427 != nil {
 			Usage()
 			return
 		}
@@ -540,19 +540,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "StartCronJob requires 1 args")
 			flag.Usage()
 		}
-		arg427 := flag.Arg(1)
-		mbTrans428 := thrift.NewTMemoryBufferLen(len(arg427))
-		defer mbTrans428.Close()
-		_, err429 := mbTrans428.WriteString(arg427)
-		if err429 != nil {
+		arg428 := flag.Arg(1)
+		mbTrans429 := thrift.NewTMemoryBufferLen(len(arg428))
+		defer mbTrans429.Close()
+		_, err430 := mbTrans429.WriteString(arg428)
+		if err430 != nil {
 			Usage()
 			return
 		}
-		factory430 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt431 := factory430.GetProtocol(mbTrans428)
+		factory431 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt432 := factory431.GetProtocol(mbTrans429)
 		argvalue0 := aurora.NewJobKey()
-		err432 := argvalue0.Read(jsProt431)
-		if err432 != nil {
+		err433 := argvalue0.Read(jsProt432)
+		if err433 != nil {
 			Usage()
 			return
 		}
@@ -565,36 +565,36 @@ func main() {
 			fmt.Fprintln(os.Stderr, "RestartShards requires 2 args")
 			flag.Usage()
 		}
-		arg433 := flag.Arg(1)
-		mbTrans434 := thrift.NewTMemoryBufferLen(len(arg433))
-		defer mbTrans434.Close()
-		_, err435 := mbTrans434.WriteString(arg433)
-		if err435 != nil {
+		arg434 := flag.Arg(1)
+		mbTrans435 := thrift.NewTMemoryBufferLen(len(arg434))
+		defer mbTrans435.Close()
+		_, err436 := mbTrans435.WriteString(arg434)
+		if err436 != nil {
 			Usage()
 			return
 		}
-		factory436 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt437 := factory436.GetProtocol(mbTrans434)
+		factory437 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt438 := factory437.GetProtocol(mbTrans435)
 		argvalue0 := aurora.NewJobKey()
-		err438 := argvalue0.Read(jsProt437)
-		if err438 != nil {
+		err439 := argvalue0.Read(jsProt438)
+		if err439 != nil {
 			Usage()
 			return
 		}
 		value0 := argvalue0
-		arg439 := flag.Arg(2)
-		mbTrans440 := thrift.NewTMemoryBufferLen(len(arg439))
-		defer mbTrans440.Close()
-		_, err441 := mbTrans440.WriteString(arg439)
-		if err441 != nil {
+		arg440 := flag.Arg(2)
+		mbTrans441 := thrift.NewTMemoryBufferLen(len(arg440))
+		defer mbTrans441.Close()
+		_, err442 := mbTrans441.WriteString(arg440)
+		if err442 != nil {
 			Usage()
 			return
 		}
-		factory442 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt443 := factory442.GetProtocol(mbTrans440)
+		factory443 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt444 := factory443.GetProtocol(mbTrans441)
 		containerStruct1 := aurora.NewAuroraAdminRestartShardsArgs()
-		err444 := containerStruct1.ReadField2(jsProt443)
-		if err444 != nil {
+		err445 := containerStruct1.ReadField2(jsProt444)
+		if err445 != nil {
 			Usage()
 			return
 		}
@@ -608,36 +608,36 @@ func main() {
 			fmt.Fprintln(os.Stderr, "KillTasks requires 3 args")
 			flag.Usage()
 		}
-		arg445 := flag.Arg(1)
-		mbTrans446 := thrift.NewTMemoryBufferLen(len(arg445))
-		defer mbTrans446.Close()
-		_, err447 := mbTrans446.WriteString(arg445)
-		if err447 != nil {
+		arg446 := flag.Arg(1)
+		mbTrans447 := thrift.NewTMemoryBufferLen(len(arg446))
+		defer mbTrans447.Close()
+		_, err448 := mbTrans447.WriteString(arg446)
+		if err448 != nil {
 			Usage()
 			return
 		}
-		factory448 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt449 := factory448.GetProtocol(mbTrans446)
+		factory449 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt450 := factory449.GetProtocol(mbTrans447)
 		argvalue0 := aurora.NewJobKey()
-		err450 := argvalue0.Read(jsProt449)
-		if err450 != nil {
+		err451 := argvalue0.Read(jsProt450)
+		if err451 != nil {
 			Usage()
 			return
 		}
 		value0 := argvalue0
-		arg451 := flag.Arg(2)
-		mbTrans452 := thrift.NewTMemoryBufferLen(len(arg451))
-		defer mbTrans452.Close()
-		_, err453 := mbTrans452.WriteString(arg451)
-		if err453 != nil {
+		arg452 := flag.Arg(2)
+		mbTrans453 := thrift.NewTMemoryBufferLen(len(arg452))
+		defer mbTrans453.Close()
+		_, err454 := mbTrans453.WriteString(arg452)
+		if err454 != nil {
 			Usage()
 			return
 		}
-		factory454 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt455 := factory454.GetProtocol(mbTrans452)
+		factory455 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt456 := factory455.GetProtocol(mbTrans453)
 		containerStruct1 := aurora.NewAuroraAdminKillTasksArgs()
-		err456 := containerStruct1.ReadField2(jsProt455)
-		if err456 != nil {
+		err457 := containerStruct1.ReadField2(jsProt456)
+		if err457 != nil {
 			Usage()
 			return
 		}
@@ -653,25 +653,25 @@ func main() {
 			fmt.Fprintln(os.Stderr, "AddInstances requires 2 args")
 			flag.Usage()
 		}
-		arg458 := flag.Arg(1)
-		mbTrans459 := thrift.NewTMemoryBufferLen(len(arg458))
-		defer mbTrans459.Close()
-		_, err460 := mbTrans459.WriteString(arg458)
-		if err460 != nil {
+		arg459 := flag.Arg(1)
+		mbTrans460 := thrift.NewTMemoryBufferLen(len(arg459))
+		defer mbTrans460.Close()
+		_, err461 := mbTrans460.WriteString(arg459)
+		if err461 != nil {
 			Usage()
 			return
 		}
-		factory461 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt462 := factory461.GetProtocol(mbTrans459)
+		factory462 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt463 := factory462.GetProtocol(mbTrans460)
 		argvalue0 := aurora.NewInstanceKey()
-		err463 := argvalue0.Read(jsProt462)
-		if err463 != nil {
+		err464 := argvalue0.Read(jsProt463)
+		if err464 != nil {
 			Usage()
 			return
 		}
 		value0 := argvalue0
-		tmp1, err464 := (strconv.Atoi(flag.Arg(2)))
-		if err464 != nil {
+		tmp1, err465 := (strconv.Atoi(flag.Arg(2)))
+		if err465 != nil {
 			Usage()
 			return
 		}
@@ -685,19 +685,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "ReplaceCronTemplate requires 1 args")
 			flag.Usage()
 		}
-		arg465 := flag.Arg(1)
-		mbTrans466 := thrift.NewTMemoryBufferLen(len(arg465))
-		defer mbTrans466.Close()
-		_, err467 := mbTrans466.WriteString(arg465)
-		if err467 != nil {
+		arg466 := flag.Arg(1)
+		mbTrans467 := thrift.NewTMemoryBufferLen(len(arg466))
+		defer mbTrans467.Close()
+		_, err468 := mbTrans467.WriteString(arg466)
+		if err468 != nil {
 			Usage()
 			return
 		}
-		factory468 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt469 := factory468.GetProtocol(mbTrans466)
+		factory469 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt470 := factory469.GetProtocol(mbTrans467)
 		argvalue0 := aurora.NewJobConfiguration()
-		err470 := argvalue0.Read(jsProt469)
-		if err470 != nil {
+		err471 := argvalue0.Read(jsProt470)
+		if err471 != nil {
 			Usage()
 			return
 		}
@@ -710,19 +710,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "StartJobUpdate requires 2 args")
 			flag.Usage()
 		}
-		arg471 := flag.Arg(1)
-		mbTrans472 := thrift.NewTMemoryBufferLen(len(arg471))
-		defer mbTrans472.Close()
-		_, err473 := mbTrans472.WriteString(arg471)
-		if err473 != nil {
+		arg472 := flag.Arg(1)
+		mbTrans473 := thrift.NewTMemoryBufferLen(len(arg472))
+		defer mbTrans473.Close()
+		_, err474 := mbTrans473.WriteString(arg472)
+		if err474 != nil {
 			Usage()
 			return
 		}
-		factory474 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt475 := factory474.GetProtocol(mbTrans472)
+		factory475 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt476 := factory475.GetProtocol(mbTrans473)
 		argvalue0 := aurora.NewJobUpdateRequest()
-		err476 := argvalue0.Read(jsProt475)
-		if err476 != nil {
+		err477 := argvalue0.Read(jsProt476)
+		if err477 != nil {
 			Usage()
 			return
 		}
@@ -737,19 +737,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "PauseJobUpdate requires 2 args")
 			flag.Usage()
 		}
-		arg478 := flag.Arg(1)
-		mbTrans479 := thrift.NewTMemoryBufferLen(len(arg478))
-		defer mbTrans479.Close()
-		_, err480 := mbTrans479.WriteString(arg478)
-		if err480 != nil {
+		arg479 := flag.Arg(1)
+		mbTrans480 := thrift.NewTMemoryBufferLen(len(arg479))
+		defer mbTrans480.Close()
+		_, err481 := mbTrans480.WriteString(arg479)
+		if err481 != nil {
 			Usage()
 			return
 		}
-		factory481 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt482 := factory481.GetProtocol(mbTrans479)
+		factory482 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt483 := factory482.GetProtocol(mbTrans480)
 		argvalue0 := aurora.NewJobUpdateKey()
-		err483 := argvalue0.Read(jsProt482)
-		if err483 != nil {
+		err484 := argvalue0.Read(jsProt483)
+		if err484 != nil {
 			Usage()
 			return
 		}
@@ -764,19 +764,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "ResumeJobUpdate requires 2 args")
 			flag.Usage()
 		}
-		arg485 := flag.Arg(1)
-		mbTrans486 := thrift.NewTMemoryBufferLen(len(arg485))
-		defer mbTrans486.Close()
-		_, err487 := mbTrans486.WriteString(arg485)
-		if err487 != nil {
+		arg486 := flag.Arg(1)
+		mbTrans487 := thrift.NewTMemoryBufferLen(len(arg486))
+		defer mbTrans487.Close()
+		_, err488 := mbTrans487.WriteString(arg486)
+		if err488 != nil {
 			Usage()
 			return
 		}
-		factory488 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt489 := factory488.GetProtocol(mbTrans486)
+		factory489 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt490 := factory489.GetProtocol(mbTrans487)
 		argvalue0 := aurora.NewJobUpdateKey()
-		err490 := argvalue0.Read(jsProt489)
-		if err490 != nil {
+		err491 := argvalue0.Read(jsProt490)
+		if err491 != nil {
 			Usage()
 			return
 		}
@@ -791,19 +791,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "AbortJobUpdate requires 2 args")
 			flag.Usage()
 		}
-		arg492 := flag.Arg(1)
-		mbTrans493 := thrift.NewTMemoryBufferLen(len(arg492))
-		defer mbTrans493.Close()
-		_, err494 := mbTrans493.WriteString(arg492)
-		if err494 != nil {
+		arg493 := flag.Arg(1)
+		mbTrans494 := thrift.NewTMemoryBufferLen(len(arg493))
+		defer mbTrans494.Close()
+		_, err495 := mbTrans494.WriteString(arg493)
+		if err495 != nil {
 			Usage()
 			return
 		}
-		factory495 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt496 := factory495.GetProtocol(mbTrans493)
+		factory496 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt497 := factory496.GetProtocol(mbTrans494)
 		argvalue0 := aurora.NewJobUpdateKey()
-		err497 := argvalue0.Read(jsProt496)
-		if err497 != nil {
+		err498 := argvalue0.Read(jsProt497)
+		if err498 != nil {
 			Usage()
 			return
 		}
@@ -818,19 +818,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "RollbackJobUpdate requires 2 args")
 			flag.Usage()
 		}
-		arg499 := flag.Arg(1)
-		mbTrans500 := thrift.NewTMemoryBufferLen(len(arg499))
-		defer mbTrans500.Close()
-		_, err501 := mbTrans500.WriteString(arg499)
-		if err501 != nil {
+		arg500 := flag.Arg(1)
+		mbTrans501 := thrift.NewTMemoryBufferLen(len(arg500))
+		defer mbTrans501.Close()
+		_, err502 := mbTrans501.WriteString(arg500)
+		if err502 != nil {
 			Usage()
 			return
 		}
-		factory502 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt503 := factory502.GetProtocol(mbTrans500)
+		factory503 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt504 := factory503.GetProtocol(mbTrans501)
 		argvalue0 := aurora.NewJobUpdateKey()
-		err504 := argvalue0.Read(jsProt503)
-		if err504 != nil {
+		err505 := argvalue0.Read(jsProt504)
+		if err505 != nil {
 			Usage()
 			return
 		}
@@ -845,19 +845,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "PulseJobUpdate requires 1 args")
 			flag.Usage()
 		}
-		arg506 := flag.Arg(1)
-		mbTrans507 := thrift.NewTMemoryBufferLen(len(arg506))
-		defer mbTrans507.Close()
-		_, err508 := mbTrans507.WriteString(arg506)
-		if err508 != nil {
+		arg507 := flag.Arg(1)
+		mbTrans508 := thrift.NewTMemoryBufferLen(len(arg507))
+		defer mbTrans508.Close()
+		_, err509 := mbTrans508.WriteString(arg507)
+		if err509 != nil {
 			Usage()
 			return
 		}
-		factory509 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt510 := factory509.GetProtocol(mbTrans507)
+		factory510 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt511 := factory510.GetProtocol(mbTrans508)
 		argvalue0 := aurora.NewJobUpdateKey()
-		err511 := argvalue0.Read(jsProt510)
-		if err511 != nil {
+		err512 := argvalue0.Read(jsProt511)
+		if err512 != nil {
 			Usage()
 			return
 		}
@@ -888,19 +888,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "GetTasksStatus requires 1 args")
 			flag.Usage()
 		}
-		arg513 := flag.Arg(1)
-		mbTrans514 := thrift.NewTMemoryBufferLen(len(arg513))
-		defer mbTrans514.Close()
-		_, err515 := mbTrans514.WriteString(arg513)
-		if err515 != nil {
+		arg514 := flag.Arg(1)
+		mbTrans515 := thrift.NewTMemoryBufferLen(len(arg514))
+		defer mbTrans515.Close()
+		_, err516 := mbTrans515.WriteString(arg514)
+		if err516 != nil {
 			Usage()
 			return
 		}
-		factory516 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt517 := factory516.GetProtocol(mbTrans514)
+		factory517 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt518 := factory517.GetProtocol(mbTrans515)
 		argvalue0 := aurora.NewTaskQuery()
-		err518 := argvalue0.Read(jsProt517)
-		if err518 != nil {
+		err519 := argvalue0.Read(jsProt518)
+		if err519 != nil {
 			Usage()
 			return
 		}
@@ -913,19 +913,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "GetTasksWithoutConfigs requires 1 args")
 			flag.Usage()
 		}
-		arg519 := flag.Arg(1)
-		mbTrans520 := thrift.NewTMemoryBufferLen(len(arg519))
-		defer mbTrans520.Close()
-		_, err521 := mbTrans520.WriteString(arg519)
-		if err521 != nil {
+		arg520 := flag.Arg(1)
+		mbTrans521 := thrift.NewTMemoryBufferLen(len(arg520))
+		defer mbTrans521.Close()
+		_, err522 := mbTrans521.WriteString(arg520)
+		if err522 != nil {
 			Usage()
 			return
 		}
-		factory522 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt523 := factory522.GetProtocol(mbTrans520)
+		factory523 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt524 := factory523.GetProtocol(mbTrans521)
 		argvalue0 := aurora.NewTaskQuery()
-		err524 := argvalue0.Read(jsProt523)
-		if err524 != nil {
+		err525 := argvalue0.Read(jsProt524)
+		if err525 != nil {
 			Usage()
 			return
 		}
@@ -938,19 +938,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "GetPendingReason requires 1 args")
 			flag.Usage()
 		}
-		arg525 := flag.Arg(1)
-		mbTrans526 := thrift.NewTMemoryBufferLen(len(arg525))
-		defer mbTrans526.Close()
-		_, err527 := mbTrans526.WriteString(arg525)
-		if err527 != nil {
+		arg526 := flag.Arg(1)
+		mbTrans527 := thrift.NewTMemoryBufferLen(len(arg526))
+		defer mbTrans527.Close()
+		_, err528 := mbTrans527.WriteString(arg526)
+		if err528 != nil {
 			Usage()
 			return
 		}
-		factory528 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt529 := factory528.GetProtocol(mbTrans526)
+		factory529 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt530 := factory529.GetProtocol(mbTrans527)
 		argvalue0 := aurora.NewTaskQuery()
-		err530 := argvalue0.Read(jsProt529)
-		if err530 != nil {
+		err531 := argvalue0.Read(jsProt530)
+		if err531 != nil {
 			Usage()
 			return
 		}
@@ -963,19 +963,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "GetConfigSummary requires 1 args")
 			flag.Usage()
 		}
-		arg531 := flag.Arg(1)
-		mbTrans532 := thrift.NewTMemoryBufferLen(len(arg531))
-		defer mbTrans532.Close()
-		_, err533 := mbTrans532.WriteString(arg531)
-		if err533 != nil {
+		arg532 := flag.Arg(1)
+		mbTrans533 := thrift.NewTMemoryBufferLen(len(arg532))
+		defer mbTrans533.Close()
+		_, err534 := mbTrans533.WriteString(arg532)
+		if err534 != nil {
 			Usage()
 			return
 		}
-		factory534 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt535 := factory534.GetProtocol(mbTrans532)
+		factory535 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt536 := factory535.GetProtocol(mbTrans533)
 		argvalue0 := aurora.NewJobKey()
-		err536 := argvalue0.Read(jsProt535)
-		if err536 != nil {
+		err537 := argvalue0.Read(jsProt536)
+		if err537 != nil {
 			Usage()
 			return
 		}
@@ -1008,19 +1008,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "PopulateJobConfig requires 1 args")
 			flag.Usage()
 		}
-		arg539 := flag.Arg(1)
-		mbTrans540 := thrift.NewTMemoryBufferLen(len(arg539))
-		defer mbTrans540.Close()
-		_, err541 := mbTrans540.WriteString(arg539)
-		if err541 != nil {
+		arg540 := flag.Arg(1)
+		mbTrans541 := thrift.NewTMemoryBufferLen(len(arg540))
+		defer mbTrans541.Close()
+		_, err542 := mbTrans541.WriteString(arg540)
+		if err542 != nil {
 			Usage()
 			return
 		}
-		factory542 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt543 := factory542.GetProtocol(mbTrans540)
+		factory543 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt544 := factory543.GetProtocol(mbTrans541)
 		argvalue0 := aurora.NewJobConfiguration()
-		err544 := argvalue0.Read(jsProt543)
-		if err544 != nil {
+		err545 := argvalue0.Read(jsProt544)
+		if err545 != nil {
 			Usage()
 			return
 		}
@@ -1033,19 +1033,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "GetJobUpdateSummaries requires 1 args")
 			flag.Usage()
 		}
-		arg545 := flag.Arg(1)
-		mbTrans546 := thrift.NewTMemoryBufferLen(len(arg545))
-		defer mbTrans546.Close()
-		_, err547 := mbTrans546.WriteString(arg545)
-		if err547 != nil {
+		arg546 := flag.Arg(1)
+		mbTrans547 := thrift.NewTMemoryBufferLen(len(arg546))
+		defer mbTrans547.Close()
+		_, err548 := mbTrans547.WriteString(arg546)
+		if err548 != nil {
 			Usage()
 			return
 		}
-		factory548 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt549 := factory548.GetProtocol(mbTrans546)
+		factory549 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt550 := factory549.GetProtocol(mbTrans547)
 		argvalue0 := aurora.NewJobUpdateQuery()
-		err550 := argvalue0.Read(jsProt549)
-		if err550 != nil {
+		err551 := argvalue0.Read(jsProt550)
+		if err551 != nil {
 			Usage()
 			return
 		}
@@ -1058,19 +1058,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "GetJobUpdateDetails requires 1 args")
 			flag.Usage()
 		}
-		arg551 := flag.Arg(1)
-		mbTrans552 := thrift.NewTMemoryBufferLen(len(arg551))
-		defer mbTrans552.Close()
-		_, err553 := mbTrans552.WriteString(arg551)
-		if err553 != nil {
+		arg552 := flag.Arg(1)
+		mbTrans553 := thrift.NewTMemoryBufferLen(len(arg552))
+		defer mbTrans553.Close()
+		_, err554 := mbTrans553.WriteString(arg552)
+		if err554 != nil {
 			Usage()
 			return
 		}
-		factory554 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt555 := factory554.GetProtocol(mbTrans552)
+		factory555 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt556 := factory555.GetProtocol(mbTrans553)
 		argvalue0 := aurora.NewJobUpdateQuery()
-		err556 := argvalue0.Read(jsProt555)
-		if err556 != nil {
+		err557 := argvalue0.Read(jsProt556)
+		if err557 != nil {
 			Usage()
 			return
 		}
@@ -1083,19 +1083,19 @@ func main() {
 			fmt.Fprintln(os.Stderr, "GetJobUpdateDiff requires 1 args")
 			flag.Usage()
 		}
-		arg557 := flag.Arg(1)
-		mbTrans558 := thrift.NewTMemoryBufferLen(len(arg557))
-		defer mbTrans558.Close()
-		_, err559 := mbTrans558.WriteString(arg557)
-		if err559 != nil {
+		arg558 := flag.Arg(1)
+		mbTrans559 := thrift.NewTMemoryBufferLen(len(arg558))
+		defer mbTrans559.Close()
+		_, err560 := mbTrans559.WriteString(arg558)
+		if err560 != nil {
 			Usage()
 			return
 		}
-		factory560 := thrift.NewTSimpleJSONProtocolFactory()
-		jsProt561 := factory560.GetProtocol(mbTrans558)
+		factory561 := thrift.NewTSimpleJSONProtocolFactory()
+		jsProt562 := factory561.GetProtocol(mbTrans559)
 		argvalue0 := aurora.NewJobUpdateRequest()
-		err562 := argvalue0.Read(jsProt561)
-		if err562 != nil {
+		err563 := argvalue0.Read(jsProt562)
+		if err563 != nil {
 			Usage()
 			return
 		}
