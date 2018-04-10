@@ -284,9 +284,10 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 
 	config.infoLogger.Printf("gorealis config url: %+v\n", url)
 
-	//Basic Authentication.
+	// Adding Basic Authentication.
 	if config.username != "" && config.password != "" {
-		AddBasicAuth(config, config.username, config.password)
+		httpTrans := (config.transport).(*thrift.THttpClient)
+		httpTrans.SetHeader("Authorization", "Basic "+basicAuth(config.username, config.password))
 	}
 
 	return &realisClient{
@@ -414,14 +415,6 @@ func newTBinaryConfig(url string, timeoutms int, config *RealisConfig) (*RealisC
 
 	return &RealisConfig{transport: trans, protoFactory: thrift.NewTBinaryProtocolFactoryDefault()}, nil
 
-}
-
-// Helper function to add basic authorization needed to communicate with Apache Aurora.
-func AddBasicAuth(config *RealisConfig, username string, password string) {
-	config.username = username
-	config.password = password
-	httpTrans := (config.transport).(*thrift.THttpClient)
-	httpTrans.SetHeader("Authorization", "Basic "+basicAuth(username, password))
 }
 
 func basicAuth(username, password string) string {
