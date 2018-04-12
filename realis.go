@@ -26,6 +26,7 @@ import (
 	"net/http/cookiejar"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"sync"
@@ -102,6 +103,7 @@ type RealisConfig struct {
 	clientkey, clientcert       string
 	options                     []ClientOption
 	debug                       bool
+	zkOptions                   []ZKOpt
 }
 
 var defaultBackoff = Backoff{
@@ -140,8 +142,15 @@ func ZKCluster(cluster *Cluster) ClientOption {
 }
 
 func ZKUrl(url string) ClientOption {
+
+	opts := []ZKOpt{ZKEndpoints(strings.Split(url, ",")...), ZKPath("/aurora/scheduler")}
+
 	return func(config *RealisConfig) {
-		config.cluster = GetDefaultClusterFromZKUrl(url)
+		if config.zkOptions == nil {
+			config.zkOptions = opts
+		} else {
+			config.zkOptions = append(config.zkOptions, opts...)
+		}
 	}
 }
 
@@ -184,6 +193,16 @@ func Certspath(certspath string) ClientOption {
 func ClientCerts(clientKey, clientCert string) ClientOption {
 	return func(config *RealisConfig) {
 		config.clientkey, config.clientcert = clientKey, clientCert
+	}
+}
+
+// Use this option if you'd like to override default settings for connecting to Zookeeper.
+// For example, this can be used to override the port on which to communicate with Aurora.
+// This may be helpful if Aurora is behind another service and running on a port that is different
+// what is advertised in Zookeeper.
+func ZookeeperOptions(opts ...ZKOpt) ClientOption {
+	return func(config *RealisConfig) {
+		config.zkOptions = opts
 	}
 }
 
@@ -257,9 +276,16 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 	var url string
 	var err error
 
-	// Determine how to get information to connect to the scheduler.
-	// Prioritize getting leader from ZK over using a direct URL.
-	if config.cluster != nil {
+	// Find the leader using custom Zookeeper options if options are provided
+	if config.zkOptions != nil {
+		url, err = LeaderFromZKOpts(config.zkOptions...)
+		if err != nil {
+			return nil, NewTemporaryError(errors.Wrap(err, "LeaderFromZK error"))
+		}
+		config.logger.Println("Scheduler URL from ZK: ", url)
+	} else if config.cluster != nil {
+		// Determine how to get information to connect to the scheduler.
+		// Prioritize getting leader from ZK over using a direct URL.
 		url, err = LeaderFromZK(*config.cluster)
 		// If ZK is configured, throw an error if the leader is unable to be determined
 		if err != nil {
@@ -270,7 +296,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		url = config.url
 		config.logger.Println("Scheduler URL: ", url)
 	} else {
-		return nil, errors.New("Incomplete Options -- url or cluster required")
+		return nil, errors.New("Incomplete Options -- url, cluster.json, or Zookeeper address required")
 	}
 
 	if config.jsonTransport {

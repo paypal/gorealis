@@ -99,7 +99,8 @@ func main() {
 		fmt.Println("zkUrl: ", zkUrl)
 		clientOptions = append(clientOptions, realis.ZKUrl(zkUrl))
 	} else {
-		clientOptions = append(clientOptions, realis.SchedulerUrl(url))
+		clientOptions = append(clientOptions, realis.SchedulerUrl(url),
+			realis.ZookeeperOptions(realis.ZKAuroraPortOverride(2343), realis.ZKAuroraSchemeOverride("https")))
 	}
 
 	r, err = realis.NewRealisClient(clientOptions...)
