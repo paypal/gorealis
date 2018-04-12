@@ -24,8 +24,6 @@ import (
 
 	"strings"
 
-	"log"
-
 	"github.com/paypal/gorealis"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/paypal/gorealis/response"
@@ -91,7 +89,7 @@ func main() {
 			Factor:   2.0,
 			Jitter:   0.1,
 		}),
-		realis.DebugLogger(log.New(os.Stdout, "realis-debug: ", log.Ltime|log.LUTC|log.Ldate)),
+		realis.Debug(),
 	}
 
 	//check if zkUrl is available.

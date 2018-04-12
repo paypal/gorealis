@@ -17,7 +17,6 @@ package realis_test
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"testing"
 	"time"
@@ -42,7 +41,7 @@ func TestMain(m *testing.M) {
 	r, err = realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
 		realis.BasicAuth("aurora", "secret"),
 		realis.TimeoutMS(20000),
-		realis.DebugLogger(log.New(os.Stdout, "realis-debug: ", log.Ltime|log.LUTC|log.Ldate)))
+		realis.Debug())
 
 	if err != nil {
 		fmt.Println("Please run vagrant box before running test suite")

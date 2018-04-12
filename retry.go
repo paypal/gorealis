@@ -134,7 +134,7 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 				adjusted = Jitter(duration, backoff.Jitter)
 			}
 
-			r.infoLogger.Printf("A retriable error occurred during thrift call, backing off for %v before retry %v\n", adjusted, curStep)
+			r.logger.Printf("A retriable error occurred during thrift call, backing off for %v before retry %v\n", adjusted, curStep)
 
 			time.Sleep(adjusted)
 			duration = time.Duration(float64(duration) * backoff.Factor)
@@ -149,7 +149,7 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 
 			resp, clientErr = thriftCall()
 
-			r.debugLogger.Printf("Aurora Thrift Call ended resp: %v clientErr: %v\n", resp, clientErr)
+			r.logger.DebugPrintf("Aurora Thrift Call ended resp: %v clientErr: %v\n", resp, clientErr)
 		}()
 
 		// Check if our thrift call is returning an error. This is a retriable event as we don't know
@@ -157,7 +157,7 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 		if clientErr != nil {
 
 			// Print out the error to the user
-			r.infoLogger.Printf("Client Error: %v\n", clientErr)
+			r.logger.Printf("Client Error: %v\n", clientErr)
 
 			// In the future, reestablish connection should be able to check if it is actually possible
 			// to make a thrift call to Aurora. For now, a reconnect should always lead to a retry.
@@ -180,7 +180,7 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 
 				// If the response code is transient, continue retrying
 			case aurora.ResponseCode_ERROR_TRANSIENT:
-				r.infoLogger.Println("Aurora replied with Transient error code, retrying")
+				r.logger.Println("Aurora replied with Transient error code, retrying")
 				continue
 
 				// Failure scenarios, these indicate a bad payload or a bad config. Stop retrying.
@@ -188,23 +188,23 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 			case aurora.ResponseCode_ERROR:
 			case aurora.ResponseCode_AUTH_FAILED:
 			case aurora.ResponseCode_JOB_UPDATING_ERROR:
-				r.debugLogger.Println("Terminal bad reply from Aurora, won't retry")
+				r.logger.Println("Terminal bad reply from Aurora, won't retry")
 				return nil, errors.New(response.CombineMessage(resp))
 
 				// The only case that should fall down to here is a WARNING response code.
 				// It is currently not used as a response in the scheduler so it is unknown how to handle it.
 			default:
-				r.debugLogger.Printf("unhandled response code %v received from Aurora\n", responseCode)
+				r.logger.DebugPrintf("unhandled response code %v received from Aurora\n", responseCode)
 				return nil, errors.Errorf("unhandled response code from Aurora %v\n", responseCode.String())
 			}
 		}
 
 	}
 
-	r.debugLogger.Printf("it took %v retries to complete this operation\n", curStep)
+	r.logger.DebugPrintf("it took %v retries to complete this operation\n", curStep)
 
 	if curStep > 1 {
-		r.config.infoLogger.Printf("retried this thrift call %d time(s)", curStep)
+		r.config.logger.Printf("retried this thrift call %d time(s)", curStep)
 	}
 
 	// Provide more information to the user wherever possible.
