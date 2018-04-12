@@ -18,6 +18,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 
 	"time"
@@ -89,6 +90,7 @@ func main() {
 			Factor:   2.0,
 			Jitter:   0.1,
 		}),
+		realis.SetLogger(log.New(os.Stdout, "realis-debug: ", log.Ldate)),
 		realis.Debug(),
 	}
 

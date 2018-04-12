@@ -1035,7 +1035,7 @@ func (r *realisClient) SetQuota(role string, cpu *float64, ramMb *int64, diskMb 
 func (r *realisClient) GetQuota(role string) (*aurora.Response, error) {
 
 	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
-		resp, retryErr :=r.adminClient.GetQuota(role)
+		resp, retryErr := r.adminClient.GetQuota(role)
 
 		if retryErr != nil {
 			return nil, errors.Wrap(retryErr, "Unable to get role quota")
