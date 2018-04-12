@@ -104,8 +104,7 @@ func main() {
 		fmt.Println("zkUrl: ", zkUrl)
 		clientOptions = append(clientOptions, realis.ZKUrl(zkUrl))
 	} else {
-		clientOptions = append(clientOptions, realis.SchedulerUrl(url),
-			realis.ZookeeperOptions(realis.ZKAuroraPortOverride(2343), realis.ZKAuroraSchemeOverride("https")))
+		clientOptions = append(clientOptions, realis.SchedulerUrl(url))
 	}
 
 	if caCertsPath != "" {
