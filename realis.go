@@ -197,9 +197,8 @@ func ClientCerts(clientKey, clientCert string) ClientOption {
 }
 
 // Use this option if you'd like to override default settings for connecting to Zookeeper.
-// For example, this can be used to override the port on which to communicate with Aurora.
-// This may be helpful if Aurora is behind another service and running on a port that is different
-// what is advertised in Zookeeper.
+// For example, this can be used to override the scheme to be used for communicating with Aurora (e.g. https).
+// See zk.go for what is possible to set as an option.
 func ZookeeperOptions(opts ...ZKOpt) ClientOption {
 	return func(config *RealisConfig) {
 		config.zkOptions = opts
