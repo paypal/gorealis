@@ -27,3 +27,29 @@ func (NoopLogger) Printf(format string, a ...interface{}) {}
 func (NoopLogger) Print(a ...interface{}) {}
 
 func (NoopLogger) Println(a ...interface{}) {}
+
+type LevelLogger struct {
+	Logger
+	debug bool
+}
+
+func (l LevelLogger) DebugPrintf(format string, a ...interface{}) {
+	if l.debug {
+		l.Print("[DEBUG] ")
+		l.Printf(format, a)
+	}
+}
+
+func (l LevelLogger) DebugPrint(a ...interface{}) {
+	if l.debug {
+		l.Print("[DEBUG] ")
+		l.Print(a)
+	}
+}
+
+func (l LevelLogger) DebugPrintln(a ...interface{}) {
+	if l.debug {
+		l.Print("[DEBUG] ")
+		l.Println(a)
+	}
+}

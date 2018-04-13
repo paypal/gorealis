@@ -40,7 +40,9 @@ func TestMain(m *testing.M) {
 	// New configuration to connect to Vagrant image
 	r, err = realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
 		realis.BasicAuth("aurora", "secret"),
-		realis.TimeoutMS(20000))
+		realis.TimeoutMS(20000),
+		realis.Debug())
+
 	if err != nil {
 		fmt.Println("Please run vagrant box before running test suite")
 		os.Exit(1)
@@ -61,7 +63,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestNonExistentEndpoint(t *testing.T) {
-	backoff := &realis.Backoff{ // Reduce penalties for this test to make it quick
+	backoff := realis.Backoff{ // Reduce penalties for this test to make it quick
 		Steps:    5,
 		Duration: 1 * time.Second,
 		Factor:   1.0,
