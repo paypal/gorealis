@@ -42,6 +42,7 @@ type zkConfig struct {
 	timeout              time.Duration
 	logger               Logger
 	auroraSchemeOverride *string
+	auroraPortOverride   *int
 }
 
 type ZKOpt func(z *zkConfig)
@@ -79,6 +80,12 @@ func ZKLogger(l Logger) ZKOpt {
 func ZKAuroraSchemeOverride(scheme string) ZKOpt {
 	return func(z *zkConfig) {
 		z.auroraSchemeOverride = &scheme
+	}
+}
+
+func ZKAuroraPortOverride(port int) ZKOpt {
+	return func(z *zkConfig) {
+		z.auroraPortOverride = &port
 	}
 }
 
@@ -167,7 +174,11 @@ func LeaderFromZKOpts(options ...ZKOpt) (string, error) {
 
 					host = v.Host
 
-					port = strconv.Itoa(v.Port)
+					if config.auroraPortOverride == nil {
+						port = strconv.Itoa(v.Port)
+					} else {
+						port = strconv.Itoa(*config.auroraPortOverride)
+					}
 				}
 
 				leaderURL = scheme + "://" + host + ":" + port
