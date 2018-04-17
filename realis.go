@@ -27,9 +27,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
-
 	"sync"
+	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
@@ -250,6 +249,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 	// Default configs
 	config.timeoutms = 10000
 	config.backoff = defaultBackoff
+	config.logger = log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC)
 
 	// Save options to recreate client if a connection error happens
 	config.options = options
@@ -259,10 +259,8 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		opt(config)
 	}
 
-	// Set a logger if debug has been set to true but no logger has been set, otherwise, set noop logger
-	if config.logger == nil && config.debug {
-		config.logger = log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC)
-	} else if config.logger == nil {
+	// Turn off all logging (including debug)
+	if config.logger == nil {
 		config.logger = LevelLogger{NoopLogger{}, false}
 	}
 
