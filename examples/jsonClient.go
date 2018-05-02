@@ -18,9 +18,9 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"os"
-
 	"github.com/paypal/gorealis"
+	"github.com/paypal/gorealis/gen-go/apache/aurora"
+	"os"
 )
 
 type URIJson struct {
@@ -63,67 +63,129 @@ func (j *JobJson) Validate() bool {
 	return true
 }
 
-func main() {
+type ZKClusterConfig struct {
+	Name          string `json:"name"`
+	AgentRoot     string `json:"slave_root"`
+	AgentRunDir   string `json:"slave_run_directory"`
+	ZK            string `json:"zk"`
+	ZKPort        int    `json:"zk_port"`
+	SchedZKPath   string `json:"scheduler_zk_path"`
+	SchedURI      string `json:"scheduler_uri"`
+	ProxyURL      string `json:"proxy_url"`
+	AuthMechanism string `json:"auth_mechanism"`
+}
 
-	jsonFile := flag.String("file", "", "JSON file containing job definition")
+type ConfigJson struct {
+	Username      string           `json:"username"`
+	Password      string           `json:"password"`
+	SchedUrl      string           `json:"schedUrl"`
+	BinTransport  bool             `json:"bin_transport,omitempty"`
+	JsonTransport bool             `json:"json_transport,omitempty"`
+	ClusterConfig *ZKClusterConfig `json:"zkCluster"`
+	Debug         bool             `json:"debug,omitempty"`
+}
+
+// Command-line arguments for config and job JSON files.
+var configJSONFile, jobJSONFile string
+
+var job JobJson
+var config ConfigJson
+
+// Reading command line arguments and validating.
+// If Aurora scheduler URL not provided, then using zookeeper to locate the leader.
+func init() {
+	flag.StringVar(&configJSONFile, "config", "./config.json", "The config file that contains username, password, and the cluster configuration information.")
+	flag.StringVar(&jobJSONFile, "job", "./job.json", "JSON file containing job definitions.")
+
 	flag.Parse()
 
-	if *jsonFile == "" {
+	job = new(JobJson)
+	config = new(realis.RealisConfig)
+
+	if jobsFile, jobJSONReadErr := os.Open(*jobJSONFile); jobJSONReadErr != nil {
 		flag.Usage()
+		fmt.Println("Error reading the job JSON file: ", jobJSONReadErr)
 		os.Exit(1)
+	} else {
+		if unmarshallErr := json.NewDecoder(jobsFile).Decode(job); unmarshallErr != nil {
+			flag.Usage()
+			fmt.Println("Error parsing job json file: ", unmarshallErr)
+			os.Exit(1)
+		}
+
+		// Need to validate the job JSON file.
+		if !job.Validate() {
+			fmt.Println("Invalid Job.")
+			os.Exit(1)
+		}
 	}
 
-	file, err := os.Open(*jsonFile)
-	if err != nil {
-		fmt.Println("Error opening file ", err)
+	if configFile, configJSONErr := os.Open(*configJSONFile); configJSONErr {
+		flag.Usage()
+		fmt.Println("Error reading the config JSON file: ", configJSONErr)
 		os.Exit(1)
+	} else {
+		if unmarshallErr := json.NewDecoder(configFile).Decode(config); unmarshallErr {
+			fmt.Println("Error parsing config JSON file: ", unmarshallErr)
+			os.Exit(1)
+		}
+	}
+}
+
+func main() {
+	var transportOption realis.ClientOption
+	if config.BinTransport {
+		transportOption = realis.ThriftBinary()
+	} else {
+		transportOption = realis.ThriftJSON()
 	}
 
-	jsonJob := new(JobJson)
+	clientOptions := []realis.ClientOption{
+		realis.BasicAuth(config.Username, config.Password),
+		transportOption(),
+		realis.ZKCluster(config.ClusterConfig),
+		realis.SchedulerUrl(config.SchedUrl),
+	}
 
-	err = json.NewDecoder(file).Decode(jsonJob)
-	if err != nil {
-		fmt.Println("Error parsing file ", err)
+	if config.Debug {
+		clientOptions = append(clientOptions, realis.Debug())
+	}
+
+	if r, clientCreationErr := realis.NewRealisClient(clientOptions...); clientCreationErr != nil {
+		fmt.Println(clientCreationErr)
 		os.Exit(1)
+	} else {
+		monitor := &realis.Monitor{Client: r}
+		defer r.Close()
+		auroraJob := realis.NewJob().
+			Environment("prod").
+			Role("vagrant").
+			Name(job.Name).
+			ExecutorName(job.Executor).
+			CPU(job.CPU).
+			RAM(job.RAM).
+			Disk(job.Disk).
+			IsService(job.Service).
+			InstanceCount(job.Instances).
+			AddPorts(job.Ports)
+
+		fmt.Println("Creating Job...")
+		if resp, jobCreationErr := r.CreateJob(auroraJob); jobCreationErr != nil {
+			fmt.Println("Error creating Aurora job: ", jobCreationErr)
+			os.Exit(1)
+		} else {
+			if resp.ResponseCode == aurora.ResponseCode_OK {
+				if ok, monitorErr := monitor.Instances(auroraJob.JobKey(), auroraJob.GetInstanceCount(), 5, 50); !ok || monitorErr != nil {
+					if _, jobErr := r.KillJob(auroraJob.JobKey()); jobErr !=
+						nil {
+						fmt.Println(jobErr)
+						os.Exit(1)
+					} else {
+						fmt.Println("ok: ", ok)
+						fmt.Println("jobErr: ", jobErr)
+					}
+				}
+			}
+		}
 	}
-
-	jsonJob.Validate()
-
-	//Create new configuration with default transport layer
-	config, err := realis.NewDefaultConfig("http://192.168.33.7:8081")
-	if err != nil {
-		fmt.Print(err)
-		os.Exit(1)
-	}
-
-	realis.AddBasicAuth(&config, "aurora", "secret")
-	r := realis.NewClient(config)
-
-	auroraJob := realis.NewJob().
-		Environment("prod").
-		Role("vagrant").
-		Name(jsonJob.Name).
-		CPU(jsonJob.CPU).
-		RAM(jsonJob.RAM).
-		Disk(jsonJob.Disk).
-		ExecutorName(jsonJob.Executor).
-		InstanceCount(jsonJob.Instances).
-		IsService(jsonJob.Service).
-		AddPorts(jsonJob.Ports)
-
-	for _, uri := range jsonJob.URIs {
-		auroraJob.AddURIs(uri.Extract, uri.Cache, uri.URI)
-	}
-
-	for k, v := range jsonJob.Labels {
-		auroraJob.AddLabel(k, v)
-	}
-
-	resp, err := r.CreateJob(auroraJob)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	fmt.Println(resp)
 }
