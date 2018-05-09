@@ -60,7 +60,6 @@ func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 	req.Settings.MaxPerInstanceFailures = 0
 	req.Settings.MaxFailedInstances = 0
 	req.Settings.RollbackOnFailure = true
-	req.Settings.VariableUpdateGroupSize = []int32{1, 2, 3}
 
 	//TODO(rdelvalle): Deep copy job struct to avoid unexpected behavior
 	return &UpdateJob{Job: job, req: req}
@@ -136,6 +135,18 @@ func (u *UpdateJob) MaxFailedInstances(inst int32) *UpdateJob {
 // When False, prevents auto rollback of a failed update.
 func (u *UpdateJob) RollbackOnFail(rollback bool) *UpdateJob {
 	u.req.Settings.RollbackOnFailure = rollback
+	return u
+}
+
+func (u *UpdateJob) UpdateStrategy(strategy aurora.JobUpdateStrategyType) *UpdateJob {
+	u.req.Settings.UpdateStrategyType = &strategy
+	return u
+}
+
+func (u *UpdateJob) GroupsSize(groupSizes []int32) *UpdateJob {
+	u.req.Settings.GroupsSize = make([]int32, len(groupSizes))
+
+	copy(u.req.Settings.GroupsSize, groupSizes)
 	return u
 }
 

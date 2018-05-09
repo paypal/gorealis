@@ -18,12 +18,9 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
-
-	"time"
-
 	"strings"
+	"time"
 
 	"github.com/paypal/gorealis"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
@@ -90,7 +87,6 @@ func main() {
 			Factor:   2.0,
 			Jitter:   0.1,
 		}),
-		realis.SetLogger(log.New(os.Stdout, "realis-debug: ", log.Ldate)),
 		realis.Debug(),
 	}
 
@@ -191,7 +187,6 @@ func main() {
 		// Create a service with three instances using the update API instead of the createJob API
 		fmt.Println("Creating service")
 		settings := realis.NewUpdateSettings()
-		settings.VariableUpdateGroupSize = []int32{1, 2, 3}
 		job.InstanceCount(6).RAM(16).CPU(.1)
 		resp, result, err := r.CreateService(job, settings)
 		if err != nil {
@@ -430,6 +425,40 @@ func main() {
 		monitor.JobUpdate(*jobUpdateKey, 5, 500)
 		break
 
+	case "staggeredUpdate":
+		fmt.Println("Updating a job with with less RAM and to 5 instances staggered")
+		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		var instId int32
+		for k := range live {
+			instId = k
+			break
+		}
+		taskConfig, err := r.FetchTaskConfig(aurora.InstanceKey{
+			JobKey:     job.JobKey(),
+			InstanceId: instId,
+		})
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		updateJob := realis.NewDefaultUpdateJob(taskConfig).
+			UpdateStrategy(aurora.JobUpdateStrategyType_VARIABLE_BATCH).
+			GroupsSize([]int32{1, 2})
+		updateJob.InstanceCount(3).RAM(8).CPU(.1)
+
+		resp, err := r.StartJobUpdate(updateJob, "")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		jobUpdateKey := response.JobUpdateKey(resp)
+		monitor.JobUpdate(*jobUpdateKey, 5, 500)
+		break
 	case "pauseJobUpdate":
 		resp, err := r.PauseJobUpdate(&aurora.JobUpdateKey{
 			Job: job.JobKey(),
@@ -492,7 +521,7 @@ func main() {
 		fmt.Println(resp.String())
 		break
 	case "rollbackUpdate":
-		fmt.Println("Abort update")
+		fmt.Println("Rollback update")
 		resp, err := r.RollbackJobUpdate(aurora.JobUpdateKey{
 			Job: job.JobKey(),
 			ID:  updateId,
