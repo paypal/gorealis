@@ -72,6 +72,7 @@ type Realis interface {
 
 	// Admin functions
 	DrainHosts(hosts ...string) (*aurora.Response, *aurora.DrainHostsResult_, error)
+	StartMaintenance(hosts ...string) (*aurora.Response, *aurora.StartMaintenanceResult_, error)
 	EndMaintenance(hosts ...string) (*aurora.Response, *aurora.EndMaintenanceResult_, error)
 	MaintenanceStatus(hosts ...string) (*aurora.Response, *aurora.MaintenanceStatusResult_, error)
 	SetQuota(role string, cpu *float64, ram *int64, disk *int64) (*aurora.Response, error)
@@ -984,6 +985,37 @@ func (r *realisClient) DrainHosts(hosts ...string) (*aurora.Response, *aurora.Dr
 	return resp, result, nil
 }
 
+func (r *realisClient) StartMaintenance(hosts ...string) (*aurora.Response, *aurora.StartMaintenanceResult_, error) {
+
+	var result *aurora.StartMaintenanceResult_
+
+	if len(hosts) == 0 {
+		return nil, nil, errors.New("no hosts provided to start maintenance on")
+	}
+
+	hostList := aurora.NewHosts()
+	hostList.HostNames = make(map[string]bool)
+	for _, host := range hosts {
+		hostList.HostNames[host] = true
+	}
+
+	r.logger.DebugPrintf("StartMaintenance Thrift Payload: %v\n", hostList)
+
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
+		return r.adminClient.StartMaintenance(hostList)
+	})
+
+	if resp.GetResult_() != nil {
+		result = resp.GetResult_().GetStartMaintenanceResult_()
+	}
+
+	if retryErr != nil {
+		return resp, result, errors.Wrap(retryErr, "Unable to recover connection")
+	}
+
+	return resp, result, nil
+}
+
 func (r *realisClient) EndMaintenance(hosts ...string) (*aurora.Response, *aurora.EndMaintenanceResult_, error) {
 
 	var result *aurora.EndMaintenanceResult_
@@ -1014,6 +1046,7 @@ func (r *realisClient) EndMaintenance(hosts ...string) (*aurora.Response, *auror
 
 	return resp, result, nil
 }
+
 
 func (r *realisClient) MaintenanceStatus(hosts ...string) (*aurora.Response, *aurora.MaintenanceStatusResult_, error) {
 
