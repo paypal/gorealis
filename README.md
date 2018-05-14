@@ -17,5 +17,5 @@ library has been tested.
 * [australis](https://github.com/rdelval/australis)
 
 ## Contributions
-Contributions are always welcome. Please raise an issue to discuss a contribution before it is made. 
+Contributions are always welcome. Please raise an issue to discuss a contribution before it is made.
 
