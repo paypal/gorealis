@@ -138,16 +138,32 @@ func (u *UpdateJob) RollbackOnFail(rollback bool) *UpdateJob {
 	return u
 }
 
-func (u *UpdateJob) UpdateStrategy(strategy aurora.JobUpdateStrategyType) *UpdateJob {
-	u.req.Settings.UpdateStrategyType = &strategy
+func (u *UpdateJob) QueueUpdateStrategy(groupSize int32) *UpdateJob {
+	u.req.Settings.UpdateStrategy = aurora.NewJobUpdateStrategy()
+	u.req.Settings.UpdateStrategy.QueueStrategy = aurora.NewQueueJobUpdateStrategy()
+	u.req.Settings.UpdateStrategy.QueueStrategy.GroupSize = groupSize
+
 	return u
 }
 
-func (u *UpdateJob) GroupsSize(groupSizes []int32) *UpdateJob {
-	u.req.Settings.GroupsSize = make([]int32, len(groupSizes))
+func (u *UpdateJob) BatchUpdateStrategy(groupSize int32) *UpdateJob {
+	u.req.Settings.UpdateStrategy = aurora.NewJobUpdateStrategy()
+	u.req.Settings.UpdateStrategy.BatchStrategy = aurora.NewBatchJobUpdateStrategy()
+	u.req.Settings.UpdateStrategy.BatchStrategy.GroupSize = groupSize
 
-	copy(u.req.Settings.GroupsSize, groupSizes)
 	return u
+}
+
+func (u *UpdateJob) VariableBatchUpdateStrategy(groupSizes ...int32) *UpdateJob {
+	u.req.Settings.UpdateStrategy = aurora.NewJobUpdateStrategy()
+	u.req.Settings.UpdateStrategy.VarBatchStrategy = aurora.NewVariableBatchJobUpdateStrategy()
+	u.req.Settings.UpdateStrategy.VarBatchStrategy.GroupSizes = groupSizes
+
+	return u
+}
+
+func (u *UpdateJob) UpdateSettings() aurora.JobUpdateSettings {
+	return *u.req.Settings
 }
 
 func NewUpdateSettings() *aurora.JobUpdateSettings {

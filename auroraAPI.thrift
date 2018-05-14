@@ -680,25 +680,27 @@ struct JobUpdateKey {
   2: string id
 }
 
-/** Declaration of update strategy types available. **/
-enum JobUpdateStrategyType {
-  /** An update strategy that will maintain a limited amount of updates running. */
-  QUEUE           = 0,
-  /** An update strategy that will only add more work when the current active group is empty. */
-  BATCH           = 1,
-  /**
-   * An update strategy that will only add more work when the current active group is empty.
-   * Unlike BatchUpdate, once an active group is empty, the size of the next active group
-   * is allowed to change using this strategy.
-   */
-  VARIABLE_BATCH  = 2
+struct QueueJobUpdateStrategy {
+  1: i32 groupSize
+}
+
+struct BatchJobUpdateStrategy {
+  1: i32 groupSize
+}
+
+struct VariableBatchJobUpdateStrategy {
+  1: list<i32> groupSizes
+}
+
+union JobUpdateStrategy {
+ 1: QueueJobUpdateStrategy queueStrategy
+ 2: BatchJobUpdateStrategy batchStrategy
+ 3: VariableBatchJobUpdateStrategy varBatchStrategy
 }
 
 /** Job update thresholds and limits. **/
 struct JobUpdateSettings {
-  /**
-  * TODO(rdelvalle): determine if it's better to use updateGroupSizes for everything and capping
-  * updateGroupSizes at length=1 for BATCH and QUEUE.
+  /** TODO(rdelvalle): Deprecated, please set value inside of desired update strategy.
   * Max number of instances being updated at any given moment.
   */
   1: i32 updateGroupSize
@@ -718,7 +720,7 @@ struct JobUpdateSettings {
   /** Instance IDs to act on. All instances will be affected if this is not set. */
   7: set<Range> updateOnlyTheseInstances
 
-  /** TODO(rdelvalle): Deprecated, please set updateStrategyType to BATCH instead
+  /** TODO(rdelvalle): Deprecated, please set updateStrategy to the batch strategy instead.
    * If true, use updateGroupSize as strict batching boundaries, and avoid proceeding to another
    * batch until the preceding batch finishes updating.
    */
@@ -732,16 +734,7 @@ struct JobUpdateSettings {
   */
   9: optional i32 blockIfNoPulsesAfterMs
 
-  /**
-   * Explicitly state which Update strategy type to use.
-   */
-  10: optional JobUpdateStrategyType updateStrategyType
-
-  /**
-   *  Limit for each update group during an update.
-   *  This field should always be length of 1 for QUEUE and BATCH.
-   */
-  11: optional list<i32> groupsSize
+  10: optional JobUpdateStrategy updateStrategy
 }
 
 /** Event marking a state transition in job update lifecycle. */

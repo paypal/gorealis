@@ -445,10 +445,8 @@ func main() {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		updateJob := realis.NewDefaultUpdateJob(taskConfig).
-			UpdateStrategy(aurora.JobUpdateStrategyType_VARIABLE_BATCH).
-			GroupsSize([]int32{1, 2})
-		updateJob.InstanceCount(3).RAM(8).CPU(.1)
+		updateJob := realis.NewDefaultUpdateJob(taskConfig).VariableBatchUpdateStrategy(3, 2, 1)
+		updateJob.InstanceCount(6).RAM(8).CPU(.1)
 
 		resp, err := r.StartJobUpdate(updateJob, "")
 		if err != nil {
