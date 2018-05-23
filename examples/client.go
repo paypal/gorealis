@@ -50,7 +50,7 @@ func init() {
 	flag.StringVar(&role, "role", "", "owner role to use")
 	flag.StringVar(&caCertsPath, "caCertsPath", "", "Path to CA certs on local machine.")
 	flag.StringVar(&clientCert, "clientCert", "", "Client certificate to use to connect to Aurora.")
-	flag.StringVar(&clientKey, "clientKey", "", "Client key to use to connect to Aurora.")
+	flag.StringVar(&clientKey, "clientKey", "", "Client private key to use to connect to Aurora.")
 
 	flag.Parse()
 
@@ -107,7 +107,7 @@ func main() {
 		clientOptions = append(clientOptions, realis.SchedulerUrl(url))
 	}
 
-	if clientKey != "" || clientCert != "" || caCertsPath != "" {
+	if clientKey != "" && clientCert != "" && caCertsPath != "" {
 		clientOptions = append(clientOptions, realis.Certspath(caCertsPath), realis.ClientCerts(clientKey, clientCert))
 	}
 
