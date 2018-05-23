@@ -12,8 +12,10 @@ library has been tested.
 * [Using the sample client](docs/using-the-sample-client.md)
 * [Leveraging the library](docs/leveraging-the-library.md)
 
-## To Do
-* Create or import a custom transport that uses https://github.com/jmcvetta/napping to improve efficiency
+## Projects using gorealis
+
+* [australis](https://github.com/rdelval/australis)
 
 ## Contributions
-Contributions are always welcome. Please raise an issue so that the contribution may be discussed before it's made.
+Contributions are always welcome. Please raise an issue to discuss a contribution before it is made.
+
