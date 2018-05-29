@@ -107,8 +107,12 @@ func main() {
 		clientOptions = append(clientOptions, realis.SchedulerUrl(url))
 	}
 
-	if clientKey != "" && clientCert != "" && caCertsPath != "" {
-		clientOptions = append(clientOptions, realis.Certspath(caCertsPath), realis.ClientCerts(clientKey, clientCert))
+	if caCertsPath != "" {
+		clientOptions = append(clientOptions, realis.Certspath(caCertsPath))
+	}
+
+	if clientKey != "" && clientCert != "" {
+		clientOptions = append(clientOptions, realis.ClientCerts(clientKey, clientCert))
 	}
 
 	r, err = realis.NewRealisClient(clientOptions...)
