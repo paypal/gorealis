@@ -36,13 +36,11 @@ type ServiceInstance struct {
 }
 
 type zkConfig struct {
-	endpoints            []string
-	path                 string
-	backoff              Backoff
-	timeout              time.Duration
-	logger               Logger
-	auroraSchemeOverride *string
-	auroraPortOverride   *int
+	endpoints []string
+	path      string
+	backoff   Backoff
+	timeout   time.Duration
+	logger    Logger
 }
 
 type ZKOpt func(z *zkConfig)
@@ -74,18 +72,6 @@ func ZKTimeout(d time.Duration) ZKOpt {
 func ZKLogger(l Logger) ZKOpt {
 	return func(z *zkConfig) {
 		z.logger = l
-	}
-}
-
-func ZKAuroraSchemeOverride(scheme string) ZKOpt {
-	return func(z *zkConfig) {
-		z.auroraSchemeOverride = &scheme
-	}
-}
-
-func ZKAuroraPortOverride(port int) ZKOpt {
-	return func(z *zkConfig) {
-		z.auroraPortOverride = &port
 	}
 }
 
@@ -165,20 +151,9 @@ func LeaderFromZKOpts(options ...ZKOpt) (string, error) {
 
 				var scheme, host, port string
 				for k, v := range serviceInst.AdditionalEndpoints {
-
-					if config.auroraSchemeOverride == nil {
-						scheme = k
-					} else {
-						scheme = *config.auroraSchemeOverride
-					}
-
+					scheme = k
 					host = v.Host
-
-					if config.auroraPortOverride == nil {
-						port = strconv.Itoa(v.Port)
-					} else {
-						port = strconv.Itoa(*config.auroraPortOverride)
-					}
+					port = strconv.Itoa(v.Port)
 				}
 
 				leaderURL = scheme + "://" + host + ":" + port
