@@ -77,18 +77,6 @@ func ZKLogger(l Logger) ZKOpt {
 	}
 }
 
-func ZKAuroraSchemeOverride(scheme string) ZKOpt {
-	return func(z *zkConfig) {
-		z.auroraSchemeOverride = &scheme
-	}
-}
-
-func ZKAuroraPortOverride(port int) ZKOpt {
-	return func(z *zkConfig) {
-		z.auroraPortOverride = &port
-	}
-}
-
 // Retrieves current Aurora leader from ZK.
 func LeaderFromZK(cluster Cluster) (string, error) {
 	return LeaderFromZKOpts(ZKEndpoints(strings.Split(cluster.ZK, ",")...), ZKPath(cluster.SchedZKPath))
@@ -165,20 +153,9 @@ func LeaderFromZKOpts(options ...ZKOpt) (string, error) {
 
 				var scheme, host, port string
 				for k, v := range serviceInst.AdditionalEndpoints {
-
-					if config.auroraSchemeOverride == nil {
-						scheme = k
-					} else {
-						scheme = *config.auroraSchemeOverride
-					}
-
+					scheme = k
 					host = v.Host
-
-					if config.auroraPortOverride == nil {
-						port = strconv.Itoa(v.Port)
-					} else {
-						port = strconv.Itoa(*config.auroraPortOverride)
-					}
+					port = strconv.Itoa(v.Port)
 				}
 
 				leaderURL = scheme + "://" + host + ":" + port
