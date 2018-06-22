@@ -266,6 +266,11 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 
 	config.logger.Println("Number of options applied to config: ", len(options))
 
+	// Set a logger if debug has been set to true but no logger has been set
+	if config.logger == nil && config.debug {
+		config.logger = log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC)
+	}
+
 	//Set default Transport to JSON if needed.
 	if !config.jsonTransport && !config.binTransport {
 		config.jsonTransport = true

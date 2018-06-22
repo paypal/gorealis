@@ -30,6 +30,8 @@ import (
 )
 
 var cmd, executor, url, clustersConfig, clusterName, updateId, username, password, zkUrl, hostList, role string
+var caCertsPath string
+var clientKey, clientCert string
 
 var CONNECTION_TIMEOUT = 20000
 
@@ -45,6 +47,9 @@ func init() {
 	flag.StringVar(&zkUrl, "zkurl", "", "zookeeper url")
 	flag.StringVar(&hostList, "hostList", "", "Comma separated list of hosts to operate on")
 	flag.StringVar(&role, "role", "", "owner role to use")
+	flag.StringVar(&caCertsPath, "caCertsPath", "", "Path to CA certs on local machine.")
+	flag.StringVar(&clientCert, "clientCert", "", "Client certificate to use to connect to Aurora.")
+	flag.StringVar(&clientKey, "clientKey", "", "Client private key to use to connect to Aurora.")
 
 	flag.Parse()
 
@@ -98,6 +103,14 @@ func main() {
 		clientOptions = append(clientOptions, realis.ZKUrl(zkUrl))
 	} else {
 		clientOptions = append(clientOptions, realis.SchedulerUrl(url))
+	}
+
+	if caCertsPath != "" {
+		clientOptions = append(clientOptions, realis.Certspath(caCertsPath))
+	}
+
+	if clientKey != "" && clientCert != "" {
+		clientOptions = append(clientOptions, realis.ClientCerts(clientKey, clientCert))
 	}
 
 	r, err = realis.NewRealisClient(clientOptions...)
