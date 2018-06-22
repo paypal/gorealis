@@ -36,13 +36,11 @@ type ServiceInstance struct {
 }
 
 type zkConfig struct {
-	endpoints            []string
-	path                 string
-	backoff              Backoff
-	timeout              time.Duration
-	logger               Logger
-	auroraSchemeOverride *string
-	auroraPortOverride   *int
+	endpoints []string
+	path      string
+	backoff   Backoff
+	timeout   time.Duration
+	logger    Logger
 }
 
 type ZKOpt func(z *zkConfig)
