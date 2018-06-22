@@ -271,7 +271,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		config.logger = &LevelLogger{log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC), true}
 	}
 
-	// Note,  by this point, a LevelLogger should have been created.
+	// Note, by this point, a LevelLogger should have been created.
 	config.logger.EnableDebug(config.debug)
 
 	config.logger.DebugPrintln("Number of options applied to config: ", len(options))
