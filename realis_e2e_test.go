@@ -40,8 +40,7 @@ func TestMain(m *testing.M) {
 	// New configuration to connect to Vagrant image
 	r, err = realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
 		realis.BasicAuth("aurora", "secret"),
-		realis.TimeoutMS(20000),
-		realis.Debug())
+		realis.TimeoutMS(20000))
 
 	if err != nil {
 		fmt.Println("Please run vagrant box before running test suite")

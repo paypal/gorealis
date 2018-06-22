@@ -96,7 +96,7 @@ type RealisConfig struct {
 	backoff                     Backoff
 	transport                   thrift.TTransport
 	protoFactory                thrift.TProtocolFactory
-	logger                      Logger
+	logger                      *LevelLogger
 	InsecureSkipVerify          bool
 	certspath                   string
 	clientkey, clientcert       string
@@ -207,7 +207,7 @@ func ZookeeperOptions(opts ...ZKOpt) ClientOption {
 // Using the word set to avoid name collision with Interface.
 func SetLogger(l Logger) ClientOption {
 	return func(config *RealisConfig) {
-		config.logger = l
+		config.logger = &LevelLogger{l, false}
 	}
 }
 
@@ -249,7 +249,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 	// Default configs
 	config.timeoutms = 10000
 	config.backoff = defaultBackoff
-	config.logger = log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC)
+	config.logger = &LevelLogger{log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC), false}
 
 	// Save options to recreate client if a connection error happens
 	config.options = options
@@ -259,17 +259,22 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		opt(config)
 	}
 
+	// TODO(rdelvalle): Move this logic to it's own function to make initialization code easier to read.
+
 	// Turn off all logging (including debug)
 	if config.logger == nil {
-		config.logger = LevelLogger{NoopLogger{}, false}
+		config.logger = &LevelLogger{NoopLogger{}, false}
 	}
-
-	config.logger.Println("Number of options applied to config: ", len(options))
 
 	// Set a logger if debug has been set to true but no logger has been set
 	if config.logger == nil && config.debug {
-		config.logger = log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC)
+		config.logger = &LevelLogger{log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC), true}
 	}
+
+	// Note,  by this point, a LevelLogger should have been created.
+	config.logger.EnableDebug(config.debug)
+
+	config.logger.DebugPrintln("Number of options applied to config: ", len(options))
 
 	//Set default Transport to JSON if needed.
 	if !config.jsonTransport && !config.binTransport {

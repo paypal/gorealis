@@ -33,6 +33,10 @@ type LevelLogger struct {
 	debug bool
 }
 
+func (l *LevelLogger) EnableDebug(enable bool) {
+	l.debug = enable
+}
+
 func (l LevelLogger) DebugPrintf(format string, a ...interface{}) {
 	if l.debug {
 		l.Print("[DEBUG] ")
