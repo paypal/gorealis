@@ -301,6 +301,25 @@ $ cd $GOPATH/src/github.com/paypal/gorealis
 $ go run examples/client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=create -executor=thermos
 ```
 
+## Creating jobs using gorealis JSON client
+We can also use the [JSON client](../examples/jsonClient.go) to create Aurora jobs using gorealis.
+
+If using _dce-go_, then use `http://192.168.33.8:8081` as the scheduler URL.
+
+```
+$ cd $GOPATH/src/github.com/paypal/gorealis/examples
+```
+
+To launch a job using the Thermos executor,
+```
+$ go run jsonClient.go -job=job_thermos.json -config=config.json
+```
+
+To launch a job using docker-compose executor,
+```
+$ go run jsonClient.go -job=job_dce.json -config=config.json
+```
+
 # Cleaning up
 
 To stop the jobs we've launched, we need to send a job kill request to Aurora.
@@ -316,25 +335,7 @@ $ aurora job killall devcluster/vagrant/prod/docker-compose
 
 ## Using gorealis
 
-If manually configured Aurora to use docker-compose executor,
 ```
 $ go run $GOPATH/src/github.com/paypal/gorealis/examples/client.go -executor=compose -url=http://192.168.33.7:8081 -cmd=kill
 $ go run $GOPATH/src/github.com/paypal/gorealis/examples/client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=kill
-```
-
-If using _dce-go_, then update the scheduler URL in the above commands to `http://192.168.33.8:8081`.
-
-### Json Client
-```
-$ cd $GOPATH/src/github.com/paypal/gorealis/examples
-```
-
-To launch a job using the Thermos executor,
-```
-$ go run jsonClient.go -job=job_thermos.json -config=config.json
-```
-
-To launch a job using docker-compose executor,
-```
-$ go run jsonClient.go -job=job_dce.json -config=config.json
 ```
