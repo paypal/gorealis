@@ -20,7 +20,11 @@ import (
 	"fmt"
 	"github.com/paypal/gorealis"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
+	"github.com/pkg/errors"
+	"io/ioutil"
+	"log"
 	"os"
+	"time"
 )
 
 type URIJson struct {
@@ -64,33 +68,21 @@ func (j *JobJson) Validate() bool {
 	return true
 }
 
-type ZKClusterConfig struct {
-	Name          string `json:"name"`
-	AgentRoot     string `json:"slave_root"`
-	AgentRunDir   string `json:"slave_run_directory"`
-	ZK            string `json:"zk"`
-	ZKPort        int    `json:"zk_port"`
-	SchedZKPath   string `json:"scheduler_zk_path"`
-	SchedURI      string `json:"scheduler_uri"`
-	ProxyURL      string `json:"proxy_url"`
-	AuthMechanism string `json:"auth_mechanism"`
-}
-
-type ConfigJson struct {
-	Username      string           `json:"username"`
-	Password      string           `json:"password"`
-	SchedUrl      string           `json:"schedUrl"`
-	BinTransport  bool             `json:"bin_transport,omitempty"`
-	JsonTransport bool             `json:"json_transport,omitempty"`
-	ClusterConfig *ZKClusterConfig `json:"zkCluster"`
-	Debug         bool             `json:"debug,omitempty"`
+type Config struct {
+	Username      string          `json:"username"`
+	Password      string          `json:"password"`
+	SchedUrl      string          `json:"schedUrl"`
+	BinTransport  bool            `json:"bin_transport,omitempty"`
+	JsonTransport bool            `json:"json_transport,omitempty"`
+	ClusterConfig *realis.Cluster `json:"cluster"`
+	Debug         bool            `json:"debug,omitempty"`
 }
 
 // Command-line arguments for config and job JSON files.
 var configJSONFile, jobJSONFile string
 
-var job JobJson
-var config ConfigJson
+var job *JobJson
+var config *Config
 
 // Reading command line arguments and validating.
 // If Aurora scheduler URL not provided, then using zookeeper to locate the leader.
@@ -101,9 +93,9 @@ func init() {
 	flag.Parse()
 
 	job = new(JobJson)
-	config = new(realis.RealisConfig)
+	config = new(Config)
 
-	if jobsFile, jobJSONReadErr := os.Open(*jobJSONFile); jobJSONReadErr != nil {
+	if jobsFile, jobJSONReadErr := os.Open(jobJSONFile); jobJSONReadErr != nil {
 		flag.Usage()
 		fmt.Println("Error reading the job JSON file: ", jobJSONReadErr)
 		os.Exit(1)
@@ -121,19 +113,19 @@ func init() {
 		}
 	}
 
-	if configFile, configJSONErr := os.Open(*configJSONFile); configJSONErr {
+	if configFile, configJSONErr := os.Open(configJSONFile); configJSONErr != nil {
 		flag.Usage()
 		fmt.Println("Error reading the config JSON file: ", configJSONErr)
 		os.Exit(1)
 	} else {
-		if unmarshallErr := json.NewDecoder(configFile).Decode(config); unmarshallErr {
+		if unmarshallErr := json.NewDecoder(configFile).Decode(config); unmarshallErr != nil {
 			fmt.Println("Error parsing config JSON file: ", unmarshallErr)
 			os.Exit(1)
 		}
 	}
 }
 
-func main() {
+func CreateRealisClient(config *Config) (realis.Realis, error) {
 	var transportOption realis.ClientOption
 	if config.BinTransport {
 		transportOption = realis.ThriftBinary()
