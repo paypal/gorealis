@@ -26,9 +26,9 @@ import (
 	"net/http/cookiejar"
 	"os"
 	"path/filepath"
-	"time"
-
+	"strings"
 	"sync"
+	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
@@ -96,12 +96,13 @@ type RealisConfig struct {
 	backoff                     Backoff
 	transport                   thrift.TTransport
 	protoFactory                thrift.TProtocolFactory
-	logger                      Logger
+	logger                      *LevelLogger
 	InsecureSkipVerify          bool
 	certspath                   string
 	clientkey, clientcert       string
 	options                     []ClientOption
 	debug                       bool
+	zkOptions                   []ZKOpt
 }
 
 var defaultBackoff = Backoff{
@@ -140,8 +141,15 @@ func ZKCluster(cluster *Cluster) ClientOption {
 }
 
 func ZKUrl(url string) ClientOption {
+
+	opts := []ZKOpt{ZKEndpoints(strings.Split(url, ",")...), ZKPath("/aurora/scheduler")}
+
 	return func(config *RealisConfig) {
-		config.cluster = GetDefaultClusterFromZKUrl(url)
+		if config.zkOptions == nil {
+			config.zkOptions = opts
+		} else {
+			config.zkOptions = append(config.zkOptions, opts...)
+		}
 	}
 }
 
@@ -187,10 +195,18 @@ func ClientCerts(clientKey, clientCert string) ClientOption {
 	}
 }
 
+// Use this option if you'd like to override default settings for connecting to Zookeeper.
+// See zk.go for what is possible to set as an option.
+func ZookeeperOptions(opts ...ZKOpt) ClientOption {
+	return func(config *RealisConfig) {
+		config.zkOptions = opts
+	}
+}
+
 // Using the word set to avoid name collision with Interface.
 func SetLogger(l Logger) ClientOption {
 	return func(config *RealisConfig) {
-		config.logger = l
+		config.logger = &LevelLogger{l, false}
 	}
 }
 
@@ -232,7 +248,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 	// Default configs
 	config.timeoutms = 10000
 	config.backoff = defaultBackoff
-	config.logger = LevelLogger{NoopLogger{}, false}
+	config.logger = &LevelLogger{log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC), false}
 
 	// Save options to recreate client if a connection error happens
 	config.options = options
@@ -242,12 +258,22 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		opt(config)
 	}
 
-	config.logger.Println("Number of options applied to config: ", len(options))
+	// TODO(rdelvalle): Move this logic to it's own function to make initialization code easier to read.
+
+	// Turn off all logging (including debug)
+	if config.logger == nil {
+		config.logger = &LevelLogger{NoopLogger{}, false}
+	}
 
 	// Set a logger if debug has been set to true but no logger has been set
 	if config.logger == nil && config.debug {
-		config.logger = log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC)
+		config.logger = &LevelLogger{log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC), true}
 	}
+
+	// Note, by this point, a LevelLogger should have been created.
+	config.logger.EnableDebug(config.debug)
+
+	config.logger.DebugPrintln("Number of options applied to config: ", len(options))
 
 	//Set default Transport to JSON if needed.
 	if !config.jsonTransport && !config.binTransport {
@@ -257,9 +283,16 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 	var url string
 	var err error
 
-	// Determine how to get information to connect to the scheduler.
-	// Prioritize getting leader from ZK over using a direct URL.
-	if config.cluster != nil {
+	// Find the leader using custom Zookeeper options if options are provided
+	if config.zkOptions != nil {
+		url, err = LeaderFromZKOpts(config.zkOptions...)
+		if err != nil {
+			return nil, NewTemporaryError(errors.Wrap(err, "LeaderFromZK error"))
+		}
+		config.logger.Println("Scheduler URL from ZK: ", url)
+	} else if config.cluster != nil {
+		// Determine how to get information to connect to the scheduler.
+		// Prioritize getting leader from ZK over using a direct URL.
 		url, err = LeaderFromZK(*config.cluster)
 		// If ZK is configured, throw an error if the leader is unable to be determined
 		if err != nil {
@@ -270,7 +303,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		url = config.url
 		config.logger.Println("Scheduler URL: ", url)
 	} else {
-		return nil, errors.New("Incomplete Options -- url or cluster required")
+		return nil, errors.New("Incomplete Options -- url, cluster.json, or Zookeeper address required")
 	}
 
 	if config.jsonTransport {
