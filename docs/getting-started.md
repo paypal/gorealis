@@ -272,7 +272,7 @@ A message from the executor should greet us.
 It is also possible to create a thermos job using gorealis. To do this, however, 
 a thermos payload is required. A thermos payload consists of a JSON blob that details
 the entire task as it exists inside the Aurora Scheduler. *Creating the blob is unfortunately
-out of the scope of was gorealis does*, so a thermos payload must be generated beforehand or 
+out of the scope of what gorealis does*, so a thermos payload must be generated beforehand or 
 retrieved from the structdump of an existing task for testing purposes.
 
 A sample thermos JSON payload may be found [here](../examples/thermos_payload.json) in the examples folder.
