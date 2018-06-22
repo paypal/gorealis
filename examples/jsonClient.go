@@ -135,26 +135,38 @@ func CreateRealisClient(config *Config) (realis.Realis, error) {
 
 	clientOptions := []realis.ClientOption{
 		realis.BasicAuth(config.Username, config.Password),
-		transportOption(),
-		realis.ZKCluster(config.ClusterConfig),
+		transportOption,
 		realis.SchedulerUrl(config.SchedUrl),
+		realis.SetLogger(log.New(os.Stdout, "realis-debug: ", log.Ldate)),
+		realis.BackOff(realis.Backoff{
+			Steps:    2,
+			Duration: 10 * time.Second,
+			Factor:   2.0,
+			Jitter:   0.1,
+		}),
 	}
 
 	if config.Debug {
 		clientOptions = append(clientOptions, realis.Debug())
 	}
 
-	if r, clientCreationErr := realis.NewRealisClient(clientOptions...); clientCreationErr != nil {
+	return realis.NewRealisClient(clientOptions...)
+}
+
+func main() {
+	if r, clientCreationErr := CreateRealisClient(config); clientCreationErr != nil {
 		fmt.Println(clientCreationErr)
 		os.Exit(1)
 	} else {
 		monitor := &realis.Monitor{Client: r}
 		defer r.Close()
+		uris := job.URIs
+		labels := job.Labels
+
 		auroraJob := realis.NewJob().
 			Environment("prod").
 			Role("vagrant").
 			Name(job.Name).
-			ExecutorName(job.Executor).
 			CPU(job.CPU).
 			RAM(job.RAM).
 			Disk(job.Disk).
