@@ -30,16 +30,17 @@ type URIJson struct {
 }
 
 type JobJson struct {
-	Name      string            `json:"name"`
-	CPU       float64           `json:"cpu"`
-	RAM       int64             `json:"ram_mb"`
-	Disk      int64             `json:"disk_mb"`
-	Executor  string            `json:"executor"`
-	Instances int32             `json:"instances"`
-	URIs      []URIJson         `json:"uris"`
-	Labels    map[string]string `json:"labels"`
-	Service   bool              `json:"service"`
-	Ports     int               `json:"ports"`
+	Name             string            `json:"name"`
+	CPU              float64           `json:"cpu"`
+	RAM              int64             `json:"ram_mb"`
+	Disk             int64             `json:"disk_mb"`
+	Executor         string            `json:"executor"`
+	ExecutorDataFile string            `json:"execDataFile,omitempty"`
+	Instances        int32             `json:"instances"`
+	URIs             []URIJson         `json:"uris"`
+	Labels           map[string]string `json:"labels"`
+	Service          bool              `json:"service"`
+	Ports            int               `json:"ports"`
 }
 
 func (j *JobJson) Validate() bool {
@@ -168,6 +169,29 @@ func main() {
 			IsService(job.Service).
 			InstanceCount(job.Instances).
 			AddPorts(job.Ports)
+
+		// If thermos executor, then reading in the thermos payload.
+		if (job.Executor == aurora.AURORA_EXECUTOR_NAME) || (job.Executor == "thermos") {
+			payload, err := ioutil.ReadFile(job.ExecutorDataFile)
+			if err != nil {
+				fmt.Println(errors.Wrap(err, "Invalid thermos payload file!"))
+				os.Exit(1)
+			}
+			auroraJob.ExecutorName(aurora.AURORA_EXECUTOR_NAME).
+				ExecutorData(string(payload))
+		} else {
+			auroraJob.ExecutorName(job.Executor)
+		}
+
+		// Adding URIs.
+		for _, uri := range uris {
+			auroraJob.AddURIs(uri.Extract, uri.Cache, uri.URI)
+		}
+
+		// Adding Labels.
+		for key, value := range labels {
+			auroraJob.AddLabel(key, value)
+		}
 
 		fmt.Println("Creating Job...")
 		if resp, jobCreationErr := r.CreateJob(auroraJob); jobCreationErr != nil {
