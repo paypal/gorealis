@@ -39,7 +39,7 @@ type JobJson struct {
 	RAM              int64             `json:"ram_mb"`
 	Disk             int64             `json:"disk_mb"`
 	Executor         string            `json:"executor"`
-	ExecutorDataFile string            `json:"execDataFile,omitempty"`
+	ExecutorDataFile string            `json:"exec_data_file,omitempty"`
 	Instances        int32             `json:"instances"`
 	URIs             []URIJson         `json:"uris"`
 	Labels           map[string]string `json:"labels"`
@@ -71,7 +71,7 @@ func (j *JobJson) Validate() bool {
 type Config struct {
 	Username      string          `json:"username"`
 	Password      string          `json:"password"`
-	SchedUrl      string          `json:"schedUrl"`
+	SchedUrl      string          `json:"sched_url"`
 	BinTransport  bool            `json:"bin_transport,omitempty"`
 	JsonTransport bool            `json:"json_transport,omitempty"`
 	ClusterConfig *realis.Cluster `json:"cluster"`

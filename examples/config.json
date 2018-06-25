@@ -1,7 +1,7 @@
 {
   "username": "aurora",
   "password": "secret",
-  "schedUrl": "http://192.168.33.7:8081",
+  "sched_url": "http://192.168.33.7:8081",
   "cluster" : {
     "name": "devcluster",
     "zk": "192.168.33.7",
