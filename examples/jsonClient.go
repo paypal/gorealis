@@ -71,7 +71,7 @@ func (j *JobJson) Validate() bool {
 type Config struct {
 	Username      string          `json:"username"`
 	Password      string          `json:"password"`
-	SchedUrl      string          `json:"schedUrl"`
+	SchedUrl      string          `json:"sched_url"`
 	BinTransport  bool            `json:"bin_transport,omitempty"`
 	JsonTransport bool            `json:"json_transport,omitempty"`
 	ClusterConfig *realis.Cluster `json:"cluster"`
