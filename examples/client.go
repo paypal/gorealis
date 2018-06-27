@@ -553,9 +553,9 @@ func main() {
 	case "taskStatus":
 		fmt.Println("Getting task status")
 		taskQ := &aurora.TaskQuery{
-			Role:        job.JobKey().Role,
-			Environment: job.JobKey().Environment,
-			JobName:     job.JobKey().Name,
+			Role:        &job.JobKey().Role,
+			Environment: &job.JobKey().Environment,
+			JobName:     &job.JobKey().Name,
 		}
 		tasks, err := r.GetTaskStatus(taskQ)
 		if err != nil {
@@ -567,9 +567,9 @@ func main() {
 	case "tasksWithoutConfig":
 		fmt.Println("Getting task status")
 		taskQ := &aurora.TaskQuery{
-			Role:        job.JobKey().Role,
-			Environment: job.JobKey().Environment,
-			JobName:     job.JobKey().Name,
+			Role:        &job.JobKey().Role,
+			Environment: &job.JobKey().Environment,
+			JobName:     &job.JobKey().Name,
 		}
 		tasks, err := r.GetTasksWithoutConfigs(taskQ)
 		if err != nil {

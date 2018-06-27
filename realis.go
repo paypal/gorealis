@@ -497,9 +497,9 @@ func (r *realisClient) Close() {
 // Uses predefined set of states to retrieve a set of active jobs in Apache Aurora.
 func (r *realisClient) GetInstanceIds(key *aurora.JobKey, states map[aurora.ScheduleStatus]bool) (map[int32]bool, error) {
 	taskQ := &aurora.TaskQuery{
-		Role:        key.Role,
-		Environment: key.Environment,
-		JobName:     key.Name,
+		Role:        &key.Role,
+		Environment: &key.Environment,
+		JobName:     &key.Name,
 		Statuses:    states,
 	}
 
@@ -880,9 +880,9 @@ func (r *realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.Task
 
 	ids[instKey.InstanceId] = true
 	taskQ := &aurora.TaskQuery{
-		Role:        instKey.JobKey.Role,
-		Environment: instKey.JobKey.Environment,
-		JobName:     instKey.JobKey.Name,
+		Role:        &instKey.JobKey.Role,
+		Environment: &instKey.JobKey.Environment,
+		JobName:     &instKey.JobKey.Name,
 		InstanceIds: ids,
 		Statuses:    aurora.ACTIVE_STATES,
 	}
