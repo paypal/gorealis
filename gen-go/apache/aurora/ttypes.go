@@ -8020,64 +8020,139 @@ func (p *GetJobsResult_) String() string {
 //  - Limit
 type TaskQuery struct {
 	// unused field # 1
-	JobName string `thrift:"jobName,2" json:"jobName"`
+	JobName *string `thrift:"jobName,2" json:"jobName,omitempty"`
 	// unused field # 3
-	TaskIds  map[string]bool         `thrift:"taskIds,4" json:"taskIds"`
-	Statuses map[ScheduleStatus]bool `thrift:"statuses,5" json:"statuses"`
+	TaskIds  map[string]bool         `thrift:"taskIds,4" json:"taskIds,omitempty"`
+	Statuses map[ScheduleStatus]bool `thrift:"statuses,5" json:"statuses,omitempty"`
 	// unused field # 6
-	InstanceIds map[int32]bool `thrift:"instanceIds,7" json:"instanceIds"`
+	InstanceIds map[int32]bool `thrift:"instanceIds,7" json:"instanceIds,omitempty"`
 	// unused field # 8
-	Environment string           `thrift:"environment,9" json:"environment"`
-	SlaveHosts  map[string]bool  `thrift:"slaveHosts,10" json:"slaveHosts"`
-	JobKeys     map[*JobKey]bool `thrift:"jobKeys,11" json:"jobKeys"`
-	Offset      int32            `thrift:"offset,12" json:"offset"`
-	Limit       int32            `thrift:"limit,13" json:"limit"`
-	Role        string           `thrift:"role,14" json:"role"`
+	Environment *string          `thrift:"environment,9" json:"environment,omitempty"`
+	SlaveHosts  map[string]bool  `thrift:"slaveHosts,10" json:"slaveHosts,omitempty"`
+	JobKeys     map[*JobKey]bool `thrift:"jobKeys,11" json:"jobKeys,omitempty"`
+	Offset      *int32           `thrift:"offset,12" json:"offset,omitempty"`
+	Limit       *int32           `thrift:"limit,13" json:"limit,omitempty"`
+	Role        *string          `thrift:"role,14" json:"role,omitempty"`
 }
 
 func NewTaskQuery() *TaskQuery {
 	return &TaskQuery{}
 }
 
+var TaskQuery_Role_DEFAULT string
+
 func (p *TaskQuery) GetRole() string {
-	return p.Role
+	if !p.IsSetRole() {
+		return TaskQuery_Role_DEFAULT
+	}
+	return *p.Role
 }
+
+var TaskQuery_Environment_DEFAULT string
 
 func (p *TaskQuery) GetEnvironment() string {
-	return p.Environment
+	if !p.IsSetEnvironment() {
+		return TaskQuery_Environment_DEFAULT
+	}
+	return *p.Environment
 }
 
+var TaskQuery_JobName_DEFAULT string
+
 func (p *TaskQuery) GetJobName() string {
-	return p.JobName
+	if !p.IsSetJobName() {
+		return TaskQuery_JobName_DEFAULT
+	}
+	return *p.JobName
 }
+
+var TaskQuery_TaskIds_DEFAULT map[string]bool
 
 func (p *TaskQuery) GetTaskIds() map[string]bool {
 	return p.TaskIds
 }
 
+var TaskQuery_Statuses_DEFAULT map[ScheduleStatus]bool
+
 func (p *TaskQuery) GetStatuses() map[ScheduleStatus]bool {
 	return p.Statuses
 }
+
+var TaskQuery_InstanceIds_DEFAULT map[int32]bool
 
 func (p *TaskQuery) GetInstanceIds() map[int32]bool {
 	return p.InstanceIds
 }
 
+var TaskQuery_SlaveHosts_DEFAULT map[string]bool
+
 func (p *TaskQuery) GetSlaveHosts() map[string]bool {
 	return p.SlaveHosts
 }
+
+var TaskQuery_JobKeys_DEFAULT map[*JobKey]bool
 
 func (p *TaskQuery) GetJobKeys() map[*JobKey]bool {
 	return p.JobKeys
 }
 
+var TaskQuery_Offset_DEFAULT int32
+
 func (p *TaskQuery) GetOffset() int32 {
-	return p.Offset
+	if !p.IsSetOffset() {
+		return TaskQuery_Offset_DEFAULT
+	}
+	return *p.Offset
 }
 
+var TaskQuery_Limit_DEFAULT int32
+
 func (p *TaskQuery) GetLimit() int32 {
-	return p.Limit
+	if !p.IsSetLimit() {
+		return TaskQuery_Limit_DEFAULT
+	}
+	return *p.Limit
 }
+func (p *TaskQuery) IsSetRole() bool {
+	return p.Role != nil
+}
+
+func (p *TaskQuery) IsSetEnvironment() bool {
+	return p.Environment != nil
+}
+
+func (p *TaskQuery) IsSetJobName() bool {
+	return p.JobName != nil
+}
+
+func (p *TaskQuery) IsSetTaskIds() bool {
+	return p.TaskIds != nil
+}
+
+func (p *TaskQuery) IsSetStatuses() bool {
+	return p.Statuses != nil
+}
+
+func (p *TaskQuery) IsSetInstanceIds() bool {
+	return p.InstanceIds != nil
+}
+
+func (p *TaskQuery) IsSetSlaveHosts() bool {
+	return p.SlaveHosts != nil
+}
+
+func (p *TaskQuery) IsSetJobKeys() bool {
+	return p.JobKeys != nil
+}
+
+func (p *TaskQuery) IsSetOffset() bool {
+	return p.Offset != nil
+}
+
+func (p *TaskQuery) IsSetLimit() bool {
+	return p.Limit != nil
+}
+
 func (p *TaskQuery) Read(iprot thrift.TProtocol) error {
 	if _, err := iprot.ReadStructBegin(); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
@@ -8151,7 +8226,7 @@ func (p *TaskQuery) readField14(iprot thrift.TProtocol) error {
 	if v, err := iprot.ReadString(); err != nil {
 		return thrift.PrependError("error reading field 14: ", err)
 	} else {
-		p.Role = v
+		p.Role = &v
 	}
 	return nil
 }
@@ -8160,7 +8235,7 @@ func (p *TaskQuery) readField9(iprot thrift.TProtocol) error {
 	if v, err := iprot.ReadString(); err != nil {
 		return thrift.PrependError("error reading field 9: ", err)
 	} else {
-		p.Environment = v
+		p.Environment = &v
 	}
 	return nil
 }
@@ -8169,7 +8244,7 @@ func (p *TaskQuery) readField2(iprot thrift.TProtocol) error {
 	if v, err := iprot.ReadString(); err != nil {
 		return thrift.PrependError("error reading field 2: ", err)
 	} else {
-		p.JobName = v
+		p.JobName = &v
 	}
 	return nil
 }
@@ -8287,7 +8362,7 @@ func (p *TaskQuery) readField12(iprot thrift.TProtocol) error {
 	if v, err := iprot.ReadI32(); err != nil {
 		return thrift.PrependError("error reading field 12: ", err)
 	} else {
-		p.Offset = v
+		p.Offset = &v
 	}
 	return nil
 }
@@ -8296,7 +8371,7 @@ func (p *TaskQuery) readField13(iprot thrift.TProtocol) error {
 	if v, err := iprot.ReadI32(); err != nil {
 		return thrift.PrependError("error reading field 13: ", err)
 	} else {
-		p.Limit = v
+		p.Limit = &v
 	}
 	return nil
 }
@@ -8345,171 +8420,191 @@ func (p *TaskQuery) Write(oprot thrift.TProtocol) error {
 }
 
 func (p *TaskQuery) writeField2(oprot thrift.TProtocol) (err error) {
-	if err := oprot.WriteFieldBegin("jobName", thrift.STRING, 2); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:jobName: ", p), err)
-	}
-	if err := oprot.WriteString(string(p.JobName)); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T.jobName (2) field write error: ", p), err)
-	}
-	if err := oprot.WriteFieldEnd(); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field end error 2:jobName: ", p), err)
+	if p.IsSetJobName() {
+		if err := oprot.WriteFieldBegin("jobName", thrift.STRING, 2); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:jobName: ", p), err)
+		}
+		if err := oprot.WriteString(string(*p.JobName)); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T.jobName (2) field write error: ", p), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 2:jobName: ", p), err)
+		}
 	}
 	return err
 }
 
 func (p *TaskQuery) writeField4(oprot thrift.TProtocol) (err error) {
-	if err := oprot.WriteFieldBegin("taskIds", thrift.SET, 4); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field begin error 4:taskIds: ", p), err)
-	}
-	if err := oprot.WriteSetBegin(thrift.STRING, len(p.TaskIds)); err != nil {
-		return thrift.PrependError("error writing set begin: ", err)
-	}
-	for v, _ := range p.TaskIds {
-		if err := oprot.WriteString(string(v)); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+	if p.IsSetTaskIds() {
+		if err := oprot.WriteFieldBegin("taskIds", thrift.SET, 4); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 4:taskIds: ", p), err)
 		}
-	}
-	if err := oprot.WriteSetEnd(); err != nil {
-		return thrift.PrependError("error writing set end: ", err)
-	}
-	if err := oprot.WriteFieldEnd(); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field end error 4:taskIds: ", p), err)
+		if err := oprot.WriteSetBegin(thrift.STRING, len(p.TaskIds)); err != nil {
+			return thrift.PrependError("error writing set begin: ", err)
+		}
+		for v, _ := range p.TaskIds {
+			if err := oprot.WriteString(string(v)); err != nil {
+				return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+			}
+		}
+		if err := oprot.WriteSetEnd(); err != nil {
+			return thrift.PrependError("error writing set end: ", err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 4:taskIds: ", p), err)
+		}
 	}
 	return err
 }
 
 func (p *TaskQuery) writeField5(oprot thrift.TProtocol) (err error) {
-	if err := oprot.WriteFieldBegin("statuses", thrift.SET, 5); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field begin error 5:statuses: ", p), err)
-	}
-	if err := oprot.WriteSetBegin(thrift.I32, len(p.Statuses)); err != nil {
-		return thrift.PrependError("error writing set begin: ", err)
-	}
-	for v, _ := range p.Statuses {
-		if err := oprot.WriteI32(int32(v)); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+	if p.IsSetStatuses() {
+		if err := oprot.WriteFieldBegin("statuses", thrift.SET, 5); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 5:statuses: ", p), err)
 		}
-	}
-	if err := oprot.WriteSetEnd(); err != nil {
-		return thrift.PrependError("error writing set end: ", err)
-	}
-	if err := oprot.WriteFieldEnd(); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field end error 5:statuses: ", p), err)
+		if err := oprot.WriteSetBegin(thrift.I32, len(p.Statuses)); err != nil {
+			return thrift.PrependError("error writing set begin: ", err)
+		}
+		for v, _ := range p.Statuses {
+			if err := oprot.WriteI32(int32(v)); err != nil {
+				return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+			}
+		}
+		if err := oprot.WriteSetEnd(); err != nil {
+			return thrift.PrependError("error writing set end: ", err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 5:statuses: ", p), err)
+		}
 	}
 	return err
 }
 
 func (p *TaskQuery) writeField7(oprot thrift.TProtocol) (err error) {
-	if err := oprot.WriteFieldBegin("instanceIds", thrift.SET, 7); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field begin error 7:instanceIds: ", p), err)
-	}
-	if err := oprot.WriteSetBegin(thrift.I32, len(p.InstanceIds)); err != nil {
-		return thrift.PrependError("error writing set begin: ", err)
-	}
-	for v, _ := range p.InstanceIds {
-		if err := oprot.WriteI32(int32(v)); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+	if p.IsSetInstanceIds() {
+		if err := oprot.WriteFieldBegin("instanceIds", thrift.SET, 7); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 7:instanceIds: ", p), err)
 		}
-	}
-	if err := oprot.WriteSetEnd(); err != nil {
-		return thrift.PrependError("error writing set end: ", err)
-	}
-	if err := oprot.WriteFieldEnd(); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field end error 7:instanceIds: ", p), err)
+		if err := oprot.WriteSetBegin(thrift.I32, len(p.InstanceIds)); err != nil {
+			return thrift.PrependError("error writing set begin: ", err)
+		}
+		for v, _ := range p.InstanceIds {
+			if err := oprot.WriteI32(int32(v)); err != nil {
+				return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+			}
+		}
+		if err := oprot.WriteSetEnd(); err != nil {
+			return thrift.PrependError("error writing set end: ", err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 7:instanceIds: ", p), err)
+		}
 	}
 	return err
 }
 
 func (p *TaskQuery) writeField9(oprot thrift.TProtocol) (err error) {
-	if err := oprot.WriteFieldBegin("environment", thrift.STRING, 9); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field begin error 9:environment: ", p), err)
-	}
-	if err := oprot.WriteString(string(p.Environment)); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T.environment (9) field write error: ", p), err)
-	}
-	if err := oprot.WriteFieldEnd(); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field end error 9:environment: ", p), err)
+	if p.IsSetEnvironment() {
+		if err := oprot.WriteFieldBegin("environment", thrift.STRING, 9); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 9:environment: ", p), err)
+		}
+		if err := oprot.WriteString(string(*p.Environment)); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T.environment (9) field write error: ", p), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 9:environment: ", p), err)
+		}
 	}
 	return err
 }
 
 func (p *TaskQuery) writeField10(oprot thrift.TProtocol) (err error) {
-	if err := oprot.WriteFieldBegin("slaveHosts", thrift.SET, 10); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field begin error 10:slaveHosts: ", p), err)
-	}
-	if err := oprot.WriteSetBegin(thrift.STRING, len(p.SlaveHosts)); err != nil {
-		return thrift.PrependError("error writing set begin: ", err)
-	}
-	for v, _ := range p.SlaveHosts {
-		if err := oprot.WriteString(string(v)); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+	if p.IsSetSlaveHosts() {
+		if err := oprot.WriteFieldBegin("slaveHosts", thrift.SET, 10); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 10:slaveHosts: ", p), err)
 		}
-	}
-	if err := oprot.WriteSetEnd(); err != nil {
-		return thrift.PrependError("error writing set end: ", err)
-	}
-	if err := oprot.WriteFieldEnd(); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field end error 10:slaveHosts: ", p), err)
+		if err := oprot.WriteSetBegin(thrift.STRING, len(p.SlaveHosts)); err != nil {
+			return thrift.PrependError("error writing set begin: ", err)
+		}
+		for v, _ := range p.SlaveHosts {
+			if err := oprot.WriteString(string(v)); err != nil {
+				return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err)
+			}
+		}
+		if err := oprot.WriteSetEnd(); err != nil {
+			return thrift.PrependError("error writing set end: ", err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 10:slaveHosts: ", p), err)
+		}
 	}
 	return err
 }
 
 func (p *TaskQuery) writeField11(oprot thrift.TProtocol) (err error) {
-	if err := oprot.WriteFieldBegin("jobKeys", thrift.SET, 11); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field begin error 11:jobKeys: ", p), err)
-	}
-	if err := oprot.WriteSetBegin(thrift.STRUCT, len(p.JobKeys)); err != nil {
-		return thrift.PrependError("error writing set begin: ", err)
-	}
-	for v, _ := range p.JobKeys {
-		if err := v.Write(oprot); err != nil {
-			return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", v), err)
+	if p.IsSetJobKeys() {
+		if err := oprot.WriteFieldBegin("jobKeys", thrift.SET, 11); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 11:jobKeys: ", p), err)
 		}
-	}
-	if err := oprot.WriteSetEnd(); err != nil {
-		return thrift.PrependError("error writing set end: ", err)
-	}
-	if err := oprot.WriteFieldEnd(); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field end error 11:jobKeys: ", p), err)
+		if err := oprot.WriteSetBegin(thrift.STRUCT, len(p.JobKeys)); err != nil {
+			return thrift.PrependError("error writing set begin: ", err)
+		}
+		for v, _ := range p.JobKeys {
+			if err := v.Write(oprot); err != nil {
+				return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", v), err)
+			}
+		}
+		if err := oprot.WriteSetEnd(); err != nil {
+			return thrift.PrependError("error writing set end: ", err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 11:jobKeys: ", p), err)
+		}
 	}
 	return err
 }
 
 func (p *TaskQuery) writeField12(oprot thrift.TProtocol) (err error) {
-	if err := oprot.WriteFieldBegin("offset", thrift.I32, 12); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field begin error 12:offset: ", p), err)
-	}
-	if err := oprot.WriteI32(int32(p.Offset)); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T.offset (12) field write error: ", p), err)
-	}
-	if err := oprot.WriteFieldEnd(); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field end error 12:offset: ", p), err)
+	if p.IsSetOffset() {
+		if err := oprot.WriteFieldBegin("offset", thrift.I32, 12); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 12:offset: ", p), err)
+		}
+		if err := oprot.WriteI32(int32(*p.Offset)); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T.offset (12) field write error: ", p), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 12:offset: ", p), err)
+		}
 	}
 	return err
 }
 
 func (p *TaskQuery) writeField13(oprot thrift.TProtocol) (err error) {
-	if err := oprot.WriteFieldBegin("limit", thrift.I32, 13); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field begin error 13:limit: ", p), err)
-	}
-	if err := oprot.WriteI32(int32(p.Limit)); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T.limit (13) field write error: ", p), err)
-	}
-	if err := oprot.WriteFieldEnd(); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field end error 13:limit: ", p), err)
+	if p.IsSetLimit() {
+		if err := oprot.WriteFieldBegin("limit", thrift.I32, 13); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 13:limit: ", p), err)
+		}
+		if err := oprot.WriteI32(int32(*p.Limit)); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T.limit (13) field write error: ", p), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 13:limit: ", p), err)
+		}
 	}
 	return err
 }
 
 func (p *TaskQuery) writeField14(oprot thrift.TProtocol) (err error) {
-	if err := oprot.WriteFieldBegin("role", thrift.STRING, 14); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field begin error 14:role: ", p), err)
-	}
-	if err := oprot.WriteString(string(p.Role)); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T.role (14) field write error: ", p), err)
-	}
-	if err := oprot.WriteFieldEnd(); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field end error 14:role: ", p), err)
+	if p.IsSetRole() {
+		if err := oprot.WriteFieldBegin("role", thrift.STRING, 14); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 14:role: ", p), err)
+		}
+		if err := oprot.WriteString(string(*p.Role)); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T.role (14) field write error: ", p), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 14:role: ", p), err)
+		}
 	}
 	return err
 }

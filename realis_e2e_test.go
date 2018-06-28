@@ -75,11 +75,7 @@ func TestNonExistentEndpoint(t *testing.T) {
 	)
 	defer r.Close()
 
-	taskQ := &aurora.TaskQuery{
-		Role:        "no",
-		Environment: "task",
-		JobName:     "here",
-	}
+	taskQ := &aurora.TaskQuery{}
 
 	_, err = r.GetTasksWithoutConfigs(taskQ)
 
