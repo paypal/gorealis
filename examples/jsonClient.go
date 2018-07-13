@@ -141,7 +141,8 @@ func CreateRealisClient(config *Config) (realis.Realis, error) {
 	clientOptions := []realis.ClientOption{
 		realis.BasicAuth(config.Username, config.Password),
 		transportOption,
-		realis.SchedulerUrl(config.SchedUrl),
+		realis.ZKCluster(&config.Cluster),
+		// realis.SchedulerUrl(config.SchedUrl),
 		realis.SetLogger(log.New(os.Stdout, "realis-debug: ", log.Ldate)),
 		realis.BackOff(realis.Backoff{
 			Steps:    2,
