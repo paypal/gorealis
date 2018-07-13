@@ -69,13 +69,12 @@ func (j *JobJson) Validate() bool {
 }
 
 type Config struct {
-	Username      string          `json:"username"`
-	Password      string          `json:"password"`
-	SchedUrl      string          `json:"sched_url"`
-	BinTransport  bool            `json:"bin_transport,omitempty"`
-	JsonTransport bool            `json:"json_transport,omitempty"`
-	ClusterConfig *realis.Cluster `json:"cluster"`
-	Debug         bool            `json:"debug,omitempty"`
+	realis.Cluster `json:"cluster"`
+	Username       string `json:"username"`
+	Password       string `json:"password"`
+	SchedUrl       string `json:"sched_url"`
+	Transport      string `json:"transport,omitempty"`
+	Debug          bool   `json:"debug,omitempty"`
 }
 
 // Command-line arguments for config and job JSON files.
@@ -127,10 +126,16 @@ func init() {
 
 func CreateRealisClient(config *Config) (realis.Realis, error) {
 	var transportOption realis.ClientOption
-	if config.BinTransport {
+	// Configuring transport protocol. If not transport is provided, then using JSON as the
+	// default transport protocol.
+	switch config.Transport {
+	case "binary":
 		transportOption = realis.ThriftBinary()
-	} else {
+	case "json", "":
 		transportOption = realis.ThriftJSON()
+	default:
+		fmt.Println("Invalid transport option provided!")
+		os.Exit(1)
 	}
 
 	clientOptions := []realis.ClientOption{
