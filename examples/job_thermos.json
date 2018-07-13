@@ -1,0 +1,11 @@
+{
+  "name": "hello_world_from_gorealis",
+  "cpu": 1.0,
+  "ram_mb": 64,
+  "disk_mb": 100,
+  "executor": "thermos",
+  "exec_data_file": "examples/thermos_payload.json",
+  "service": true,
+  "ports": 1,
+  "instances": 1
+}

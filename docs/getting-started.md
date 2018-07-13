@@ -94,6 +94,15 @@ client must be used in order to launch tasks using a custom executor. In this ca
 we will be using [gorealis](https://github.com/paypal/gorealis) to launch a task with
 the compose executor on Aurora.
 
+## Using [dce-go](https://github.com/paypal/dce-go)
+Instead of manually configuring Aurora to run the docker-compose executor, one can follow the instructions provided [here](https://github.com/paypal/dce-go/blob/develop/docs/environment.md) to quickly create a DCE environment that would include mesos, aurora, golang1.7, docker, docker-compose and DCE installed.
+
+Please note that when using dce-go, the endpoints are going to be as shown below,
+```
+Aurora endpoint --> http://192.168.33.8:8081
+Mesos endpoint --> http://192.168.33.8:5050
+```
+
 ## Configuring the system to run a custom client and docker-compose executor
 
 ### Installing Go
@@ -162,7 +171,7 @@ $ source $HOME/.profile
 
 Download and run the msi installer from https://golang.org/dl/
 
-## Installing Docker Compose
+## Installing Docker Compose (if manually configured Aurora)
 To show Aurora's new multi executor feature, we need to use at least one custom executor.
 In this case we will be using the [docker-compose-executor](https://github.com/mesos/docker-compose-executor).
 
@@ -263,7 +272,7 @@ A message from the executor should greet us.
 It is also possible to create a thermos job using gorealis. To do this, however, 
 a thermos payload is required. A thermos payload consists of a JSON blob that details
 the entire task as it exists inside the Aurora Scheduler. *Creating the blob is unfortunately
-out of the scope of was gorealis does*, so a thermos payload must be generated beforehand or 
+out of the scope of what gorealis does*, so a thermos payload must be generated beforehand or 
 retrieved from the structdump of an existing task for testing purposes.
 
 A sample thermos JSON payload may be found [here](../examples/thermos_payload.json) in the examples folder.
@@ -292,13 +301,32 @@ $ cd $GOPATH/src/github.com/paypal/gorealis
 $ go run examples/client.go -executor=thermos -url=http://192.168.33.7:8081 -cmd=create -executor=thermos
 ```
 
+## Creating jobs using gorealis JSON client
+We can also use the [JSON client](../examples/jsonClient.go) to create Aurora jobs using gorealis.
+
+If using _dce-go_, then use `http://192.168.33.8:8081` as the scheduler URL.
+
+```
+$ cd $GOPATH/src/github.com/paypal/gorealis/examples
+```
+
+To launch a job using the Thermos executor,
+```
+$ go run jsonClient.go -job=job_thermos.json -config=config.json
+```
+
+To launch a job using docker-compose executor,
+```
+$ go run jsonClient.go -job=job_dce.json -config=config.json
+```
+
 # Cleaning up
 
 To stop the jobs we've launched, we need to send a job kill request to Aurora.
 It should be noted that although we can't create jobs using a custom executor using the default Aurora client,
 we ~can~ use the default Aurora client to kill them. Additionally, we can use gorealis perform the clean up as well.
 
-## Using the Default Client
+## Using the Default Client (if manually configured Aurora)
 
 ```
 $ aurora job killall devcluster/www-data/prod/hello

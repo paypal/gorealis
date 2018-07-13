@@ -1,0 +1,13 @@
+{
+  "username": "aurora",
+  "password": "secret",
+  "sched_url": "http://192.168.33.7:8081",
+  "cluster" : {
+    "name": "devcluster",
+    "zk": "192.168.33.7",
+    "scheduler_zk_path": "/aurora/scheduler",
+    "auth_mechanism": "UNAUTHENTICATED",
+    "slave_run_directory": "latest",
+    "slave_root": "/var/lib/mesos"
+  }
+}

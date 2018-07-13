@@ -1,0 +1,21 @@
+{
+  "name": "sampleapp",
+  "cpu": 0.25,
+  "ram_mb": 256,
+  "disk_mb": 100,
+  "executor": "docker-compose-executor",
+  "service": true,
+  "ports": 4,
+  "instances": 1,
+  "uris": [
+    {
+      "uri": "http://192.168.33.8/app.tar.gz",
+      "extract": true,
+      "cache": false
+    }
+  ],
+  "labels":{
+    "fileName":"sampleapp/docker-compose.yml,sampleapp/docker-compose-healthcheck.yml"
+  }
+
+}
