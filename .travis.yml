@@ -4,6 +4,7 @@ go:
    - "1.10.x"
    - "1.9.x"
 
+install:
 
 script:
-   - go build $GOPATH/src/github.com/paypal/gorealis/examples/client.go
+   - go build ./examples/client.go
