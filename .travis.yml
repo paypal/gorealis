@@ -4,7 +4,7 @@ go:
    - "1.10.x"
    - "1.9.x"
 
-install:
+install: true
 
 script:
    - go build ./examples/client.go
