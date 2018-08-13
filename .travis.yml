@@ -1,10 +1,10 @@
-language: go
+sudo: required
 
-go:
-   - "1.10.x"
-   - "1.9.x"
+services:
+  - docker
 
 install: true
+  - docker-compose -d up
 
 script:
-   - go build ./examples/client.go
+  - ./runTest.sh
