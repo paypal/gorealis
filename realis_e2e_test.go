@@ -69,7 +69,7 @@ func TestNonExistentEndpoint(t *testing.T) {
 		Jitter:   0.1}
 
 	// Attempt to connect to a bad endpoint
-	r, err := realis.NewRealisClient(realis.SchedulerUrl("http://127.0.0.1:8081/doesntexist/"),
+	r, err := realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081/doesntexist/"),
 		realis.TimeoutMS(200),
 		realis.BackOff(backoff),
 	)
@@ -92,11 +92,11 @@ func TestNonExistentEndpoint(t *testing.T) {
 }
 
 func TestLeaderFromZK(t *testing.T) {
-	cluster := realis.GetDefaultClusterFromZKUrl("192.168.33.7:2181")
+	cluster := realis.GetDefaultClusterFromZKUrl("192.168.33.2:2181")
 	url, err := realis.LeaderFromZK(*cluster)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "http://aurora.local:8081", url)
+	assert.Equal(t, "http://192.168.33.7:8081", url)
 }
 
 func TestRealisClient_ReestablishConn(t *testing.T) {
@@ -171,7 +171,7 @@ func TestRealisClient_CreateJobWithPulse_Thermos(t *testing.T) {
 		Name("create_thermos_job_test").
 		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
 		ExecutorData(string(thermosPayload)).
-		CPU(1).
+		CPU(.5).
 		RAM(64).
 		Disk(100).
 		IsService(true).
@@ -295,7 +295,7 @@ func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
 }
 
 func TestRealisClient_DrainHosts(t *testing.T) {
-	hosts := []string{"192.168.33.7"}
+	hosts := []string{"localhost"}
 	_, _, err := r.DrainHosts(hosts...)
 	if err != nil {
 		fmt.Printf("error: %+v\n", err.Error())
@@ -308,7 +308,7 @@ func TestRealisClient_DrainHosts(t *testing.T) {
 		[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
 		1,
 		50)
-	assert.Equal(t, map[string]bool{"192.168.33.7": true}, hostResults)
+	assert.Equal(t, map[string]bool{"localhost": true}, hostResults)
 	assert.NoError(t, err)
 
 	t.Run("TestRealisClient_MonitorNontransitioned", func(t *testing.T) {
@@ -321,7 +321,7 @@ func TestRealisClient_DrainHosts(t *testing.T) {
 
 		// Assert monitor returned an error that was not nil, and also a list of the non-transitioned hosts
 		assert.Error(t, err)
-		assert.Equal(t, map[string]bool{"192.168.33.7": true, "IMAGINARY_HOST": false}, hostResults)
+		assert.Equal(t, map[string]bool{"localhost": true, "IMAGINARY_HOST": false}, hostResults)
 	})
 
 	t.Run("TestRealisClient_EndMaintenance", func(t *testing.T) {

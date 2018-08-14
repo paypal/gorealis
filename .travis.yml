@@ -1,0 +1,15 @@
+sudo: required
+
+language: go
+
+go:
+  - "1.10.x"
+
+services:
+  - docker
+
+install:
+  - docker-compose up -d
+
+script:
+  - go test -v github.com/paypal/gorealis
