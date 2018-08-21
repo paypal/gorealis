@@ -2,10 +2,11 @@
 
 
 [[projects]]
+  branch = "0.10.0-http-client-fix"
   name = "git.apache.org/thrift.git"
   packages = ["lib/go/thrift"]
-  revision = "b2a4d4ae21c789b689dd162deb819665567f481c"
-  version = "0.10.0"
+  revision = "cb1afec972a85791e9b24a04b60fc9dbbfc3cda3"
+  source = "github.com/rdelval/thrift"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -38,6 +39,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6b1d8788979382ad684db5a62850b9d206014ea36f020a0a481331adf3c234dd"
+  inputs-digest = "fdb631400420ca7299ad56b66175c9157ca073e3de52f666a84fc1d6fa893978"
   solver-name = "gps-cdcl"
   solver-version = 1
