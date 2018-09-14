@@ -18,11 +18,9 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"os"
-
-	"time"
-
+	"log"
 	"strings"
+	"time"
 
 	"github.com/paypal/gorealis"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
@@ -59,20 +57,17 @@ func init() {
 	if clustersConfig != "" {
 		clusters, err := realis.LoadClusters(clustersConfig)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
 		}
 
 		cluster, ok := clusters[clusterName]
 		if !ok {
-			fmt.Printf("Cluster %s doesn't exist in the file provided\n", clusterName)
-			os.Exit(1)
+			log.Fatalf("Cluster %s doesn't exist in the file provided\n", clusterName)
 		}
 
 		url, err = realis.LeaderFromZK(cluster)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
 		}
 	}
 }
@@ -115,8 +110,7 @@ func main() {
 
 	r, err = realis.NewRealisClient(clientOptions...)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatalln(err)
 	}
 	monitor = &realis.Monitor{r}
 	defer r.Close()
@@ -125,8 +119,7 @@ func main() {
 	case "thermos":
 		payload, err := ioutil.ReadFile("examples/thermos_payload.json")
 		if err != nil {
-			fmt.Println("Error reading json config file: ", err)
-			os.Exit(1)
+			log.Fatalln("Error reading json config file: ", err)
 		}
 
 		job = realis.NewJob().
@@ -141,7 +134,6 @@ func main() {
 			IsService(true).
 			InstanceCount(1).
 			AddPorts(1)
-		break
 	case "compose":
 		job = realis.NewJob().
 			Environment("prod").
@@ -157,7 +149,6 @@ func main() {
 			AddPorts(4).
 			AddLabel("fileName", "sample-app/docker-compose.yml").
 			AddURIs(true, true, "https://github.com/mesos/docker-compose-executor/releases/download/0.1.0/sample-app.tar.gz")
-		break
 	case "none":
 		job = realis.NewJob().
 			Environment("prod").
@@ -169,10 +160,8 @@ func main() {
 			IsService(true).
 			InstanceCount(1).
 			AddPorts(1)
-		break
 	default:
-		fmt.Println("Only thermos, compose, and none are supported for now")
-		os.Exit(1)
+		log.Fatalln("Only thermos, compose, and none are supported for now")
 	}
 
 	switch cmd {
@@ -180,24 +169,19 @@ func main() {
 		fmt.Println("Creating job")
 		resp, err := r.CreateJob(job)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
 		}
 		fmt.Println(resp.String())
 
-		if resp.ResponseCode == aurora.ResponseCode_OK {
-			if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 5, 50); !ok || err != nil {
-				_, err := r.KillJob(job.JobKey())
-				if err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-				}
-				fmt.Println("ok: ", ok)
-				fmt.Println("err: ", err)
+		if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 5, 50); !ok || err != nil {
+			_, err := r.KillJob(job.JobKey())
+			if err != nil {
+				log.Fatalln(err)
 			}
-
+			log.Println("ok: ", ok)
+			log.Println("err: ", err)
 		}
-		break
+
 	case "createService":
 		// Create a service with three instances using the update API instead of the createJob API
 		fmt.Println("Creating service")
@@ -205,65 +189,54 @@ func main() {
 		job.InstanceCount(3)
 		resp, result, err := r.CreateService(job, settings)
 		if err != nil {
-			fmt.Println("error: ", err)
-			fmt.Println("response: ", resp.String())
-			os.Exit(1)
+			log.Println("error: ", err)
+			log.Fatalln("response: ", resp.String())
 		}
 		fmt.Println(result.String())
 
 		if ok, err := monitor.JobUpdate(*result.GetKey(), 5, 50); !ok || err != nil {
 			_, err := r.KillJob(job.JobKey())
 			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
+				log.Fatalln(err)
 			}
-			fmt.Println("ok: ", ok)
-			fmt.Println("err: ", err)
+			log.Println("ok: ", ok)
+			log.Println("err: ", err)
 		}
 
-		break
 	case "createDocker":
 		fmt.Println("Creating a docker based job")
 		container := realis.NewDockerContainer().Image("python:2.7").AddParameter("network", "host")
 		job.Container(container)
 		resp, err := r.CreateJob(job)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
 		}
 		fmt.Println(resp.String())
 
-		if resp.ResponseCode == aurora.ResponseCode_OK {
-			if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 10, 300); !ok || err != nil {
-				_, err := r.KillJob(job.JobKey())
-				if err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-				}
+		if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 10, 300); !ok || err != nil {
+			_, err := r.KillJob(job.JobKey())
+			if err != nil {
+				log.Fatalln(err)
 			}
 		}
-		break
+
 	case "createMesosContainer":
 		fmt.Println("Creating a docker based job")
 		container := realis.NewMesosContainer().DockerImage("python", "2.7")
 		job.Container(container)
 		resp, err := r.CreateJob(job)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
 		}
 		fmt.Println(resp.String())
 
-		if resp.ResponseCode == aurora.ResponseCode_OK {
-			if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 10, 300); !ok || err != nil {
-				_, err := r.KillJob(job.JobKey())
-				if err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-				}
+		if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 10, 300); !ok || err != nil {
+			_, err := r.KillJob(job.JobKey())
+			if err != nil {
+				log.Fatalln(err)
 			}
 		}
-		break
+
 	case "scheduleCron":
 		fmt.Println("Scheduling a Cron job")
 		// Cron config
@@ -271,81 +244,68 @@ func main() {
 		job.IsService(false)
 		resp, err := r.ScheduleCronJob(job)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
 		}
 		fmt.Println(resp.String())
 
-		break
 	case "startCron":
 		fmt.Println("Starting a Cron job")
 		resp, err := r.StartCronJob(job.JobKey())
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
 		}
 		fmt.Println(resp.String())
 
-		break
 	case "descheduleCron":
 		fmt.Println("Descheduling a Cron job")
 		resp, err := r.DescheduleCronJob(job.JobKey())
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
 		}
 		fmt.Println(resp.String())
 
-		break
 	case "kill":
 		fmt.Println("Killing job")
 
 		resp, err := r.KillJob(job.JobKey())
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
 		}
 
-		if resp.ResponseCode == aurora.ResponseCode_OK {
-			if ok, err := monitor.Instances(job.JobKey(), 0, 5, 50); !ok || err != nil {
-				fmt.Println("Unable to kill all instances of job")
-				os.Exit(1)
-			}
+		if ok, err := monitor.Instances(job.JobKey(), 0, 5, 50); !ok || err != nil {
+			log.Fatalln("Unable to kill all instances of job")
 		}
 		fmt.Println(resp.String())
-		break
+
 	case "restart":
 		fmt.Println("Restarting job")
 		resp, err := r.RestartJob(job.JobKey())
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
 		}
 
 		fmt.Println(resp.String())
-		break
+
 	case "liveCount":
 		fmt.Println("Getting instance count")
 
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.LIVE_STATES)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
 		}
 
 		fmt.Printf("Live instances: %+v\n", live)
-		break
+
 	case "activeCount":
 		fmt.Println("Getting instance count")
 
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
 		}
 
 		fmt.Println("Number of live instances: ", len(live))
-		break
+
 	case "flexUp":
 		fmt.Println("Flexing up job")
 
@@ -353,15 +313,14 @@ func main() {
 
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
+
 		}
 		currInstances := int32(len(live))
 		fmt.Println("Current num of instances: ", currInstances)
 		var instId int32
 		for k := range live {
 			instId = k
-			break
 		}
 		resp, err := r.AddInstances(aurora.InstanceKey{
 			JobKey:     job.JobKey(),
@@ -370,17 +329,15 @@ func main() {
 			numOfInstances)
 
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
+
 		}
 
-		if resp.ResponseCode == aurora.ResponseCode_OK {
-			if ok, err := monitor.Instances(job.JobKey(), currInstances+numOfInstances, 5, 50); !ok || err != nil {
-				fmt.Println("Flexing up failed")
-			}
+		if ok, err := monitor.Instances(job.JobKey(), currInstances+numOfInstances, 5, 50); !ok || err != nil {
+			fmt.Println("Flexing up failed")
 		}
 		fmt.Println(resp.String())
-		break
+
 	case "flexDown":
 		fmt.Println("Flexing down job")
 
@@ -388,57 +345,54 @@ func main() {
 
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
+
 		}
 		currInstances := int32(len(live))
 		fmt.Println("Current num of instances: ", currInstances)
 
 		resp, err := r.RemoveInstances(job.JobKey(), numOfInstances)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
+
 		}
 
-		if resp.ResponseCode == aurora.ResponseCode_OK {
-			if ok, err := monitor.Instances(job.JobKey(), currInstances-numOfInstances, 5, 100); !ok || err != nil {
-				fmt.Println("flexDown failed")
-			}
+		if ok, err := monitor.Instances(job.JobKey(), currInstances-numOfInstances, 5, 100); !ok || err != nil {
+			fmt.Println("flexDown failed")
 		}
+
 		fmt.Println(resp.String())
-		break
+
 	case "update":
 		fmt.Println("Updating a job with with more RAM and to 5 instances")
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
+
 		}
 		var instId int32
 		for k := range live {
 			instId = k
-			break
 		}
 		taskConfig, err := r.FetchTaskConfig(aurora.InstanceKey{
 			JobKey:     job.JobKey(),
 			InstanceId: instId,
 		})
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
+
 		}
 		updateJob := realis.NewDefaultUpdateJob(taskConfig)
 		updateJob.InstanceCount(5).RAM(128)
 
 		resp, err := r.StartJobUpdate(updateJob, "")
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
+
 		}
 
 		jobUpdateKey := response.JobUpdateKey(resp)
 		monitor.JobUpdate(*jobUpdateKey, 5, 500)
-		break
 
 	case "pauseJobUpdate":
 		resp, err := r.PauseJobUpdate(&aurora.JobUpdateKey{
@@ -447,7 +401,7 @@ func main() {
 		}, "")
 
 		if err != nil {
-			fmt.Println(err)
+			log.Fatalln(err)
 		}
 		fmt.Println("PauseJobUpdate response: ", resp.String())
 
@@ -458,7 +412,7 @@ func main() {
 		}, "")
 
 		if err != nil {
-			fmt.Println(err)
+			log.Fatalln(err)
 		}
 		fmt.Println("ResumeJobUpdate response: ", resp.String())
 
@@ -468,8 +422,9 @@ func main() {
 			ID:  updateId,
 		})
 		if err != nil {
-			fmt.Println(err)
+			log.Fatalln(err)
 		}
+
 		fmt.Println("PulseJobUpdate response: ", resp.String())
 
 	case "updateDetails":
@@ -482,11 +437,11 @@ func main() {
 		})
 
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
 		}
+
 		fmt.Println(response.JobUpdateDetails(resp))
-		break
+
 	case "abortUpdate":
 		fmt.Println("Abort update")
 		resp, err := r.AbortJobUpdate(aurora.JobUpdateKey{
@@ -496,11 +451,10 @@ func main() {
 			"")
 
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
 		}
 		fmt.Println(resp.String())
-		break
+
 	case "rollbackUpdate":
 		fmt.Println("Abort update")
 		resp, err := r.RollbackJobUpdate(aurora.JobUpdateKey{
@@ -510,17 +464,16 @@ func main() {
 			"")
 
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
 		}
 		fmt.Println(resp.String())
-		break
+
 	case "taskConfig":
 		fmt.Println("Getting job info")
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
+
 		}
 		var instId int32
 		for k := range live {
@@ -533,11 +486,11 @@ func main() {
 		})
 
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatalln(err)
 		}
-		print(config.String())
-		break
+
+		log.Println(config.String())
+
 	case "updatesummary":
 		fmt.Println("Getting job update summary")
 		jobquery := &aurora.JobUpdateQuery{
@@ -546,10 +499,11 @@ func main() {
 		}
 		updatesummary, err := r.GetJobUpdateSummaries(jobquery)
 		if err != nil {
-			fmt.Printf("error while getting update summary: %v", err)
-			os.Exit(1)
+			log.Fatalf("error while getting update summary: %v", err)
 		}
+
 		fmt.Println(updatesummary)
+
 	case "taskStatus":
 		fmt.Println("Getting task status")
 		taskQ := &aurora.TaskQuery{
@@ -559,11 +513,12 @@ func main() {
 		}
 		tasks, err := r.GetTaskStatus(taskQ)
 		if err != nil {
-			fmt.Printf("error: %+v\n ", err)
-			os.Exit(1)
+			log.Fatalf("error: %+v\n ", err)
 		}
+
 		fmt.Printf("length: %d\n ", len(tasks))
 		fmt.Printf("tasks: %+v\n", tasks)
+
 	case "tasksWithoutConfig":
 		fmt.Println("Getting task status")
 		taskQ := &aurora.TaskQuery{
@@ -573,22 +528,22 @@ func main() {
 		}
 		tasks, err := r.GetTasksWithoutConfigs(taskQ)
 		if err != nil {
-			fmt.Printf("error: %+v\n ", err)
-			os.Exit(1)
+			log.Fatalf("error: %+v\n ", err)
 		}
+
 		fmt.Printf("length: %d\n ", len(tasks))
 		fmt.Printf("tasks: %+v\n", tasks)
+
 	case "drainHosts":
 		fmt.Println("Setting hosts to DRAINING")
 		if hostList == "" {
-			fmt.Println("No hosts specified to drain")
-			os.Exit(1)
+			log.Fatalln("No hosts specified to drain")
+
 		}
 		hosts := strings.Split(hostList, ",")
 		_, result, err := r.DrainHosts(hosts...)
 		if err != nil {
-			fmt.Printf("error: %+v\n", err.Error())
-			os.Exit(1)
+			log.Fatalf("error: %+v\n", err.Error())
 		}
 
 		// Monitor change to DRAINING and DRAINED mode
@@ -603,23 +558,21 @@ func main() {
 					fmt.Printf("Host %s did not transtion into desired mode(s)\n", host)
 				}
 			}
-
-			fmt.Printf("error: %+v\n", err.Error())
-			os.Exit(1)
+			log.Fatalf("error: %+v\n", err.Error())
 		}
 
 		fmt.Print(result.String())
+
 	case "endMaintenance":
 		fmt.Println("Setting hosts to ACTIVE")
 		if hostList == "" {
-			fmt.Println("No hosts specified to drain")
-			os.Exit(1)
+			log.Fatalln("No hosts specified to drain")
+
 		}
 		hosts := strings.Split(hostList, ",")
 		_, result, err := r.EndMaintenance(hosts...)
 		if err != nil {
-			fmt.Printf("error: %+v\n", err.Error())
-			os.Exit(1)
+			log.Fatalf("error: %+v\n", err.Error())
 		}
 
 		// Monitor change to DRAINING and DRAINED mode
@@ -634,18 +587,16 @@ func main() {
 					fmt.Printf("Host %s did not transtion into desired mode(s)\n", host)
 				}
 			}
-
-			fmt.Printf("error: %+v\n", err.Error())
-			os.Exit(1)
+			log.Fatalf("error: %+v\n", err.Error())
 		}
 
 		fmt.Print(result.String())
+
 	case "getJobs":
 		fmt.Println("GetJobs...role: ", role)
 		_, result, err := r.GetJobs(role)
 		if err != nil {
-			fmt.Printf("error: %+v\n", err.Error())
-			os.Exit(1)
+			log.Fatalf("error: %+v\n", err.Error())
 		}
 		fmt.Println("map size: ", len(result.Configs))
 		fmt.Println(result.String())
@@ -654,20 +605,18 @@ func main() {
 		fmt.Println("Forcing scheduler to write snapshot to mesos replicated log")
 		err := r.Snapshot()
 		if err != nil {
-			fmt.Printf("error: %+v\n", err.Error())
-			os.Exit(1)
+			log.Fatalf("error: %+v\n", err.Error())
 		}
 
 	case "performBackup":
 		fmt.Println("Writing Backup of Snapshot to file system")
 		err := r.PerformBackup()
 		if err != nil {
-			fmt.Printf("error: %+v\n", err.Error())
-			os.Exit(1)
+			log.Fatalf("error: %+v\n", err.Error())
 		}
 
 	default:
-		fmt.Println("Command not supported")
-		os.Exit(1)
+		log.Fatalln("Command not supported")
+
 	}
 }
