@@ -149,10 +149,8 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 	assert.Equal(t, len(result.Configs), 1)
 	assert.NoError(t, err)
 
-
-
 	// Test asking the scheduler to perform a Snpshot
-	t.Run("TestRealisClient_Snapshot", func (t *testing.T) {
+	t.Run("TestRealisClient_Snapshot", func(t *testing.T) {
 		err := r.Snapshot()
 		assert.NoError(t, err)
 	})

@@ -75,8 +75,8 @@ type Realis interface {
 	MaintenanceStatus(hosts ...string) (*aurora.Response, *aurora.MaintenanceStatusResult_, error)
 	SetQuota(role string, cpu *float64, ram *int64, disk *int64) (*aurora.Response, error)
 	GetQuota(role string) (*aurora.Response, error)
-	Snapshot() (error)
-	PerformBackup() (error)
+	Snapshot() error
+	PerformBackup() error
 }
 
 type realisClient struct {
@@ -1086,7 +1086,7 @@ func (r *realisClient) GetQuota(role string) (*aurora.Response, error) {
 }
 
 // Force Aurora Scheduler to perform a snapshot and write to Mesos log
-func (r *realisClient) Snapshot() (error) {
+func (r *realisClient) Snapshot() error {
 
 	_, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.adminClient.Snapshot()
@@ -1100,7 +1100,7 @@ func (r *realisClient) Snapshot() (error) {
 }
 
 // Force Aurora Scheduler to write backup file to a file in the backup directory
-func  (r *realisClient) PerformBackup() (error) {
+func (r *realisClient) PerformBackup() error {
 
 	_, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.adminClient.PerformBackup()
