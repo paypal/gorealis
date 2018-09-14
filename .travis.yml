@@ -7,7 +7,7 @@ go:
 
 env:
   global:
-    - GO_USR_DIRS=$(go list -f {{.Dir}} ./... | grep -v /gen-go/)
+    - GO_USR_DIRS=$(go list -f {{.Dir}} ./... | grep -E -v "/gen-go/|/vendor/")
 
 services:
   - docker
