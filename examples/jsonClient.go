@@ -18,13 +18,14 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/paypal/gorealis"
-	"github.com/paypal/gorealis/gen-go/apache/aurora"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"log"
 	"os"
 	"time"
+
+	"github.com/paypal/gorealis"
+	"github.com/paypal/gorealis/gen-go/apache/aurora"
+	"github.com/pkg/errors"
 )
 
 type URIJson struct {
