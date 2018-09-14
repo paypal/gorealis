@@ -75,6 +75,8 @@ type Realis interface {
 	MaintenanceStatus(hosts ...string) (*aurora.Response, *aurora.MaintenanceStatusResult_, error)
 	SetQuota(role string, cpu *float64, ram *int64, disk *int64) (*aurora.Response, error)
 	GetQuota(role string) (*aurora.Response, error)
+	Snapshot() error
+	PerformBackup() error
 }
 
 type realisClient struct {
@@ -940,6 +942,10 @@ func (r *realisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string
 	return resp, nil
 }
 
+/* Admin functions */
+// TODO(rdelvalle): Consider moving these functions to another interface. It would be a backwards incompatible change,
+// but would add safety.
+
 // Set a list of nodes to DRAINING. This means nothing will be able to be scheduled on them and any existing
 // tasks will be killed and re-scheduled elsewhere in the cluster. Tasks from DRAINING nodes are not guaranteed
 // to return to running unless there is enough capacity in the cluster to run them.
@@ -1077,4 +1083,32 @@ func (r *realisClient) GetQuota(role string) (*aurora.Response, error) {
 	})
 
 	return resp, retryErr
+}
+
+// Force Aurora Scheduler to perform a snapshot and write to Mesos log
+func (r *realisClient) Snapshot() error {
+
+	_, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
+		return r.adminClient.Snapshot()
+	})
+
+	if retryErr != nil {
+		return errors.Wrap(retryErr, "Unable to recover connection")
+	}
+
+	return nil
+}
+
+// Force Aurora Scheduler to write backup file to a file in the backup directory
+func (r *realisClient) PerformBackup() error {
+
+	_, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
+		return r.adminClient.PerformBackup()
+	})
+
+	if retryErr != nil {
+		return errors.Wrap(retryErr, "Unable to recover connection")
+	}
+
+	return nil
 }
