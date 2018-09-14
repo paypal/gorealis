@@ -31,7 +31,7 @@ services:
     - zk
 
   agent-one:
-    image: rdelvalle/mesos-agent:1.5.0
+    image: rdelvalle/mesos-agent:1.5.1
     pid: host
     restart: on-failure
     ports:
@@ -55,7 +55,7 @@ services:
     - zk
 
   aurora-one:
-    image: rdelvalle/aurora:0.20.0
+    image: rdelvalle/aurora:0.21.0
     pid: host
     ports:
     - "8081:8081"
