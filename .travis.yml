@@ -5,8 +5,16 @@ language: go
 go:
   - "1.10.x"
 
+env:
+  global:
+    - GO_USR_DIRS=$(go list -f {{.Dir}} ./... | grep -v /gen-go/)
+
 services:
   - docker
+
+before_install:
+  - go get golang.org/x/tools/cmd/goimports
+  - test -z "`for d in $GO_USR_DIRS; do goimports -d $d/*.go | tee /dev/stderr; done`"
 
 install:
   - docker-compose up -d
