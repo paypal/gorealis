@@ -644,11 +644,27 @@ func main() {
 		fmt.Println("GetJobs...role: ", role)
 		_, result, err := r.GetJobs(role)
 		if err != nil {
-			fmt.Print("error: %+v\n", err.Error())
+			fmt.Printf("error: %+v\n", err.Error())
 			os.Exit(1)
 		}
 		fmt.Println("map size: ", len(result.Configs))
 		fmt.Println(result.String())
+
+	case "snapshot":
+		fmt.Println("Forcing scheduler to write snapshot to mesos replicated log")
+		err := r.Snapshot()
+		if err != nil {
+			fmt.Printf("error: %+v\n", err.Error())
+			os.Exit(1)
+		}
+
+	case "performBackup":
+		fmt.Println("Writing Backup of Snapshot to file system")
+		err := r.PerformBackup()
+		if err != nil {
+			fmt.Printf("error: %+v\n", err.Error())
+			os.Exit(1)
+		}
 
 	default:
 		fmt.Println("Command not supported")

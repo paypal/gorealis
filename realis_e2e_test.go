@@ -143,11 +143,25 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 	assert.True(t, success)
 	assert.NoError(t, err)
 
-	//Fetch all obs
+	//Fetch all Jobs
 	_, result, err := r.GetJobs(role)
 	fmt.Printf("GetJobs length: %+v \n", len(result.Configs))
 	assert.Equal(t, len(result.Configs), 1)
 	assert.NoError(t, err)
+
+
+
+	// Test asking the scheduler to perform a Snpshot
+	t.Run("TestRealisClient_Snapshot", func (t *testing.T) {
+		err := r.Snapshot()
+		assert.NoError(t, err)
+	})
+
+	// Test asking the scheduler to backup a Snapshot
+	t.Run("TestRealisClient_PerformBackup", func(t *testing.T) {
+		err := r.PerformBackup()
+		assert.NoError(t, err)
+	})
 
 	// Tasks must exist for it to, be killed
 	t.Run("TestRealisClient_KillJob_Thermos", func(t *testing.T) {
