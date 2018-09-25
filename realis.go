@@ -622,7 +622,6 @@ func (r *realisClient) CreateService(auroraJob Job, settings *aurora.JobUpdateSe
 	// Create a new job update object and ship it to the StartJobUpdate api
 	update := NewUpdateJob(auroraJob.TaskConfig(), settings)
 	update.InstanceCount(auroraJob.GetInstanceCount())
-	update.BatchSize(auroraJob.GetInstanceCount())
 
 	resp, err := r.StartJobUpdate(update, "")
 	if err != nil {
