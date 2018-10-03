@@ -625,7 +625,7 @@ func (r *realisClient) CreateService(auroraJob Job, settings *aurora.JobUpdateSe
 
 	resp, err := r.StartJobUpdate(update, "")
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "unable to create service")
+		return resp, nil, errors.Wrap(err, "unable to create service")
 	}
 
 	if resp != nil && resp.GetResult_() != nil {
@@ -734,7 +734,7 @@ func (r *realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*au
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Error sending StartJobUpdate command to Aurora Scheduler")
+		return resp, errors.Wrap(retryErr, "Error sending StartJobUpdate command to Aurora Scheduler")
 	}
 	return resp, nil
 }
