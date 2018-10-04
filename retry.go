@@ -15,9 +15,8 @@
 package realis
 
 import (
-	"time"
-
 	"math/rand"
+	"time"
 
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/paypal/gorealis/response"
@@ -178,18 +177,18 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 			case aurora.ResponseCode_OK:
 				return resp, nil
 
-				// If the response code is transient, continue retrying
+			// If the response code is transient, continue retrying
 			case aurora.ResponseCode_ERROR_TRANSIENT:
 				r.logger.Println("Aurora replied with Transient error code, retrying")
 				continue
 
-				// Failure scenarios, these indicate a bad payload or a bad config. Stop retrying.
-			case aurora.ResponseCode_INVALID_REQUEST:
-			case aurora.ResponseCode_ERROR:
-			case aurora.ResponseCode_AUTH_FAILED:
-			case aurora.ResponseCode_JOB_UPDATING_ERROR:
-				r.logger.Println("Terminal bad reply from Aurora, won't retry")
-				return nil, errors.New(response.CombineMessage(resp))
+			// Failure scenarios, these indicate a bad payload or a bad config. Stop retrying.
+			case aurora.ResponseCode_INVALID_REQUEST,
+				aurora.ResponseCode_ERROR,
+				aurora.ResponseCode_AUTH_FAILED,
+				aurora.ResponseCode_JOB_UPDATING_ERROR:
+				r.logger.Printf("Terminal Response Code %v from Aurora, won't retry\n", resp.GetResponseCode().String())
+				return resp, errors.New(response.CombineMessage(resp))
 
 				// The only case that should fall down to here is a WARNING response code.
 				// It is currently not used as a response in the scheduler so it is unknown how to handle it.
