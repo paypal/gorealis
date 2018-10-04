@@ -183,13 +183,10 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 				continue
 
 			// Failure scenarios, these indicate a bad payload or a bad config. Stop retrying.
-			case aurora.ResponseCode_INVALID_REQUEST:
-				fallthrough
-			case aurora.ResponseCode_ERROR:
-				fallthrough
-			case aurora.ResponseCode_AUTH_FAILED:
-				fallthrough
-			case aurora.ResponseCode_JOB_UPDATING_ERROR:
+			case aurora.ResponseCode_INVALID_REQUEST,
+				aurora.ResponseCode_ERROR,
+				aurora.ResponseCode_AUTH_FAILED,
+				aurora.ResponseCode_JOB_UPDATING_ERROR:
 				r.logger.Printf("Terminal Response Code %v from Aurora, won't retry\n", resp.GetResponseCode().String())
 				return resp, errors.New(response.CombineMessage(resp))
 
