@@ -173,13 +173,13 @@ func main() {
 		}
 		fmt.Println(resp.String())
 
-		if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 5, 50); !ok || err != nil {
+		if ok, mErr := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 5, 50); !ok || mErr != nil {
 			_, err := r.KillJob(job.JobKey())
 			if err != nil {
 				log.Fatalln(err)
 			}
 			log.Println("ok: ", ok)
-			log.Println("err: ", err)
+			log.Fatalf("ok: %v\n err: %v", ok, mErr)
 		}
 
 	case "createService":
@@ -190,17 +190,17 @@ func main() {
 		resp, result, err := r.CreateService(job, settings)
 		if err != nil {
 			log.Println("error: ", err)
-			log.Fatalln("response: ", resp.String())
+			log.Fatal("response: ", resp.String())
 		}
 		fmt.Println(result.String())
 
-		if ok, err := monitor.JobUpdate(*result.GetKey(), 5, 50); !ok || err != nil {
-			_, err := r.KillJob(job.JobKey())
+		if ok, mErr := monitor.JobUpdate(*result.GetKey(), 5, 180); !ok || mErr != nil {
+			_, err := r.AbortJobUpdate(*result.GetKey(), "Monitor timed out")
+			_, err = r.KillJob(job.JobKey())
 			if err != nil {
-				log.Fatalln(err)
+				log.Fatal(err)
 			}
-			log.Println("ok: ", ok)
-			log.Println("err: ", err)
+			log.Fatalf("ok: %v\n err: %v", ok, mErr)
 		}
 
 	case "createDocker":
@@ -209,14 +209,14 @@ func main() {
 		job.Container(container)
 		resp, err := r.CreateJob(job)
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 		fmt.Println(resp.String())
 
 		if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 10, 300); !ok || err != nil {
 			_, err := r.KillJob(job.JobKey())
 			if err != nil {
-				log.Fatalln(err)
+				log.Fatal(err)
 			}
 		}
 
@@ -226,14 +226,14 @@ func main() {
 		job.Container(container)
 		resp, err := r.CreateJob(job)
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 		fmt.Println(resp.String())
 
 		if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 10, 300); !ok || err != nil {
 			_, err := r.KillJob(job.JobKey())
 			if err != nil {
-				log.Fatalln(err)
+				log.Fatal(err)
 			}
 		}
 
@@ -244,7 +244,7 @@ func main() {
 		job.IsService(false)
 		resp, err := r.ScheduleCronJob(job)
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 		fmt.Println(resp.String())
 
@@ -252,7 +252,7 @@ func main() {
 		fmt.Println("Starting a Cron job")
 		resp, err := r.StartCronJob(job.JobKey())
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 		fmt.Println(resp.String())
 
@@ -260,7 +260,7 @@ func main() {
 		fmt.Println("Descheduling a Cron job")
 		resp, err := r.DescheduleCronJob(job.JobKey())
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 		fmt.Println(resp.String())
 
@@ -269,11 +269,11 @@ func main() {
 
 		resp, err := r.KillJob(job.JobKey())
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 
 		if ok, err := monitor.Instances(job.JobKey(), 0, 5, 50); !ok || err != nil {
-			log.Fatalln("Unable to kill all instances of job")
+			log.Fatal("Unable to kill all instances of job")
 		}
 		fmt.Println(resp.String())
 
@@ -281,7 +281,7 @@ func main() {
 		fmt.Println("Restarting job")
 		resp, err := r.RestartJob(job.JobKey())
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 
 		fmt.Println(resp.String())
@@ -291,7 +291,7 @@ func main() {
 
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.LIVE_STATES)
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 
 		fmt.Printf("Live instances: %+v\n", live)
@@ -301,7 +301,7 @@ func main() {
 
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 
 		fmt.Println("Number of live instances: ", len(live))
@@ -313,7 +313,7 @@ func main() {
 
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 
 		}
 		currInstances := int32(len(live))
@@ -329,7 +329,7 @@ func main() {
 			numOfInstances)
 
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 
 		}
 
@@ -345,7 +345,7 @@ func main() {
 
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 
 		}
 		currInstances := int32(len(live))
@@ -353,7 +353,7 @@ func main() {
 
 		resp, err := r.RemoveInstances(job.JobKey(), numOfInstances)
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 
 		}
 
@@ -367,7 +367,7 @@ func main() {
 		fmt.Println("Updating a job with with more RAM and to 5 instances")
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 
 		}
 		var instId int32
@@ -379,7 +379,7 @@ func main() {
 			InstanceId: instId,
 		})
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 
 		}
 		updateJob := realis.NewDefaultUpdateJob(taskConfig)
@@ -387,7 +387,7 @@ func main() {
 
 		resp, err := r.StartJobUpdate(updateJob, "")
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 
 		}
 
@@ -401,7 +401,7 @@ func main() {
 		}, "")
 
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 		fmt.Println("PauseJobUpdate response: ", resp.String())
 
@@ -412,7 +412,7 @@ func main() {
 		}, "")
 
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 		fmt.Println("ResumeJobUpdate response: ", resp.String())
 
@@ -422,7 +422,7 @@ func main() {
 			ID:  updateId,
 		})
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 
 		fmt.Println("PulseJobUpdate response: ", resp.String())
@@ -437,7 +437,7 @@ func main() {
 		})
 
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 
 		fmt.Println(response.JobUpdateDetails(resp))
@@ -451,7 +451,7 @@ func main() {
 			"")
 
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 		fmt.Println(resp.String())
 
@@ -464,7 +464,7 @@ func main() {
 			"")
 
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 		fmt.Println(resp.String())
 
@@ -472,7 +472,7 @@ func main() {
 		fmt.Println("Getting job info")
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 
 		}
 		var instId int32
@@ -486,7 +486,7 @@ func main() {
 		})
 
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatal(err)
 		}
 
 		log.Println(config.String())
@@ -537,7 +537,7 @@ func main() {
 	case "drainHosts":
 		fmt.Println("Setting hosts to DRAINING")
 		if hostList == "" {
-			log.Fatalln("No hosts specified to drain")
+			log.Fatal("No hosts specified to drain")
 
 		}
 		hosts := strings.Split(hostList, ",")
@@ -566,7 +566,7 @@ func main() {
 	case "endMaintenance":
 		fmt.Println("Setting hosts to ACTIVE")
 		if hostList == "" {
-			log.Fatalln("No hosts specified to drain")
+			log.Fatal("No hosts specified to drain")
 
 		}
 		hosts := strings.Split(hostList, ",")
@@ -616,7 +616,7 @@ func main() {
 		}
 
 	default:
-		log.Fatalln("Command not supported")
+		log.Fatal("Command not supported")
 
 	}
 }
