@@ -612,7 +612,7 @@ func (r *realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Error sending Create command to Aurora Scheduler")
+		return resp, errors.Wrap(retryErr, "Error sending Create command to Aurora Scheduler")
 	}
 	return resp, nil
 }
