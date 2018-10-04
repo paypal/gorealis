@@ -38,6 +38,7 @@ import (
 
 const VERSION = "1.2.1"
 
+// TODO(rdelvalle): Move documentation to interface in order to make godoc look better/more accessible
 type Realis interface {
 	AbortJobUpdate(updateKey aurora.JobUpdateKey, message string) (*aurora.Response, error)
 	AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error)
