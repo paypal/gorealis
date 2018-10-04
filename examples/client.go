@@ -178,7 +178,6 @@ func main() {
 			if err != nil {
 				log.Fatalln(err)
 			}
-			log.Println("ok: ", ok)
 			log.Fatalf("ok: %v\n err: %v", ok, mErr)
 		}
 
@@ -314,7 +313,6 @@ func main() {
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
 		if err != nil {
 			log.Fatal(err)
-
 		}
 		currInstances := int32(len(live))
 		fmt.Println("Current num of instances: ", currInstances)
@@ -330,7 +328,6 @@ func main() {
 
 		if err != nil {
 			log.Fatal(err)
-
 		}
 
 		if ok, err := monitor.Instances(job.JobKey(), currInstances+numOfInstances, 5, 50); !ok || err != nil {
@@ -346,7 +343,6 @@ func main() {
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
 		if err != nil {
 			log.Fatal(err)
-
 		}
 		currInstances := int32(len(live))
 		fmt.Println("Current num of instances: ", currInstances)
@@ -354,7 +350,6 @@ func main() {
 		resp, err := r.RemoveInstances(job.JobKey(), numOfInstances)
 		if err != nil {
 			log.Fatal(err)
-
 		}
 
 		if ok, err := monitor.Instances(job.JobKey(), currInstances-numOfInstances, 5, 100); !ok || err != nil {
@@ -368,7 +363,6 @@ func main() {
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
 		if err != nil {
 			log.Fatal(err)
-
 		}
 		var instId int32
 		for k := range live {
@@ -380,7 +374,6 @@ func main() {
 		})
 		if err != nil {
 			log.Fatal(err)
-
 		}
 		updateJob := realis.NewDefaultUpdateJob(taskConfig)
 		updateJob.InstanceCount(5).RAM(128)
@@ -388,7 +381,6 @@ func main() {
 		resp, err := r.StartJobUpdate(updateJob, "")
 		if err != nil {
 			log.Fatal(err)
-
 		}
 
 		jobUpdateKey := response.JobUpdateKey(resp)
@@ -538,7 +530,6 @@ func main() {
 		fmt.Println("Setting hosts to DRAINING")
 		if hostList == "" {
 			log.Fatal("No hosts specified to drain")
-
 		}
 		hosts := strings.Split(hostList, ",")
 		_, result, err := r.DrainHosts(hosts...)
@@ -567,7 +558,6 @@ func main() {
 		fmt.Println("Setting hosts to ACTIVE")
 		if hostList == "" {
 			log.Fatal("No hosts specified to drain")
-
 		}
 		hosts := strings.Split(hostList, ",")
 		_, result, err := r.EndMaintenance(hosts...)
@@ -617,6 +607,5 @@ func main() {
 
 	default:
 		log.Fatal("Command not supported")
-
 	}
 }
