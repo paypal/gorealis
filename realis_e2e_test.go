@@ -37,13 +37,13 @@ var thermosPayload []byte
 func TestMain(m *testing.M) {
 	var err error
 
-	// New configuration to connect to Vagrant image
+	// New configuration to connect to docker container
 	r, err = realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
 		realis.BasicAuth("aurora", "secret"),
 		realis.TimeoutMS(20000))
 
 	if err != nil {
-		fmt.Println("Please run vagrant box before running test suite")
+		fmt.Println("Please run docker-compose up -d before running test suite")
 		os.Exit(1)
 	}
 
@@ -173,7 +173,27 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 	})
 }
 
-func TestRealisClient_CreateJobWithPulse_Thermos(t *testing.T) {
+// Test configuring an executor that doesn't exist for CreateJob API
+func TestRealisClient_CreateJob_ExecutorDoesNotExist(t *testing.T) {
+
+	// Create a single job
+	job := realis.NewJob().
+		Environment("prod").
+		Role("vagrant").
+		Name("executordoesntexist").
+		ExecutorName("idontexist").
+		ExecutorData("").
+		CPU(.25).
+		RAM(4).
+		Disk(10).
+		InstanceCount(1)
+
+	resp, err := r.CreateJob(job)
+	assert.Error(t, err)
+	assert.Equal(t, aurora.ResponseCode_INVALID_REQUEST, resp.GetResponseCode())
+}
+
+func TestRealisClient_CreateService_WithPulse_Thermos(t *testing.T) {
 
 	fmt.Println("Creating service")
 	role := "vagrant"
@@ -255,6 +275,75 @@ func TestRealisClient_CreateJobWithPulse_Thermos(t *testing.T) {
 		fmt.Printf("Kill call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 	})
 
+}
+
+// Test configuring an executor that doesn't exist for CreateJob API
+func TestRealisClient_CreateService(t *testing.T) {
+
+	// Create a single job
+	job := realis.NewJob().
+		Environment("prod").
+		Role("vagrant").
+		Name("create_service_test").
+		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
+		ExecutorData(string(thermosPayload)).
+		CPU(.25).
+		RAM(4).
+		Disk(10).
+		InstanceCount(3).
+		IsService(true)
+
+	settings := realis.NewUpdateSettings()
+	job.InstanceCount(3)
+	resp, result, err := r.CreateService(job, settings)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, aurora.ResponseCode_OK, resp.GetResponseCode())
+
+	var ok bool
+	var mErr error
+
+	if ok, mErr = monitor.JobUpdate(*result.GetKey(), 5, 180); !ok || mErr != nil {
+		// Update may already be in a terminal state so don't check for error
+		_, err := r.AbortJobUpdate(*result.GetKey(), "Monitor timed out.")
+
+		_, err = r.KillJob(job.JobKey())
+
+		assert.NoError(t, err)
+	}
+
+	assert.True(t, ok)
+	assert.NoError(t, mErr)
+
+	// Kill task test task after confirming it came up fine
+	_, err = r.KillJob(job.JobKey())
+
+	assert.NoError(t, err)
+}
+
+// Test configuring an executor that doesn't exist for CreateJob API
+func TestRealisClient_CreateService_ExecutorDoesNotExist(t *testing.T) {
+
+	// Create a single job
+	job := realis.NewJob().
+		Environment("prod").
+		Role("vagrant").
+		Name("executordoesntexist").
+		ExecutorName("idontexist").
+		ExecutorData("").
+		CPU(.25).
+		RAM(4).
+		Disk(10).
+		InstanceCount(1)
+
+	settings := realis.NewUpdateSettings()
+	job.InstanceCount(3)
+	resp, result, err := r.CreateService(job, settings)
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Equal(t, aurora.ResponseCode_INVALID_REQUEST, resp.GetResponseCode())
 }
 
 func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
@@ -367,7 +456,7 @@ func TestRealisClient_SessionThreadSafety(t *testing.T) {
 		CPU(.25).
 		RAM(4).
 		Disk(10).
-		InstanceCount(100) // Impossible amount to go live in the current vagrant default settings
+		InstanceCount(1000) // Impossible amount to go live in any sane machine
 
 	resp, err := r.CreateJob(job)
 	assert.NoError(t, err)
@@ -432,3 +521,4 @@ func TestRealisClient_SetQuota(t *testing.T) {
 		fmt.Print("GetQuota Result", result.String())
 	})
 }
+
