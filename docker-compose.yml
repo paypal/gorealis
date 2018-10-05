@@ -14,7 +14,7 @@ services:
         ipv4_address: 192.168.33.2
 
   master:
-    image: mesosphere/mesos-master:1.5.0
+    image: rdelvalle/mesos-master:1.5.1
     restart: on-failure
     ports:
     - "5050:5050"
@@ -24,6 +24,7 @@ services:
       MESOS_HOSTNAME: localhost
       MESOS_CLUSTER: test-cluster
       MESOS_REGISTRY: replicated_log
+      MESOS_WORK_DIR: /tmp/mesos
     networks:
       aurora_cluster:
         ipv4_address: 192.168.33.3
