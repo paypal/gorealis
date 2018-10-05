@@ -20,4 +20,7 @@ install:
   - docker-compose up -d
 
 script:
-  - go test -v github.com/paypal/gorealis
+  - go test -race -coverprofile=coverage.txt -covermode=atomic -v github.com/paypal/gorealis
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
