@@ -37,6 +37,15 @@ type Job interface {
 	AddNamedPorts(names ...string) Job
 	AddLimitConstraint(name string, limit int32) Job
 	AddValueConstraint(name string, negated bool, values ...string) Job
+
+	// From Aurora Docs:
+	// dedicated attribute. Aurora treats this specially, and only allows matching jobs
+	// to run on these machines, and will only schedule matching jobs on these machines.
+	// When a job is created, the scheduler requires that the $role component matches
+	// the role field in the job configuration, and will reject the job creation otherwise.
+	// A wildcard (*) may be used for the role portion of the dedicated attribute, which
+	// will allow any owner to elect for a job to run on the host(s)
+	AddDedicatedConstraint(role, name string) Job
 	AddURIs(extract bool, cache bool, values ...string) Job
 	JobKey() *aurora.JobKey
 	JobConfig() *aurora.JobConfiguration
@@ -61,11 +70,11 @@ func NewJob() Job {
 	taskConfig := aurora.NewTaskConfig()
 	jobKey := aurora.NewJobKey()
 
-	//Job Config
+	// Job Config
 	jobConfig.Key = jobKey
 	jobConfig.TaskConfig = taskConfig
 
-	//Task Config
+	// Task Config
 	taskConfig.Job = jobKey
 	taskConfig.Container = aurora.NewContainer()
 	taskConfig.Container.Mesos = aurora.NewMesosContainer()
@@ -73,7 +82,7 @@ func NewJob() Job {
 	taskConfig.Metadata = make(map[*aurora.Metadata]bool)
 	taskConfig.Constraints = make(map[*aurora.Constraint]bool)
 
-	//Resources
+	// Resources
 	numCpus := aurora.NewResource()
 	ramMb := aurora.NewResource()
 	diskMb := aurora.NewResource()
@@ -293,6 +302,12 @@ func (j *AuroraJob) AddLimitConstraint(name string, limit int32) Job {
 			Limit: &aurora.LimitConstraint{Limit: limit},
 		},
 	}] = true
+
+	return j
+}
+
+func (j *AuroraJob) AddDedicatedConstraint(role, name string) Job {
+	j.AddValueConstraint("dedicated", false, role+"/"+name)
 
 	return j
 }
