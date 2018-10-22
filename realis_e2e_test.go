@@ -18,10 +18,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sync"
 	"testing"
 	"time"
-
-	"sync"
 
 	"github.com/paypal/gorealis"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
@@ -294,6 +293,7 @@ func TestRealisClient_CreateService(t *testing.T) {
 		IsService(true)
 
 	settings := realis.NewUpdateSettings()
+	settings.UpdateGroupSize = 2
 	job.InstanceCount(3)
 	resp, result, err := r.CreateService(job, settings)
 
@@ -520,4 +520,20 @@ func TestRealisClient_SetQuota(t *testing.T) {
 		}
 		fmt.Print("GetQuota Result", result.String())
 	})
+}
+
+func TestRealisClient_ForceImplicitTaskReconciliation(t *testing.T) {
+	err := r.ForceImplicitTaskReconciliation()
+	assert.NoError(t, err)
+}
+
+func TestRealisClient_ForceExplicitTaskReconciliation(t *testing.T) {
+	// Default value
+	err := r.ForceExplicitTaskReconciliation(nil)
+	assert.NoError(t, err)
+
+	// Custom batch value
+	var batchSize int32 = 32
+	err = r.ForceExplicitTaskReconciliation(&batchSize)
+	assert.NoError(t, err)
 }

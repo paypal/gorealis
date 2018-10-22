@@ -78,6 +78,10 @@ type Realis interface {
 	GetQuota(role string) (*aurora.Response, error)
 	Snapshot() error
 	PerformBackup() error
+	// Force an Implicit reconciliation between Mesos and Aurora
+	ForceImplicitTaskReconciliation() error
+	// Force an Explicit reconciliation between Mesos and Aurora
+	ForceExplicitTaskReconciliation(batchSize *int32) error
 }
 
 type realisClient struct {
@@ -1104,6 +1108,39 @@ func (r *realisClient) PerformBackup() error {
 
 	_, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.adminClient.PerformBackup()
+	})
+
+	if retryErr != nil {
+		return errors.Wrap(retryErr, "Unable to recover connection")
+	}
+
+	return nil
+}
+
+func (r *realisClient) ForceImplicitTaskReconciliation() error {
+
+	_, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
+		return r.adminClient.TriggerImplicitTaskReconciliation()
+	})
+
+	if retryErr != nil {
+		return errors.Wrap(retryErr, "Unable to recover connection")
+	}
+
+	return nil
+}
+
+func (r *realisClient) ForceExplicitTaskReconciliation(batchSize *int32) error {
+
+	if batchSize != nil && *batchSize < 1 {
+		return errors.New("Invalid batch size.")
+	}
+	settings := aurora.NewExplicitReconciliationSettings()
+
+	settings.BatchSize = batchSize
+
+	_, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
+		return r.adminClient.TriggerExplicitTaskReconciliation(settings)
 	})
 
 	if retryErr != nil {
