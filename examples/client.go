@@ -605,6 +605,20 @@ func main() {
 			log.Fatalf("error: %+v\n", err.Error())
 		}
 
+	case "forceExplicitRecon":
+		fmt.Println("Force an explicit recon")
+		err := r.ForceExplicitTaskReconciliation(nil)
+		if err != nil {
+			log.Fatalf("error: %+v\n", err.Error())
+		}
+
+	case "forceImplicitRecon":
+		fmt.Println("Force an implicit recon")
+		err := r.ForceImplicitTaskReconciliation()
+		if err != nil {
+			log.Fatalf("error: %+v\n", err.Error())
+		}
+
 	default:
 		log.Fatal("Command not supported")
 	}
