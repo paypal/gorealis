@@ -51,6 +51,7 @@ type Realis interface {
 	GetTaskStatus(query *aurora.TaskQuery) ([]*aurora.ScheduledTask, error)
 	GetTasksWithoutConfigs(query *aurora.TaskQuery) ([]*aurora.ScheduledTask, error)
 	GetJobs(role string) (*aurora.Response, *aurora.GetJobsResult_, error)
+	GetPendingReason(query *aurora.TaskQuery) (pendingReasons []*aurora.PendingReason, e error)
 	JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aurora.Response, error)
 	KillJob(key *aurora.JobKey) (*aurora.Response, error)
 	KillInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error)
@@ -861,6 +862,30 @@ func (r *realisClient) GetTaskStatus(query *aurora.TaskQuery) (tasks []*aurora.S
 	}
 
 	return response.ScheduleStatusResult(resp).GetTasks(), nil
+}
+
+// Get pending reason
+func (r *realisClient) GetPendingReason(query *aurora.TaskQuery) (pendingReasons []*aurora.PendingReason, e error) {
+
+	r.logger.DebugPrintf("GetPendingReason Thrift Payload: %+v\n", query)
+
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
+		return r.client.GetPendingReason(query)
+	})
+
+	if retryErr != nil {
+		return nil, errors.Wrap(retryErr, "Error querying Aurora Scheduler for pending Reasons")
+	}
+
+	var result map[*aurora.PendingReason]bool
+
+	if resp != nil && resp.GetResult_() != nil {
+		result = resp.GetResult_().GetGetPendingReasonResult_().GetReasons()
+	}
+	for reason := range result {
+		pendingReasons = append(pendingReasons, reason)
+	}
+	return pendingReasons, nil
 }
 
 // Get information about task including without a task configuration object
