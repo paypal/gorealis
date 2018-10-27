@@ -90,6 +90,56 @@ func TestNonExistentEndpoint(t *testing.T) {
 
 }
 
+func TestThriftBinary(t *testing.T) {
+	var err error
+
+	// New configuration to connect to docker container
+	r, err = realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
+		realis.BasicAuth("aurora", "secret"),
+		realis.TimeoutMS(20000),
+		realis.ThriftBinary())
+
+	assert.NoError(t, err)
+
+	role := "all"
+	taskQ := &aurora.TaskQuery{
+		Role:        &role,
+	}
+
+	// Perform a simple API call to test Thrift Binary
+	_, err = r.GetTasksWithoutConfigs(taskQ)
+
+	assert.NoError(t, err)
+
+	r.Close()
+
+}
+
+func TestThriftJSON(t *testing.T) {
+	var err error
+
+	// New configuration to connect to docker container
+	r, err = realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
+		realis.BasicAuth("aurora", "secret"),
+		realis.TimeoutMS(20000),
+		realis.ThriftJSON())
+
+	assert.NoError(t, err)
+
+	role := "all"
+	taskQ := &aurora.TaskQuery{
+		Role:        &role,
+	}
+
+	// Perform a simple API call to test Thrift Binary
+	_, err = r.GetTasksWithoutConfigs(taskQ)
+
+	assert.NoError(t, err)
+
+	r.Close()
+
+}
+
 func TestLeaderFromZK(t *testing.T) {
 	cluster := realis.GetDefaultClusterFromZKUrl("192.168.33.2:2181")
 	url, err := realis.LeaderFromZK(*cluster)
