@@ -128,7 +128,7 @@ func main() {
 			Name("hello_world_from_gorealis").
 			ExecutorName(aurora.AURORA_EXECUTOR_NAME).
 			ExecutorData(string(payload)).
-			CPU(10000).
+			CPU(1).
 			RAM(64).
 			Disk(100).
 			IsService(true).
