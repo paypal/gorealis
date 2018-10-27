@@ -93,7 +93,6 @@ func TestNonExistentEndpoint(t *testing.T) {
 func TestThriftBinary(t *testing.T) {
 	var err error
 
-	// New configuration to connect to docker container
 	r, err = realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
 		realis.BasicAuth("aurora", "secret"),
 		realis.TimeoutMS(20000),
@@ -103,7 +102,7 @@ func TestThriftBinary(t *testing.T) {
 
 	role := "all"
 	taskQ := &aurora.TaskQuery{
-		Role:        &role,
+		Role: &role,
 	}
 
 	// Perform a simple API call to test Thrift Binary
@@ -118,7 +117,6 @@ func TestThriftBinary(t *testing.T) {
 func TestThriftJSON(t *testing.T) {
 	var err error
 
-	// New configuration to connect to docker container
 	r, err = realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
 		realis.BasicAuth("aurora", "secret"),
 		realis.TimeoutMS(20000),
@@ -128,7 +126,7 @@ func TestThriftJSON(t *testing.T) {
 
 	role := "all"
 	taskQ := &aurora.TaskQuery{
-		Role:        &role,
+		Role: &role,
 	}
 
 	// Perform a simple API call to test Thrift Binary
@@ -138,6 +136,26 @@ func TestThriftJSON(t *testing.T) {
 
 	r.Close()
 
+}
+
+func TestNoopLogger(t *testing.T) {
+	r, err := realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
+		realis.BasicAuth("aurora", "secret"),
+		realis.SetLogger(realis.NoopLogger{}))
+
+	assert.NoError(t, err)
+
+	role := "all"
+	taskQ := &aurora.TaskQuery{
+		Role: &role,
+	}
+
+	// Perform a simple API call to test Thrift Binary
+	_, err = r.GetTasksWithoutConfigs(taskQ)
+
+	assert.NoError(t, err)
+
+	r.Close()
 }
 
 func TestLeaderFromZK(t *testing.T) {
@@ -172,11 +190,11 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		Name("create_thermos_job_test").
 		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
 		ExecutorData(string(thermosPayload)).
-		CPU(1).
+		CPU(.5).
 		RAM(64).
 		Disk(100).
 		IsService(true).
-		InstanceCount(1).
+		InstanceCount(2).
 		AddPorts(1)
 
 	resp, err := r.CreateJob(job)
@@ -213,6 +231,10 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+
+		success, err := monitor.Instances(job.JobKey(), 0, 1, 50)
+		assert.True(t, success)
+		assert.NoError(t, err)
 	})
 }
 
