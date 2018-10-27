@@ -91,9 +91,7 @@ func TestNonExistentEndpoint(t *testing.T) {
 }
 
 func TestThriftBinary(t *testing.T) {
-	var err error
-
-	r, err = realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
+	r, err := realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
 		realis.BasicAuth("aurora", "secret"),
 		realis.TimeoutMS(20000),
 		realis.ThriftBinary())
@@ -115,9 +113,7 @@ func TestThriftBinary(t *testing.T) {
 }
 
 func TestThriftJSON(t *testing.T) {
-	var err error
-
-	r, err = realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
+	r, err := realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
 		realis.BasicAuth("aurora", "secret"),
 		realis.TimeoutMS(20000),
 		realis.ThriftJSON())
