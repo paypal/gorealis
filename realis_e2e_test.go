@@ -129,13 +129,10 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		InstanceCount(1).
 		AddPorts(1)
 
-	start := time.Now()
 	resp, err := r.CreateJob(job)
-	end := time.Now()
 	assert.NoError(t, err)
 
 	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-	fmt.Printf("Create call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 
 	// Test Instances Monitor
 	success, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 1, 50)
@@ -145,7 +142,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 	//Fetch all Jobs
 	_, result, err := r.GetJobs(role)
 	fmt.Printf("GetJobs length: %+v \n", len(result.Configs))
-	assert.Equal(t, len(result.Configs), 1)
+	assert.Len(t, result.Configs, 1)
 	assert.NoError(t, err)
 
 	// Test asking the scheduler to perform a Snpshot
@@ -162,13 +159,10 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 
 	// Tasks must exist for it to, be killed
 	t.Run("TestRealisClient_KillJob_Thermos", func(t *testing.T) {
-		start := time.Now()
 		resp, err := r.KillJob(job.JobKey())
-		end := time.Now()
 		assert.NoError(t, err)
 
 		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-		fmt.Printf("Kill call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 	})
 }
 
@@ -190,6 +184,43 @@ func TestRealisClient_CreateJob_ExecutorDoesNotExist(t *testing.T) {
 	resp, err := r.CreateJob(job)
 	assert.Error(t, err)
 	assert.Equal(t, aurora.ResponseCode_INVALID_REQUEST, resp.GetResponseCode())
+}
+
+// Test configuring an executor that doesn't exist for CreateJob API
+func TestRealisClient_GetPendingReason(t *testing.T) {
+
+	env := "prod"
+	role := "vagrant"
+	name := "pending_reason_test"
+
+	// Create a single job
+	job := realis.NewJob().
+		Environment(env).
+		Role(role).
+		Name(name).
+		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
+		ExecutorData(string(thermosPayload)).
+		CPU(1000).
+		RAM(64).
+		Disk(100).
+		InstanceCount(1)
+
+	resp, err := r.CreateJob(job)
+	assert.NoError(t, err)
+	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+
+	taskQ := &aurora.TaskQuery{
+		Role:        &role,
+		Environment: &env,
+		JobName:     &name,
+	}
+
+	reasons, err := r.GetPendingReason(taskQ)
+	assert.NoError(t, err)
+	assert.Len(t, reasons, 1)
+
+	resp, err = r.KillJob(job.JobKey())
+	assert.NoError(t, err)
 }
 
 func TestRealisClient_CreateService_WithPulse_Thermos(t *testing.T) {
@@ -394,6 +425,34 @@ func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
 		fmt.Printf("Deschedule cron call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 	})
 }
+func TestRealisClient_StartMaintenance(t *testing.T) {
+	hosts := []string{"localhost"}
+	_, _, err := r.StartMaintenance(hosts...)
+	if err != nil {
+		fmt.Printf("error: %+v\n", err.Error())
+		os.Exit(1)
+	}
+
+	// Monitor change to DRAINING and DRAINED mode
+	hostResults, err := monitor.HostMaintenance(
+		hosts,
+		[]aurora.MaintenanceMode{aurora.MaintenanceMode_SCHEDULED},
+		1,
+		50)
+	assert.Equal(t, map[string]bool{"localhost": true}, hostResults)
+	assert.NoError(t, err)
+
+	_, _, err = r.EndMaintenance(hosts...)
+	assert.NoError(t, err)
+
+	// Monitor change to DRAINING and DRAINED mode
+	_, err = monitor.HostMaintenance(
+		hosts,
+		[]aurora.MaintenanceMode{aurora.MaintenanceMode_NONE},
+		5,
+		10)
+	assert.NoError(t, err)
+}
 
 func TestRealisClient_DrainHosts(t *testing.T) {
 	hosts := []string{"localhost"}
@@ -427,10 +486,7 @@ func TestRealisClient_DrainHosts(t *testing.T) {
 
 	t.Run("TestRealisClient_EndMaintenance", func(t *testing.T) {
 		_, _, err := r.EndMaintenance(hosts...)
-		if err != nil {
-			fmt.Printf("error: %+v\n", err.Error())
-			os.Exit(1)
-		}
+		assert.NoError(t, err)
 
 		// Monitor change to DRAINING and DRAINED mode
 		_, err = monitor.HostMaintenance(

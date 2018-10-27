@@ -128,7 +128,7 @@ func main() {
 			Name("hello_world_from_gorealis").
 			ExecutorName(aurora.AURORA_EXECUTOR_NAME).
 			ExecutorData(string(payload)).
-			CPU(1).
+			CPU(10000).
 			RAM(64).
 			Disk(100).
 			IsService(true).
@@ -581,6 +581,21 @@ func main() {
 		}
 
 		fmt.Print(result.String())
+
+	case "getPendingReasons":
+		fmt.Println("Getting pending reasons")
+		taskQ := &aurora.TaskQuery{
+			Role:        &job.JobKey().Role,
+			Environment: &job.JobKey().Environment,
+			JobName:     &job.JobKey().Name,
+		}
+		reasons, err := r.GetPendingReason(taskQ)
+		if err != nil {
+			log.Fatalf("error: %+v\n ", err)
+		}
+
+		fmt.Printf("length: %d\n ", len(reasons))
+		fmt.Printf("tasks: %+v\n", reasons)
 
 	case "getJobs":
 		fmt.Println("GetJobs...role: ", role)
