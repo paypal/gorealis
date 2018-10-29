@@ -1072,7 +1072,6 @@ func (r *realisClient) EndMaintenance(hosts ...string) (*aurora.Response, *auror
 	return resp, result, nil
 }
 
-
 func (r *realisClient) MaintenanceStatus(hosts ...string) (*aurora.Response, *aurora.MaintenanceStatusResult_, error) {
 
 	var result *aurora.MaintenanceStatusResult_
