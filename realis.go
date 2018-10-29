@@ -1120,13 +1120,12 @@ func (r *realisClient) SetQuota(role string, cpu *float64, ramMb *int64, diskMb 
 	quota.Resources[c] = true
 	quota.Resources[d] = true
 	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
-		resp, retryErr := r.adminClient.SetQuota(role, quota)
-
-		if retryErr != nil {
-			return nil, errors.Wrap(retryErr, "Unable to set role quota")
-		}
-		return resp, nil
+		return r.adminClient.SetQuota(role, quota)
 	})
+
+	if retryErr != nil {
+		return resp, errors.Wrap(retryErr, "Unable to set role quota")
+	}
 	return resp, retryErr
 
 }
@@ -1135,14 +1134,12 @@ func (r *realisClient) SetQuota(role string, cpu *float64, ramMb *int64, diskMb 
 func (r *realisClient) GetQuota(role string) (*aurora.Response, error) {
 
 	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
-		resp, retryErr := r.adminClient.GetQuota(role)
-
-		if retryErr != nil {
-			return nil, errors.Wrap(retryErr, "Unable to get role quota")
-		}
-		return resp, nil
+		return r.adminClient.GetQuota(role)
 	})
 
+	if retryErr != nil {
+		return resp, errors.Wrap(retryErr, "Unable to get role quota")
+	}
 	return resp, retryErr
 }
 
