@@ -16,11 +16,13 @@ package realis
 
 import (
 	"math/rand"
+	"net/url"
 	"time"
 
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/paypal/gorealis/response"
 	"github.com/pkg/errors"
+	"github.com/rdelval/thrift/lib/go/thrift"
 )
 
 type Backoff struct {
@@ -157,6 +159,19 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 
 			// Print out the error to the user
 			r.logger.Printf("Client Error: %v\n", clientErr)
+
+			// Determine if error is a temporary URL error by going up the stack
+			e, ok := clientErr.(thrift.TTransportException)
+			if ok {
+				r.logger.DebugPrint("Encountered a transport exception")
+
+				e, ok := e.Err().(*url.Error)
+				if ok {
+					if !IsTemporary(e) {
+						return nil, errors.Wrap(clientErr, "Non-temporary connection error")
+					}
+				}
+			}
 
 			// In the future, reestablish connection should be able to check if it is actually possible
 			// to make a thrift call to Aurora. For now, a reconnect should always lead to a retry.

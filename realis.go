@@ -555,12 +555,12 @@ func (r *realisClient) GetJobs(role string) (*aurora.Response, *aurora.GetJobsRe
 		return r.readonlyClient.GetJobs(role)
 	})
 
-	if resp.GetResult_() != nil {
-		result = resp.GetResult_().GetJobsResult_
-	}
-
 	if retryErr != nil {
 		return nil, result, errors.Wrap(retryErr, "Error getting Jobs from Aurora Scheduler")
+	}
+
+	if resp.GetResult_() != nil {
+		result = resp.GetResult_().GetJobsResult_
 	}
 
 	return resp, result, nil
@@ -635,7 +635,7 @@ func (r *realisClient) CreateService(auroraJob Job, settings *aurora.JobUpdateSe
 		return resp, nil, errors.Wrap(err, "unable to create service")
 	}
 
-	if resp != nil && resp.GetResult_() != nil {
+	if resp.GetResult_() != nil {
 		return resp, resp.GetResult_().GetStartJobUpdateResult_(), nil
 	}
 
@@ -879,7 +879,7 @@ func (r *realisClient) GetPendingReason(query *aurora.TaskQuery) (pendingReasons
 
 	var result map[*aurora.PendingReason]bool
 
-	if resp != nil && resp.GetResult_() != nil {
+	if resp.GetResult_() != nil {
 		result = resp.GetResult_().GetGetPendingReasonResult_().GetReasons()
 	}
 	for reason := range result {
@@ -999,12 +999,12 @@ func (r *realisClient) DrainHosts(hosts ...string) (*aurora.Response, *aurora.Dr
 		return r.adminClient.DrainHosts(drainList)
 	})
 
-	if resp != nil && resp.GetResult_() != nil {
-		result = resp.GetResult_().GetDrainHostsResult_()
-	}
-
 	if retryErr != nil {
 		return resp, result, errors.Wrap(retryErr, "Unable to recover connection")
+	}
+
+	if resp.GetResult_() != nil {
+		result = resp.GetResult_().GetDrainHostsResult_()
 	}
 
 	return resp, result, nil
@@ -1030,12 +1030,12 @@ func (r *realisClient) StartMaintenance(hosts ...string) (*aurora.Response, *aur
 		return r.adminClient.StartMaintenance(hostList)
 	})
 
-	if resp.GetResult_() != nil {
-		result = resp.GetResult_().GetStartMaintenanceResult_()
-	}
-
 	if retryErr != nil {
 		return resp, result, errors.Wrap(retryErr, "Unable to recover connection")
+	}
+
+	if resp.GetResult_() != nil {
+		result = resp.GetResult_().GetStartMaintenanceResult_()
 	}
 
 	return resp, result, nil
@@ -1061,12 +1061,12 @@ func (r *realisClient) EndMaintenance(hosts ...string) (*aurora.Response, *auror
 		return r.adminClient.EndMaintenance(hostList)
 	})
 
-	if resp.GetResult_() != nil {
-		result = resp.GetResult_().GetEndMaintenanceResult_()
-	}
-
 	if retryErr != nil {
 		return resp, result, errors.Wrap(retryErr, "Unable to recover connection")
+	}
+
+	if resp.GetResult_() != nil {
+		result = resp.GetResult_().GetEndMaintenanceResult_()
 	}
 
 	return resp, result, nil
@@ -1094,12 +1094,12 @@ func (r *realisClient) MaintenanceStatus(hosts ...string) (*aurora.Response, *au
 		return r.adminClient.MaintenanceStatus(hostList)
 	})
 
-	if resp.GetResult_() != nil {
-		result = resp.GetResult_().GetMaintenanceStatusResult_()
-	}
-
 	if retryErr != nil {
 		return resp, result, errors.Wrap(retryErr, "Unable to recover connection")
+	}
+
+	if resp.GetResult_() != nil {
+		result = resp.GetResult_().GetMaintenanceStatusResult_()
 	}
 
 	return resp, result, nil
