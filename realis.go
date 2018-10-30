@@ -443,7 +443,7 @@ func newTJSONConfig(url string, timeoutms int, config *RealisConfig) (*RealisCon
 
 	httpTrans := (trans).(*thrift.THttpClient)
 	httpTrans.SetHeader("Content-Type", "application/x-thrift")
-	httpTrans.SetHeader("User-Agent", "GoRealis v"+VERSION)
+	httpTrans.SetHeader("User-Agent", "gorealis v"+VERSION)
 
 	return &RealisConfig{transport: trans, protoFactory: thrift.NewTJSONProtocolFactory()}, nil
 }
@@ -460,7 +460,7 @@ func newTBinaryConfig(url string, timeoutms int, config *RealisConfig) (*RealisC
 
 	httpTrans.SetHeader("Accept", "application/vnd.apache.thrift.binary")
 	httpTrans.SetHeader("Content-Type", "application/vnd.apache.thrift.binary")
-	httpTrans.SetHeader("User-Agent", "GoRealis v"+VERSION)
+	httpTrans.SetHeader("User-Agent", "gorealis v"+VERSION)
 
 	return &RealisConfig{transport: trans, protoFactory: thrift.NewTBinaryProtocolFactoryDefault()}, nil
 
@@ -475,6 +475,9 @@ func (r *realisClient) ReestablishConn() error {
 	// Close existing connection
 	r.logger.Println("Re-establishing Connection to Aurora")
 	r.Close()
+
+	r.lock.Lock()
+	defer r.lock.Unlock()
 
 	// Recreate connection from scratch using original options
 	newRealis, err := NewRealisClient(r.config.options...)
@@ -498,6 +501,10 @@ func (r *realisClient) ReestablishConn() error {
 
 // Releases resources associated with the realis client.
 func (r *realisClient) Close() {
+
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	r.client.Transport.Close()
 	r.readonlyClient.Transport.Close()
 	r.adminClient.Transport.Close()
