@@ -251,6 +251,10 @@ func newTBinTransport(url string, timeout int, config *RealisConfig) (thrift.TTr
 	return trans, err
 }
 
+// This client implementation of the realis interface uses a retry mechanism for all Thrift Calls.
+// It will retry all calls which result in a temporary failure as well as calls that fail due to an EOF
+// being returned by the http client. Most permanent failures are now being caught by the thriftCallWithRetries
+// function and not being retried but there may be corner cases not yet handled.
 func NewRealisClient(options ...ClientOption) (Realis, error) {
 	config := &RealisConfig{}
 
