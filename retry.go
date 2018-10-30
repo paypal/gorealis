@@ -15,6 +15,7 @@
 package realis
 
 import (
+	"io"
 	"math/rand"
 	"net/url"
 	"time"
@@ -90,7 +91,6 @@ func ExponentialBackoff(backoff Backoff, logger Logger, condition ConditionFunc)
 		}
 
 		if err != nil {
-
 			// If the error is temporary, continue retrying.
 			if !IsTemporary(err) {
 				return err
@@ -98,9 +98,7 @@ func ExponentialBackoff(backoff Backoff, logger Logger, condition ConditionFunc)
 				// Print out the temporary error we experienced.
 				logger.Println(err)
 			}
-
 		}
-
 	}
 
 	if curStep > 1 {
@@ -167,8 +165,11 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 
 				e, ok := e.Err().(*url.Error)
 				if ok {
-					if !IsTemporary(e) {
-						return nil, errors.Wrap(clientErr, "Non-temporary connection error")
+					// EOF error occurs when the server closes the read buffer of the client. This is common
+					// when the server is overloaded and should be retried. All other errors that are permanent
+					// will not be retried.
+					if e.Err != io.EOF && !IsTemporary(e) {
+						return nil, errors.Wrap(clientErr, "Permanent connection error")
 					}
 				}
 			}
