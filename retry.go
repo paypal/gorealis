@@ -168,7 +168,7 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 					// EOF error occurs when the server closes the read buffer of the client. This is common
 					// when the server is overloaded and should be retried. All other errors that are permanent
 					// will not be retried.
-					if e.Err != io.EOF && !IsTemporary(e) {
+					if e.Err != io.EOF && !e.Temporary() {
 						return nil, errors.Wrap(clientErr, "Permanent connection error")
 					}
 				}
