@@ -15,9 +15,12 @@
 package realis
 
 import (
+	"io"
 	"math/rand"
+	"net/url"
 	"time"
 
+	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/paypal/gorealis/response"
 	"github.com/pkg/errors"
@@ -88,7 +91,6 @@ func ExponentialBackoff(backoff Backoff, logger Logger, condition ConditionFunc)
 		}
 
 		if err != nil {
-
 			// If the error is temporary, continue retrying.
 			if !IsTemporary(err) {
 				return err
@@ -96,9 +98,7 @@ func ExponentialBackoff(backoff Backoff, logger Logger, condition ConditionFunc)
 				// Print out the temporary error we experienced.
 				logger.Println(err)
 			}
-
 		}
-
 	}
 
 	if curStep > 1 {
@@ -157,6 +157,22 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 
 			// Print out the error to the user
 			r.logger.Printf("Client Error: %v\n", clientErr)
+
+			// Determine if error is a temporary URL error by going up the stack
+			e, ok := clientErr.(thrift.TTransportException)
+			if ok {
+				r.logger.DebugPrint("Encountered a transport exception")
+
+				e, ok := e.Err().(*url.Error)
+				if ok {
+					// EOF error occurs when the server closes the read buffer of the client. This is common
+					// when the server is overloaded and should be retried. All other errors that are permanent
+					// will not be retried.
+					if e.Err != io.EOF && !e.Temporary() {
+						return nil, errors.Wrap(clientErr, "Permanent connection error")
+					}
+				}
+			}
 
 			// In the future, reestablish connection should be able to check if it is actually possible
 			// to make a thrift call to Aurora. For now, a reconnect should always lead to a retry.
