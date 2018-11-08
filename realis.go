@@ -138,7 +138,7 @@ func InsecureSkipVerify(InsecureSkipVerify bool) ClientOption {
 	}
 }
 
-func Certspath(certspath string) ClientOption {
+func CertsPath(certspath string) ClientOption {
 	return func(config *RealisConfig) {
 		config.certspath = certspath
 	}
