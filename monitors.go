@@ -30,7 +30,7 @@ const (
 )
 
 type Monitor struct {
-	Client Realis
+	Client *RealisClient
 }
 
 // Polls the scheduler every certain amount of time to see if the update has succeeded

@@ -77,7 +77,7 @@ func main() {
 	var job realis.Job
 	var err error
 	var monitor *realis.Monitor
-	var r realis.Realis
+	var r *realis.RealisClient
 
 	clientOptions := []realis.ClientOption{
 		realis.BasicAuth(username, password),

@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var r realis.Realis
+var r *realis.RealisClient
 var monitor *realis.Monitor
 var thermosPayload []byte
 
