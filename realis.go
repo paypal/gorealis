@@ -75,7 +75,7 @@ var defaultBackoff = Backoff{
 
 type ClientOption func(*RealisConfig)
 
-//Config sets for options in RealisConfig.
+// Config sets for options in RealisConfig.
 func BasicAuth(username, password string) ClientOption {
 	return func(config *RealisConfig) {
 		config.username = username
@@ -111,12 +111,6 @@ func ZKUrl(url string) ClientOption {
 		} else {
 			config.zkOptions = append(config.zkOptions, opts...)
 		}
-	}
-}
-
-func Retries(backoff Backoff) ClientOption {
-	return func(config *RealisConfig) {
-		config.backoff = backoff
 	}
 }
 
