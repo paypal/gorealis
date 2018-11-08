@@ -26,7 +26,7 @@ import (
 const (
 	UpdateFailed = "update failed"
 	RolledBack   = "update rolled back"
-	Timeout      = "timeout"
+	Timedout     = "timeout"
 )
 
 type Monitor struct {
@@ -82,7 +82,7 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 				}
 			}
 		case <-timer.C:
-			return false, errors.New(Timeout)
+			return false, errors.New(Timedout)
 		}
 	}
 }
@@ -117,7 +117,7 @@ func (m *Monitor) ScheduleStatus(key *aurora.JobKey, instanceCount int32, desire
 		case <-timer.C:
 
 			// If the timer runs out, return a timeout error to user
-			return false, errors.New(Timeout)
+			return false, errors.New(Timedout)
 		}
 	}
 }
@@ -177,7 +177,7 @@ func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode
 				hostResult[host] = false
 			}
 
-			return hostResult, errors.New(Timeout)
+			return hostResult, errors.New(Timedout)
 		}
 	}
 }

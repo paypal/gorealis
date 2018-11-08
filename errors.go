@@ -17,7 +17,7 @@ package realis
 // Using a pattern described by Dave Cheney to differentiate errors
 // https://dave.cheney.net/2016/04/27/dont-just-check-errors-handle-them-gracefully
 
-// Timeout errors are returned when a function is unable to continue executing due
+// Timedout errors are returned when a function is unable to continue executing due
 // to a time constraint or meeting a set number of retries.
 type timeout interface {
 	Timedout() bool

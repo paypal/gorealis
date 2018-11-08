@@ -51,7 +51,7 @@ type RealisClient struct {
 type RealisConfig struct {
 	username, password          string
 	url                         string
-	timeoutms                   int
+	timeout                     time.Duration
 	binTransport, jsonTransport bool
 	cluster                     *Cluster
 	backoff                     Backoff
@@ -59,8 +59,8 @@ type RealisConfig struct {
 	protoFactory                thrift.TProtocolFactory
 	logger                      *LevelLogger
 	InsecureSkipVerify          bool
-	certspath                   string
-	clientkey, clientcert       string
+	certsPath                   string
+	clientKey, clientCert       string
 	options                     []ClientOption
 	debug                       bool
 	zkOptions                   []ZKOpt
@@ -89,9 +89,9 @@ func SchedulerUrl(url string) ClientOption {
 	}
 }
 
-func TimeoutMS(timeout int) ClientOption {
+func Timeout(timeout time.Duration) ClientOption {
 	return func(config *RealisConfig) {
-		config.timeoutms = timeout
+		config.timeout = timeout
 	}
 }
 
@@ -140,13 +140,13 @@ func InsecureSkipVerify(InsecureSkipVerify bool) ClientOption {
 
 func CertsPath(certspath string) ClientOption {
 	return func(config *RealisConfig) {
-		config.certspath = certspath
+		config.certsPath = certspath
 	}
 }
 
 func ClientCerts(clientKey, clientCert string) ClientOption {
 	return func(config *RealisConfig) {
-		config.clientkey, config.clientcert = clientKey, clientCert
+		config.clientKey, config.clientCert = clientKey, clientCert
 	}
 }
 
@@ -205,7 +205,7 @@ func NewRealisClient(options ...ClientOption) (*RealisClient, error) {
 	config := &RealisConfig{}
 
 	// Default configs
-	config.timeoutms = 10000
+	config.timeout = 10 * time.Second
 	config.backoff = defaultBackoff
 	config.logger = &LevelLogger{log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC), false}
 
@@ -266,7 +266,7 @@ func NewRealisClient(options ...ClientOption) (*RealisClient, error) {
 	}
 
 	if config.jsonTransport {
-		trans, err := newTJSONTransport(url, config.timeoutms, config)
+		trans, err := newTJSONTransport(url, config.timeout, config)
 		if err != nil {
 			return nil, NewTemporaryError(errors.Wrap(err, "Error creating realis"))
 		}
@@ -274,7 +274,7 @@ func NewRealisClient(options ...ClientOption) (*RealisClient, error) {
 		config.protoFactory = thrift.NewTJSONProtocolFactory()
 
 	} else if config.binTransport {
-		trans, err := newTBinTransport(url, config.timeoutms, config)
+		trans, err := newTBinTransport(url, config.timeout, config)
 		if err != nil {
 			return nil, NewTemporaryError(errors.Wrap(err, "Error creating realis"))
 		}
@@ -310,15 +310,15 @@ func GetDefaultClusterFromZKUrl(zkurl string) *Cluster {
 	}
 }
 
-func GetCerts(certpath string) (*x509.CertPool, error) {
+func GetCerts(certPath string) (*x509.CertPool, error) {
 	globalRootCAs := x509.NewCertPool()
-	caFiles, err := ioutil.ReadDir(certpath)
+	caFiles, err := ioutil.ReadDir(certPath)
 	if err != nil {
 		return nil, err
 	}
 	for _, cert := range caFiles {
-		capathfile := filepath.Join(certpath, cert.Name())
-		caCert, err := ioutil.ReadFile(capathfile)
+		caPathFile := filepath.Join(certPath, cert.Name())
+		caCert, err := ioutil.ReadFile(caPathFile)
 		if err != nil {
 			return nil, err
 		}
@@ -328,33 +328,35 @@ func GetCerts(certpath string) (*x509.CertPool, error) {
 }
 
 // Creates a default Thrift Transport object for communications in gorealis using an HTTP Post Client
-func defaultTTransport(urlstr string, timeoutms int, config *RealisConfig) (thrift.TTransport, error) {
+func defaultTTransport(url string, timeout time.Duration, config *RealisConfig) (thrift.TTransport, error) {
+	var transport http.Transport
+
 	jar, err := cookiejar.New(nil)
 	if err != nil {
-		return &thrift.THttpClient{}, errors.Wrap(err, "Error creating Cookie Jar")
+		return nil, errors.Wrap(err, "Error creating Cookie Jar")
 	}
-	var transport http.Transport
+
 	if config != nil {
 		tlsConfig := &tls.Config{}
 		if config.InsecureSkipVerify {
 			tlsConfig.InsecureSkipVerify = true
 		}
-		if config.certspath != "" {
-			rootCAs, err := GetCerts(config.certspath)
+		if config.certsPath != "" {
+			rootCAs, err := GetCerts(config.certsPath)
 			if err != nil {
 				config.logger.Println("error occured couldn't fetch certs")
 				return nil, err
 			}
 			tlsConfig.RootCAs = rootCAs
 		}
-		if config.clientkey != "" && config.clientcert == "" {
+		if config.clientKey != "" && config.clientCert == "" {
 			return nil, fmt.Errorf("have to provide both client key,cert. Only client key provided ")
 		}
-		if config.clientkey == "" && config.clientcert != "" {
+		if config.clientKey == "" && config.clientCert != "" {
 			return nil, fmt.Errorf("have to provide both client key,cert. Only client cert provided ")
 		}
-		if config.clientkey != "" && config.clientcert != "" {
-			cert, err := tls.LoadX509KeyPair(config.clientcert, config.clientkey)
+		if config.clientKey != "" && config.clientCert != "" {
+			cert, err := tls.LoadX509KeyPair(config.clientCert, config.clientKey)
 			if err != nil {
 				config.logger.Println("error occured loading client certs and keys")
 				return nil, err
@@ -364,15 +366,15 @@ func defaultTTransport(urlstr string, timeoutms int, config *RealisConfig) (thri
 		transport.TLSClientConfig = tlsConfig
 	}
 
-	trans, err := thrift.NewTHttpPostClientWithOptions(urlstr+"/api",
-		thrift.THttpClientOptions{Client: &http.Client{Timeout: time.Millisecond * time.Duration(timeoutms), Transport: &transport, Jar: jar}})
+	trans, err := thrift.NewTHttpPostClientWithOptions(url+"/api",
+		thrift.THttpClientOptions{Client: &http.Client{Timeout: timeout, Transport: &transport, Jar: jar}})
 
 	if err != nil {
-		return &thrift.THttpClient{}, errors.Wrap(err, "Error creating transport")
+		return nil, errors.Wrap(err, "Error creating transport")
 	}
 
 	if err := trans.Open(); err != nil {
-		return &thrift.THttpClient{}, errors.Wrapf(err, "Error opening connection to %s", urlstr)
+		return nil, errors.Wrapf(err, "Error opening connection to %s", url)
 	}
 
 	return trans, nil
@@ -380,13 +382,13 @@ func defaultTTransport(urlstr string, timeoutms int, config *RealisConfig) (thri
 
 // Create a default configuration of the transport layer, requires a URL to test connection with.
 // Uses HTTP Post as transport layer and Thrift JSON as the wire protocol by default.
-func newDefaultConfig(url string, timeoutms int, config *RealisConfig) (*RealisConfig, error) {
-	return newTJSONConfig(url, timeoutms, config)
+func newDefaultConfig(url string, timeout time.Duration, config *RealisConfig) (*RealisConfig, error) {
+	return newTJSONConfig(url, timeout, config)
 }
 
 // Creates a realis config object using HTTP Post and Thrift JSON protocol to communicate with Aurora.
-func newTJSONConfig(url string, timeoutms int, config *RealisConfig) (*RealisConfig, error) {
-	trans, err := defaultTTransport(url, timeoutms, config)
+func newTJSONConfig(url string, timeout time.Duration, config *RealisConfig) (*RealisConfig, error) {
+	trans, err := defaultTTransport(url, timeout, config)
 	if err != nil {
 		return &RealisConfig{}, errors.Wrap(err, "Error creating realis config")
 	}
@@ -399,8 +401,8 @@ func newTJSONConfig(url string, timeoutms int, config *RealisConfig) (*RealisCon
 }
 
 // Creates a realis config config using HTTP Post and Thrift Binary protocol to communicate with Aurora.
-func newTBinaryConfig(url string, timeoutms int, config *RealisConfig) (*RealisConfig, error) {
-	trans, err := defaultTTransport(url, timeoutms, config)
+func newTBinaryConfig(url string, timeout time.Duration, config *RealisConfig) (*RealisConfig, error) {
+	trans, err := defaultTTransport(url, timeout, config)
 	if err != nil {
 		return &RealisConfig{}, errors.Wrap(err, "Error creating realis config")
 	}
