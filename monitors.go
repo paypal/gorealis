@@ -87,12 +87,12 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 	}
 }
 
-// Monitor a Job until all instances enter one of the LIVE_STATES
+// Monitor a AuroraJob until all instances enter one of the LIVE_STATES
 func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval, timeout int) (bool, error) {
 	return m.ScheduleStatus(key, instances, aurora.LIVE_STATES, interval, timeout)
 }
 
-// Monitor a Job until all instances enter a desired status.
+// Monitor a AuroraJob until all instances enter a desired status.
 // Defaults sets of desired statuses provided by the thrift API include:
 // ACTIVE_STATES, SLAVE_ASSIGNED_STATES, LIVE_STATES, and TERMINAL_STATES
 func (m *Monitor) ScheduleStatus(key *aurora.JobKey, instanceCount int32, desiredStatuses map[aurora.ScheduleStatus]bool, interval, timeout int) (bool, error) {

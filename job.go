@@ -20,43 +20,6 @@ import (
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 )
 
-type Job interface {
-	// Set Job Key environment.
-	Environment(env string) Job
-	Role(role string) Job
-	Name(name string) Job
-	CPU(cpus float64) Job
-	CronSchedule(cron string) Job
-	CronCollisionPolicy(policy aurora.CronCollisionPolicy) Job
-	Disk(disk int64) Job
-	RAM(ram int64) Job
-	ExecutorName(name string) Job
-	ExecutorData(data string) Job
-	AddPorts(num int) Job
-	AddLabel(key string, value string) Job
-	AddNamedPorts(names ...string) Job
-	AddLimitConstraint(name string, limit int32) Job
-	AddValueConstraint(name string, negated bool, values ...string) Job
-
-	// From Aurora Docs:
-	// dedicated attribute. Aurora treats this specially, and only allows matching jobs
-	// to run on these machines, and will only schedule matching jobs on these machines.
-	// When a job is created, the scheduler requires that the $role component matches
-	// the role field in the job configuration, and will reject the job creation otherwise.
-	// A wildcard (*) may be used for the role portion of the dedicated attribute, which
-	// will allow any owner to elect for a job to run on the host(s)
-	AddDedicatedConstraint(role, name string) Job
-	AddURIs(extract bool, cache bool, values ...string) Job
-	JobKey() *aurora.JobKey
-	JobConfig() *aurora.JobConfiguration
-	TaskConfig() *aurora.TaskConfig
-	IsService(isService bool) Job
-	InstanceCount(instCount int32) Job
-	GetInstanceCount() int32
-	MaxFailure(maxFail int32) Job
-	Container(container Container) Job
-}
-
 // Structure to collect all information pertaining to an Aurora job.
 type AuroraJob struct {
 	jobConfig *aurora.JobConfiguration
@@ -64,13 +27,13 @@ type AuroraJob struct {
 	portCount int
 }
 
-// Create a Job object with everything initialized.
-func NewJob() Job {
+// Create a AuroraJob object with everything initialized.
+func NewJob() *AuroraJob {
 	jobConfig := aurora.NewJobConfiguration()
 	taskConfig := aurora.NewTaskConfig()
 	jobKey := aurora.NewJobKey()
 
-	// Job Config
+	// AuroraJob Config
 	jobConfig.Key = jobKey
 	jobConfig.TaskConfig = taskConfig
 
@@ -108,14 +71,14 @@ func NewJob() Job {
 	}
 }
 
-// Set Job Key environment.
-func (j *AuroraJob) Environment(env string) Job {
+// Set AuroraJob Key environment.
+func (j *AuroraJob) Environment(env string) *AuroraJob {
 	j.jobConfig.Key.Environment = env
 	return j
 }
 
-// Set Job Key Role.
-func (j *AuroraJob) Role(role string) Job {
+// Set AuroraJob Key Role.
+func (j *AuroraJob) Role(role string) *AuroraJob {
 	j.jobConfig.Key.Role = role
 
 	//Will be deprecated
@@ -125,14 +88,14 @@ func (j *AuroraJob) Role(role string) Job {
 	return j
 }
 
-// Set Job Key Name.
-func (j *AuroraJob) Name(name string) Job {
+// Set AuroraJob Key Name.
+func (j *AuroraJob) Name(name string) *AuroraJob {
 	j.jobConfig.Key.Name = name
 	return j
 }
 
 // Set name of the executor that will the task will be configured to.
-func (j *AuroraJob) ExecutorName(name string) Job {
+func (j *AuroraJob) ExecutorName(name string) *AuroraJob {
 
 	if j.jobConfig.TaskConfig.ExecutorConfig == nil {
 		j.jobConfig.TaskConfig.ExecutorConfig = aurora.NewExecutorConfig()
@@ -143,7 +106,7 @@ func (j *AuroraJob) ExecutorName(name string) Job {
 }
 
 // Will be included as part of entire task inside the scheduler that will be serialized.
-func (j *AuroraJob) ExecutorData(data string) Job {
+func (j *AuroraJob) ExecutorData(data string) *AuroraJob {
 
 	if j.jobConfig.TaskConfig.ExecutorConfig == nil {
 		j.jobConfig.TaskConfig.ExecutorConfig = aurora.NewExecutorConfig()
@@ -153,42 +116,42 @@ func (j *AuroraJob) ExecutorData(data string) Job {
 	return j
 }
 
-func (j *AuroraJob) CPU(cpus float64) Job {
+func (j *AuroraJob) CPU(cpus float64) *AuroraJob {
 	*j.resources["cpu"].NumCpus = cpus
 
 	return j
 }
 
-func (j *AuroraJob) RAM(ram int64) Job {
+func (j *AuroraJob) RAM(ram int64) *AuroraJob {
 	*j.resources["ram"].RamMb = ram
 
 	return j
 }
 
-func (j *AuroraJob) Disk(disk int64) Job {
+func (j *AuroraJob) Disk(disk int64) *AuroraJob {
 	*j.resources["disk"].DiskMb = disk
 
 	return j
 }
 
 // How many failures to tolerate before giving up.
-func (j *AuroraJob) MaxFailure(maxFail int32) Job {
+func (j *AuroraJob) MaxFailure(maxFail int32) *AuroraJob {
 	j.jobConfig.TaskConfig.MaxTaskFailures = maxFail
 	return j
 }
 
 // How many instances of the job to run
-func (j *AuroraJob) InstanceCount(instCount int32) Job {
+func (j *AuroraJob) InstanceCount(instCount int32) *AuroraJob {
 	j.jobConfig.InstanceCount = instCount
 	return j
 }
 
-func (j *AuroraJob) CronSchedule(cron string) Job {
+func (j *AuroraJob) CronSchedule(cron string) *AuroraJob {
 	j.jobConfig.CronSchedule = &cron
 	return j
 }
 
-func (j *AuroraJob) CronCollisionPolicy(policy aurora.CronCollisionPolicy) Job {
+func (j *AuroraJob) CronCollisionPolicy(policy aurora.CronCollisionPolicy) *AuroraJob {
 	j.jobConfig.CronCollisionPolicy = policy
 	return j
 }
@@ -199,7 +162,7 @@ func (j *AuroraJob) GetInstanceCount() int32 {
 }
 
 // Restart the job's tasks if they fail
-func (j *AuroraJob) IsService(isService bool) Job {
+func (j *AuroraJob) IsService(isService bool) *AuroraJob {
 	j.jobConfig.TaskConfig.IsService = isService
 	return j
 }
@@ -220,7 +183,7 @@ func (j *AuroraJob) TaskConfig() *aurora.TaskConfig {
 
 // Add a list of URIs with the same extract and cache configuration. Scheduler must have
 // --enable_mesos_fetcher flag enabled. Currently there is no duplicate detection.
-func (j *AuroraJob) AddURIs(extract bool, cache bool, values ...string) Job {
+func (j *AuroraJob) AddURIs(extract bool, cache bool, values ...string) *AuroraJob {
 	for _, value := range values {
 		j.jobConfig.TaskConfig.MesosFetcherUris[&aurora.MesosFetcherURI{
 			Value:   value,
@@ -233,14 +196,14 @@ func (j *AuroraJob) AddURIs(extract bool, cache bool, values ...string) Job {
 
 // Adds a Mesos label to the job. Note that Aurora will add the
 // prefix "org.apache.aurora.metadata." to the beginning of each key.
-func (j *AuroraJob) AddLabel(key string, value string) Job {
+func (j *AuroraJob) AddLabel(key string, value string) *AuroraJob {
 	j.jobConfig.TaskConfig.Metadata[&aurora.Metadata{Key: key, Value: value}] = true
 	return j
 }
 
 // Add a named port to the job configuration  These are random ports as it's
 // not currently possible to request specific ports using Aurora.
-func (j *AuroraJob) AddNamedPorts(names ...string) Job {
+func (j *AuroraJob) AddNamedPorts(names ...string) *AuroraJob {
 	j.portCount += len(names)
 	for _, name := range names {
 		j.jobConfig.TaskConfig.Resources[&aurora.Resource{NamedPort: &name}] = true
@@ -253,7 +216,7 @@ func (j *AuroraJob) AddNamedPorts(names ...string) Job {
 // will be org.apache.aurora.port.X, where X is the current port count for the job configuration
 // starting at 0. These are random ports as it's not currently possible to request
 // specific ports using Aurora.
-func (j *AuroraJob) AddPorts(num int) Job {
+func (j *AuroraJob) AddPorts(num int) *AuroraJob {
 	start := j.portCount
 	j.portCount += num
 	for i := start; i < j.portCount; i++ {
@@ -269,7 +232,7 @@ func (j *AuroraJob) AddPorts(num int) Job {
 // name - Mesos slave attribute that the constraint is matched against.
 // If negated = true , treat this as a 'not' - to avoid specific values.
 // Values - list of values we look for in attribute name
-func (j *AuroraJob) AddValueConstraint(name string, negated bool, values ...string) Job {
+func (j *AuroraJob) AddValueConstraint(name string, negated bool, values ...string) *AuroraJob {
 	constraintValues := make(map[string]bool)
 	for _, value := range values {
 		constraintValues[value] = true
@@ -291,7 +254,7 @@ func (j *AuroraJob) AddValueConstraint(name string, negated bool, values ...stri
 // From Aurora Docs:
 // A constraint that specifies the maximum number of active tasks on a host with
 // a matching attribute that may be scheduled simultaneously.
-func (j *AuroraJob) AddLimitConstraint(name string, limit int32) Job {
+func (j *AuroraJob) AddLimitConstraint(name string, limit int32) *AuroraJob {
 	j.jobConfig.TaskConfig.Constraints[&aurora.Constraint{
 		Name: name,
 		Constraint: &aurora.TaskConstraint{
@@ -303,14 +266,21 @@ func (j *AuroraJob) AddLimitConstraint(name string, limit int32) Job {
 	return j
 }
 
-func (j *AuroraJob) AddDedicatedConstraint(role, name string) Job {
+// From Aurora Docs:
+// dedicated attribute. Aurora treats this specially, and only allows matching jobs
+// to run on these machines, and will only schedule matching jobs on these machines.
+// When a job is created, the scheduler requires that the $role component matches
+// the role field in the job configuration, and will reject the job creation otherwise.
+// A wildcard (*) may be used for the role portion of the dedicated attribute, which
+// will allow any owner to elect for a job to run on the host(s)
+func (j *AuroraJob) AddDedicatedConstraint(role, name string) *AuroraJob {
 	j.AddValueConstraint("dedicated", false, role+"/"+name)
 
 	return j
 }
 
 // Set a container to run for the job configuration to run.
-func (j *AuroraJob) Container(container Container) Job {
+func (j *AuroraJob) Container(container Container) *AuroraJob {
 	j.jobConfig.TaskConfig.Container = container.Build()
 
 	return j

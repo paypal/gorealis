@@ -20,8 +20,8 @@ import (
 
 // Structure to collect all information required to create job update
 type UpdateJob struct {
-	Job // SetInstanceCount for job is hidden, access via full qualifier
-	req *aurora.JobUpdateRequest
+	*AuroraJob // SetInstanceCount for job is hidden, access via full qualifier
+	req        *aurora.JobUpdateRequest
 }
 
 // Create a default UpdateJob object.
@@ -31,7 +31,7 @@ func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 	req.TaskConfig = config
 	req.Settings = NewUpdateSettings()
 
-	job := NewJob().(*AuroraJob)
+	job := NewJob()
 	job.jobConfig.TaskConfig = config
 
 	// Rebuild resource map from TaskConfig
@@ -62,7 +62,7 @@ func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 	req.Settings.RollbackOnFailure = true
 
 	//TODO(rdelvalle): Deep copy job struct to avoid unexpected behavior
-	return &UpdateJob{Job: job, req: req}
+	return &UpdateJob{AuroraJob: job, req: req}
 }
 
 func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings) *UpdateJob {
@@ -71,7 +71,7 @@ func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings)
 	req.TaskConfig = config
 	req.Settings = settings
 
-	job := NewJob().(*AuroraJob)
+	job := NewJob()
 	job.jobConfig.TaskConfig = config
 
 	// Rebuild resource map from TaskConfig
@@ -93,7 +93,7 @@ func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings)
 	}
 
 	//TODO(rdelvalle): Deep copy job struct to avoid unexpected behavior
-	return &UpdateJob{Job: job, req: req}
+	return &UpdateJob{AuroraJob: job, req: req}
 }
 
 // Set instance count the job will have after the update.

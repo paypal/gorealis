@@ -172,7 +172,7 @@ func Debug() ClientOption {
 	}
 }
 
-func newTJSONTransport(url string, timeout int, config *RealisConfig) (thrift.TTransport, error) {
+func newTJSONTransport(url string, timeout time.Duration, config *RealisConfig) (thrift.TTransport, error) {
 	trans, err := defaultTTransport(url, timeout, config)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating realis")
@@ -183,7 +183,7 @@ func newTJSONTransport(url string, timeout int, config *RealisConfig) (thrift.TT
 	return trans, err
 }
 
-func newTBinTransport(url string, timeout int, config *RealisConfig) (thrift.TTransport, error) {
+func newTBinTransport(url string, timeout time.Duration, config *RealisConfig) (thrift.TTransport, error) {
 	trans, err := defaultTTransport(url, timeout, config)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating realis")
@@ -567,7 +567,7 @@ func (r *RealisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 // Although this API is able to create service jobs, it is better to use CreateService instead
 // as that API uses the update thrift call which has a few extra features available.
 // Use this API to create ad-hoc jobs.
-func (r *RealisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
+func (r *RealisClient) CreateJob(auroraJob *AuroraJob) (*aurora.Response, error) {
 
 	r.logger.DebugPrintf("CreateJob Thrift Payload: %+v\n", auroraJob.JobConfig())
 
@@ -578,11 +578,12 @@ func (r *RealisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 	if retryErr != nil {
 		return resp, errors.Wrap(retryErr, "Error sending Create command to Aurora Scheduler")
 	}
+
 	return resp, nil
 }
 
 // This API uses an update thrift call to create the services giving a few more robust features.
-func (r *RealisClient) CreateService(auroraJob Job, settings *aurora.JobUpdateSettings) (*aurora.Response, *aurora.StartJobUpdateResult_, error) {
+func (r *RealisClient) CreateService(auroraJob *AuroraJob, settings *aurora.JobUpdateSettings) (*aurora.Response, *aurora.StartJobUpdateResult_, error) {
 	// Create a new job update object and ship it to the StartJobUpdate api
 	update := NewUpdateJob(auroraJob.TaskConfig(), settings)
 	update.InstanceCount(auroraJob.GetInstanceCount())
@@ -599,7 +600,7 @@ func (r *RealisClient) CreateService(auroraJob Job, settings *aurora.JobUpdateSe
 	return nil, nil, errors.New("results object is nil")
 }
 
-func (r *RealisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) {
+func (r *RealisClient) ScheduleCronJob(auroraJob *AuroraJob) (*aurora.Response, error) {
 	r.logger.DebugPrintf("ScheduleCronJob Thrift Payload: %+v\n", auroraJob.JobConfig())
 
 	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
@@ -607,7 +608,7 @@ func (r *RealisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) 
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Error sending Cron Job Schedule message to Aurora Scheduler")
+		return nil, errors.Wrap(retryErr, "Error sending Cron AuroraJob Schedule message to Aurora Scheduler")
 	}
 	return resp, nil
 }
@@ -621,7 +622,7 @@ func (r *RealisClient) DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, 
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Error sending Cron Job De-schedule message to Aurora Scheduler")
+		return nil, errors.Wrap(retryErr, "Error sending Cron AuroraJob De-schedule message to Aurora Scheduler")
 
 	}
 	return resp, nil
@@ -637,7 +638,7 @@ func (r *RealisClient) StartCronJob(key *aurora.JobKey) (*aurora.Response, error
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Error sending Start Cron Job  message to Aurora Scheduler")
+		return nil, errors.Wrap(retryErr, "Error sending Start Cron AuroraJob  message to Aurora Scheduler")
 	}
 	return resp, nil
 
@@ -703,7 +704,7 @@ func (r *RealisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*au
 	return resp, nil
 }
 
-// Abort Job Update on Aurora. Requires the updateId which can be obtained on the Aurora web UI.
+// Abort AuroraJob Update on Aurora. Requires the updateId which can be obtained on the Aurora web UI.
 func (r *RealisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message string) (*aurora.Response, error) {
 
 	r.logger.DebugPrintf("AbortJobUpdate Thrift Payload: %+v %v\n", updateKey, message)
@@ -718,7 +719,7 @@ func (r *RealisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message str
 	return resp, nil
 }
 
-//Pause Job Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.
+//Pause AuroraJob Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.
 func (r *RealisClient) PauseJobUpdate(updateKey *aurora.JobUpdateKey, message string) (*aurora.Response, error) {
 
 	r.logger.DebugPrintf("PauseJobUpdate Thrift Payload: %+v %v\n", updateKey, message)
@@ -734,7 +735,7 @@ func (r *RealisClient) PauseJobUpdate(updateKey *aurora.JobUpdateKey, message st
 	return resp, nil
 }
 
-//Resume Paused Job Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.
+//Resume Paused AuroraJob Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.
 func (r *RealisClient) ResumeJobUpdate(updateKey *aurora.JobUpdateKey, message string) (*aurora.Response, error) {
 
 	r.logger.DebugPrintf("ResumeJobUpdate Thrift Payload: %+v %v\n", updateKey, message)
@@ -750,7 +751,7 @@ func (r *RealisClient) ResumeJobUpdate(updateKey *aurora.JobUpdateKey, message s
 	return resp, nil
 }
 
-//Pulse Job Update on Aurora. UpdateID is returned from StartJobUpdate or the Aurora web UI.
+//Pulse AuroraJob Update on Aurora. UpdateID is returned from StartJobUpdate or the Aurora web UI.
 func (r *RealisClient) PulseJobUpdate(updateKey *aurora.JobUpdateKey) (*aurora.Response, error) {
 
 	r.logger.DebugPrintf("PulseJobUpdate Thrift Payload: %+v\n", updateKey)

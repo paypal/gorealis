@@ -31,10 +31,10 @@ var cmd, executor, url, clustersConfig, clusterName, updateId, username, passwor
 var caCertsPath string
 var clientKey, clientCert string
 
-var CONNECTION_TIMEOUT = 20000
+var CONNECTION_TIMEOUT = 20 * time.Second
 
 func init() {
-	flag.StringVar(&cmd, "cmd", "", "Job request type to send to Aurora Scheduler")
+	flag.StringVar(&cmd, "cmd", "", "Aurora Job request type to send to Aurora Scheduler")
 	flag.StringVar(&executor, "executor", "thermos", "Executor to use")
 	flag.StringVar(&url, "url", "", "URL at which the Aurora Scheduler exists as [url]:[port]")
 	flag.StringVar(&clustersConfig, "clusters", "", "Location of the clusters.json file used by aurora.")
@@ -74,7 +74,7 @@ func init() {
 
 func main() {
 
-	var job realis.Job
+	var job *realis.AuroraJob
 	var err error
 	var monitor *realis.Monitor
 	var r *realis.RealisClient
@@ -82,7 +82,7 @@ func main() {
 	clientOptions := []realis.ClientOption{
 		realis.BasicAuth(username, password),
 		realis.ThriftJSON(),
-		realis.TimeoutMS(CONNECTION_TIMEOUT),
+		realis.Timeout(CONNECTION_TIMEOUT),
 		realis.BackOff(realis.Backoff{
 			Steps:    2,
 			Duration: 10 * time.Second,
@@ -101,7 +101,7 @@ func main() {
 	}
 
 	if caCertsPath != "" {
-		clientOptions = append(clientOptions, realis.Certspath(caCertsPath))
+		clientOptions = append(clientOptions, realis.CertsPath(caCertsPath))
 	}
 
 	if clientKey != "" && clientCert != "" {
