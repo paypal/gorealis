@@ -27,7 +27,7 @@ type UpdateJob struct {
 // Create a default UpdateJob object.
 func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 
-	req := aurora.NewJobUpdateRequest()
+	req := aurora.JobUpdateRequest{}
 	req.TaskConfig = config
 	req.Settings = NewUpdateSettings()
 
@@ -62,7 +62,7 @@ func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 	req.Settings.RollbackOnFailure = true
 
 	//TODO(rdelvalle): Deep copy job struct to avoid unexpected behavior
-	return &UpdateJob{AuroraJob: job, req: req}
+	return &UpdateJob{AuroraJob: job, req: &req}
 }
 
 func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings) *UpdateJob {
@@ -140,7 +140,7 @@ func (u *UpdateJob) RollbackOnFail(rollback bool) *UpdateJob {
 
 func NewUpdateSettings() *aurora.JobUpdateSettings {
 
-	us := new(aurora.JobUpdateSettings)
+	us := aurora.JobUpdateSettings{}
 	// Mirrors defaults set by Pystachio
 	us.UpdateOnlyTheseInstances = make(map[*aurora.Range]bool)
 	us.UpdateGroupSize = 1
@@ -150,5 +150,5 @@ func NewUpdateSettings() *aurora.JobUpdateSettings {
 	us.MaxFailedInstances = 0
 	us.RollbackOnFailure = true
 
-	return us
+	return &us
 }
