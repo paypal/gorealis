@@ -68,9 +68,8 @@ type ReadOnlyScheduler interface {
 	// Gets job update details.
 	//
 	// Parameters:
-	//  - Key
 	//  - Query
-	GetJobUpdateDetails(key *JobUpdateKey, query *JobUpdateQuery) (r *Response, err error)
+	GetJobUpdateDetails(query *JobUpdateQuery) (r *Response, err error)
 	// Gets the diff between client (desired) and server (current) job states.
 	//
 	// Parameters:
@@ -897,16 +896,15 @@ func (p *ReadOnlySchedulerClient) recvGetJobUpdateSummaries() (value *Response, 
 // Gets job update details.
 //
 // Parameters:
-//  - Key
 //  - Query
-func (p *ReadOnlySchedulerClient) GetJobUpdateDetails(key *JobUpdateKey, query *JobUpdateQuery) (r *Response, err error) {
-	if err = p.sendGetJobUpdateDetails(key, query); err != nil {
+func (p *ReadOnlySchedulerClient) GetJobUpdateDetails(query *JobUpdateQuery) (r *Response, err error) {
+	if err = p.sendGetJobUpdateDetails(query); err != nil {
 		return
 	}
 	return p.recvGetJobUpdateDetails()
 }
 
-func (p *ReadOnlySchedulerClient) sendGetJobUpdateDetails(key *JobUpdateKey, query *JobUpdateQuery) (err error) {
+func (p *ReadOnlySchedulerClient) sendGetJobUpdateDetails(query *JobUpdateQuery) (err error) {
 	oprot := p.OutputProtocol
 	if oprot == nil {
 		oprot = p.ProtocolFactory.GetProtocol(p.Transport)
@@ -917,7 +915,6 @@ func (p *ReadOnlySchedulerClient) sendGetJobUpdateDetails(key *JobUpdateKey, que
 		return
 	}
 	args := ReadOnlySchedulerGetJobUpdateDetailsArgs{
-		Key:   key,
 		Query: query,
 	}
 	if err = args.Write(oprot); err != nil {
@@ -1684,7 +1681,7 @@ func (p *readOnlySchedulerProcessorGetJobUpdateDetails) Process(seqId int32, ipr
 	result := ReadOnlySchedulerGetJobUpdateDetailsResult{}
 	var retval *Response
 	var err2 error
-	if retval, err2 = p.handler.GetJobUpdateDetails(args.Key, args.Query); err2 != nil {
+	if retval, err2 = p.handler.GetJobUpdateDetails(args.Query); err2 != nil {
 		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing getJobUpdateDetails: "+err2.Error())
 		oprot.WriteMessageBegin("getJobUpdateDetails", thrift.EXCEPTION, seqId)
 		x.Write(oprot)
@@ -3741,24 +3738,14 @@ func (p *ReadOnlySchedulerGetJobUpdateSummariesResult) String() string {
 }
 
 // Attributes:
-//  - Key
 //  - Query
 type ReadOnlySchedulerGetJobUpdateDetailsArgs struct {
-	Key   *JobUpdateKey   `thrift:"key,1" json:"key"`
+	// unused field # 1
 	Query *JobUpdateQuery `thrift:"query,2" json:"query"`
 }
 
 func NewReadOnlySchedulerGetJobUpdateDetailsArgs() *ReadOnlySchedulerGetJobUpdateDetailsArgs {
 	return &ReadOnlySchedulerGetJobUpdateDetailsArgs{}
-}
-
-var ReadOnlySchedulerGetJobUpdateDetailsArgs_Key_DEFAULT *JobUpdateKey
-
-func (p *ReadOnlySchedulerGetJobUpdateDetailsArgs) GetKey() *JobUpdateKey {
-	if !p.IsSetKey() {
-		return ReadOnlySchedulerGetJobUpdateDetailsArgs_Key_DEFAULT
-	}
-	return p.Key
 }
 
 var ReadOnlySchedulerGetJobUpdateDetailsArgs_Query_DEFAULT *JobUpdateQuery
@@ -3769,10 +3756,6 @@ func (p *ReadOnlySchedulerGetJobUpdateDetailsArgs) GetQuery() *JobUpdateQuery {
 	}
 	return p.Query
 }
-func (p *ReadOnlySchedulerGetJobUpdateDetailsArgs) IsSetKey() bool {
-	return p.Key != nil
-}
-
 func (p *ReadOnlySchedulerGetJobUpdateDetailsArgs) IsSetQuery() bool {
 	return p.Query != nil
 }
@@ -3791,10 +3774,6 @@ func (p *ReadOnlySchedulerGetJobUpdateDetailsArgs) Read(iprot thrift.TProtocol) 
 			break
 		}
 		switch fieldId {
-		case 1:
-			if err := p.readField1(iprot); err != nil {
-				return err
-			}
 		case 2:
 			if err := p.readField2(iprot); err != nil {
 				return err
@@ -3814,14 +3793,6 @@ func (p *ReadOnlySchedulerGetJobUpdateDetailsArgs) Read(iprot thrift.TProtocol) 
 	return nil
 }
 
-func (p *ReadOnlySchedulerGetJobUpdateDetailsArgs) readField1(iprot thrift.TProtocol) error {
-	p.Key = &JobUpdateKey{}
-	if err := p.Key.Read(iprot); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", p.Key), err)
-	}
-	return nil
-}
-
 func (p *ReadOnlySchedulerGetJobUpdateDetailsArgs) readField2(iprot thrift.TProtocol) error {
 	p.Query = &JobUpdateQuery{}
 	if err := p.Query.Read(iprot); err != nil {
@@ -3834,9 +3805,6 @@ func (p *ReadOnlySchedulerGetJobUpdateDetailsArgs) Write(oprot thrift.TProtocol)
 	if err := oprot.WriteStructBegin("getJobUpdateDetails_args"); err != nil {
 		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
 	}
-	if err := p.writeField1(oprot); err != nil {
-		return err
-	}
 	if err := p.writeField2(oprot); err != nil {
 		return err
 	}
@@ -3847,19 +3815,6 @@ func (p *ReadOnlySchedulerGetJobUpdateDetailsArgs) Write(oprot thrift.TProtocol)
 		return thrift.PrependError("write struct stop error: ", err)
 	}
 	return nil
-}
-
-func (p *ReadOnlySchedulerGetJobUpdateDetailsArgs) writeField1(oprot thrift.TProtocol) (err error) {
-	if err := oprot.WriteFieldBegin("key", thrift.STRUCT, 1); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:key: ", p), err)
-	}
-	if err := p.Key.Write(oprot); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.Key), err)
-	}
-	if err := oprot.WriteFieldEnd(); err != nil {
-		return thrift.PrependError(fmt.Sprintf("%T write field end error 1:key: ", p), err)
-	}
-	return err
 }
 
 func (p *ReadOnlySchedulerGetJobUpdateDetailsArgs) writeField2(oprot thrift.TProtocol) (err error) {

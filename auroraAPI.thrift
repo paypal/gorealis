@@ -1091,8 +1091,7 @@ service ReadOnlyScheduler {
   Response getJobUpdateSummaries(1: JobUpdateQuery jobUpdateQuery)
 
   /** Gets job update details. */
-  // TODO(zmanji): `key` is deprecated, remove this with AURORA-1765
-  Response getJobUpdateDetails(1: JobUpdateKey key, 2: JobUpdateQuery query)
+  Response getJobUpdateDetails(2: JobUpdateQuery query)
 
   /** Gets the diff between client (desired) and server (current) job states. */
   Response getJobUpdateDiff(1: JobUpdateRequest request)
