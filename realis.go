@@ -73,6 +73,7 @@ type Realis interface {
 
 	// Admin functions
 	DrainHosts(hosts ...string) (*aurora.Response, *aurora.DrainHostsResult_, error)
+	SLADrainHosts(policy *aurora.SlaPolicy, timeout int64, hosts ...string) (*aurora.DrainHostsResult_, error)
 	StartMaintenance(hosts ...string) (*aurora.Response, *aurora.StartMaintenanceResult_, error)
 	EndMaintenance(hosts ...string) (*aurora.Response, *aurora.EndMaintenanceResult_, error)
 	MaintenanceStatus(hosts ...string) (*aurora.Response, *aurora.MaintenanceStatusResult_, error)
@@ -1019,6 +1020,39 @@ func (r *realisClient) DrainHosts(hosts ...string) (*aurora.Response, *aurora.Dr
 	}
 
 	return resp, result, nil
+}
+
+// Start SLA Aware Drain.
+// defaultSlaPolicy is the fallback SlaPolicy to use if a task does not have an SlaPolicy.
+// After timeoutSecs, tasks will be forcefully drained without checking SLA.
+func (r *realisClient) SLADrainHosts(policy *aurora.SlaPolicy, timeout int64, hosts ...string) (*aurora.DrainHostsResult_, error) {
+	var result *aurora.DrainHostsResult_
+
+	if len(hosts) == 0 {
+		return nil, errors.New("no hosts provided to drain")
+	}
+
+	drainList := aurora.NewHosts()
+	drainList.HostNames = make(map[string]bool)
+	for _, host := range hosts {
+		drainList.HostNames[host] = true
+	}
+
+	r.logger.DebugPrintf("SLADrainHosts Thrift Payload: %v\n", drainList)
+
+	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
+		return r.adminClient.SlaDrainHosts(drainList, policy, timeout)
+	})
+
+	if retryErr != nil {
+		return result, errors.Wrap(retryErr, "Unable to recover connection")
+	}
+
+	if resp.GetResult_() != nil {
+		result = resp.GetResult_().GetDrainHostsResult_()
+	}
+
+	return result, nil
 }
 
 func (r *realisClient) StartMaintenance(hosts ...string) (*aurora.Response, *aurora.StartMaintenanceResult_, error) {

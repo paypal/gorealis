@@ -155,21 +155,18 @@ func (j *AuroraJob) ExecutorData(data string) Job {
 
 func (j *AuroraJob) CPU(cpus float64) Job {
 	*j.resources["cpu"].NumCpus = cpus
-	j.jobConfig.TaskConfig.NumCpus = cpus //Will be deprecated soon
 
 	return j
 }
 
 func (j *AuroraJob) RAM(ram int64) Job {
 	*j.resources["ram"].RamMb = ram
-	j.jobConfig.TaskConfig.RamMb = ram //Will be deprecated soon
 
 	return j
 }
 
 func (j *AuroraJob) Disk(disk int64) Job {
 	*j.resources["disk"].DiskMb = disk
-	j.jobConfig.TaskConfig.DiskMb = disk //Will be deprecated
 
 	return j
 }
