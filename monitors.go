@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
-	"github.com/paypal/gorealis/response"
 	"github.com/pkg/errors"
 )
 
@@ -44,24 +43,20 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 	defer ticker.Stop()
 	timer := time.NewTimer(time.Second * time.Duration(timeout))
 	defer timer.Stop()
-	var cliErr error
-	var respDetail *aurora.Response
 
 	for {
 		select {
 		case <-ticker.C:
-			respDetail, cliErr = m.Client.JobUpdateDetails(updateQ)
+			updateDetail, cliErr := m.Client.JobUpdateDetails(updateQ)
 			if cliErr != nil {
 				return false, cliErr
 			}
 
-			updateDetail := response.JobUpdateDetails(respDetail)
-
-			if len(updateDetail) == 0 {
+			if len(updateDetail.GetDetailsList()) == 0 {
 				m.Client.RealisConfig().logger.Println("No update found")
 				return false, errors.New("No update found for " + updateKey.String())
 			}
-			status := updateDetail[0].Update.Summary.State.Status
+			status := updateDetail.GetDetailsList()[0].Update.Summary.State.Status
 
 			if _, ok := aurora.ACTIVE_JOB_UPDATE_STATES[status]; !ok {
 
@@ -151,7 +146,7 @@ func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode
 		select {
 		case <-ticker.C:
 			// Client call has multiple retries internally
-			_, result, err := m.Client.MaintenanceStatus(hosts...)
+			result, err := m.Client.MaintenanceStatus(hosts...)
 			if err != nil {
 				// Error is either a payload error or a severe connection error
 				for host := range remainingHosts {
