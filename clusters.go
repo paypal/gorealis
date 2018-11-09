@@ -54,3 +54,14 @@ func LoadClusters(config string) (map[string]Cluster, error) {
 
 	return m, nil
 }
+
+func GetDefaultClusterFromZKUrl(zkURL string) *Cluster {
+	return &Cluster{
+		Name:          "defaultCluster",
+		AuthMechanism: "UNAUTHENTICATED",
+		ZK:            zkURL,
+		SchedZKPath:   "/aurora/scheduler",
+		AgentRunDir:   "latest",
+		AgentRoot:     "/var/lib/mesos",
+	}
+}
