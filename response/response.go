@@ -17,7 +17,6 @@ package response
 
 import (
 	"bytes"
-	"errors"
 
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 )
@@ -37,18 +36,6 @@ func ScheduleStatusResult(resp *aurora.Response) *aurora.ScheduleStatusResult_ {
 
 func JobUpdateSummaries(resp *aurora.Response) []*aurora.JobUpdateSummary {
 	return resp.GetResult_().GetGetJobUpdateSummariesResult_().GetUpdateSummaries()
-}
-
-// Deprecated: Replaced by checks done inside of thriftCallHelper
-func ResponseCodeCheck(resp *aurora.Response) (*aurora.Response, error) {
-	if resp == nil {
-		return resp, errors.New("Response is nil")
-	}
-	if resp.GetResponseCode() != aurora.ResponseCode_OK {
-		return resp, errors.New(CombineMessage(resp))
-	}
-
-	return resp, nil
 }
 
 // Based on aurora client: src/main/python/apache/aurora/client/base.py
