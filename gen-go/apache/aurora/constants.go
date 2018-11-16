@@ -41,6 +41,7 @@ func init() {
 		12: true,
 		2:  true,
 		1:  true,
+		18: true,
 		16: true,
 	}
 
@@ -51,6 +52,7 @@ func init() {
 		13: true,
 		12: true,
 		2:  true,
+		18: true,
 		1:  true,
 	}
 
@@ -59,6 +61,7 @@ func init() {
 		13: true,
 		12: true,
 		17: true,
+		18: true,
 		2:  true,
 	}
 

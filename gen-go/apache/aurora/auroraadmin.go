@@ -74,6 +74,15 @@ type AuroraAdmin interface {
 	// Parameters:
 	//  - Hosts
 	EndMaintenance(hosts *Hosts) (r *Response, err error)
+	// Ask scheduler to put hosts into DRAINING mode and move scheduled tasks off of the hosts
+	// such that its SLA requirements are satisfied. Use defaultSlaPolicy if it is not set for a task.
+	//
+	//
+	// Parameters:
+	//  - Hosts
+	//  - DefaultSlaPolicy
+	//  - TimeoutSecs
+	SlaDrainHosts(hosts *Hosts, defaultSlaPolicy *SlaPolicy, timeoutSecs int64) (r *Response, err error)
 	// Start a storage snapshot and block until it completes.
 	Snapshot() (r *Response, err error)
 	// Tell scheduler to trigger an explicit task reconciliation with the given settings.
@@ -158,16 +167,16 @@ func (p *AuroraAdminClient) recvSetQuota() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error317 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error318 error
-		error318, err = error317.Read(iprot)
+		error316 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error317 error
+		error317, err = error316.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error318
+		err = error317
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -241,16 +250,16 @@ func (p *AuroraAdminClient) recvForceTaskState() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error319 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error320 error
-		error320, err = error319.Read(iprot)
+		error318 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error319 error
+		error319, err = error318.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error320
+		err = error319
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -315,16 +324,16 @@ func (p *AuroraAdminClient) recvPerformBackup() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error321 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error322 error
-		error322, err = error321.Read(iprot)
+		error320 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error321 error
+		error321, err = error320.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error322
+		err = error321
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -389,16 +398,16 @@ func (p *AuroraAdminClient) recvListBackups() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error323 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error324 error
-		error324, err = error323.Read(iprot)
+		error322 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error323 error
+		error323, err = error322.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error324
+		err = error323
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -468,16 +477,16 @@ func (p *AuroraAdminClient) recvStageRecovery() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error325 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error326 error
-		error326, err = error325.Read(iprot)
+		error324 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error325 error
+		error325, err = error324.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error326
+		err = error325
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -547,16 +556,16 @@ func (p *AuroraAdminClient) recvQueryRecovery() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error327 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error328 error
-		error328, err = error327.Read(iprot)
+		error326 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error327 error
+		error327, err = error326.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error328
+		err = error327
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -626,16 +635,16 @@ func (p *AuroraAdminClient) recvDeleteRecoveryTasks() (value *Response, err erro
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error329 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error330 error
-		error330, err = error329.Read(iprot)
+		error328 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error329 error
+		error329, err = error328.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error330
+		err = error329
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -700,16 +709,16 @@ func (p *AuroraAdminClient) recvCommitRecovery() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error331 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error332 error
-		error332, err = error331.Read(iprot)
+		error330 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error331 error
+		error331, err = error330.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error332
+		err = error331
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -774,16 +783,16 @@ func (p *AuroraAdminClient) recvUnloadRecovery() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error333 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error334 error
-		error334, err = error333.Read(iprot)
+		error332 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error333 error
+		error333, err = error332.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error334
+		err = error333
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -853,16 +862,16 @@ func (p *AuroraAdminClient) recvStartMaintenance() (value *Response, err error) 
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error335 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error336 error
-		error336, err = error335.Read(iprot)
+		error334 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error335 error
+		error335, err = error334.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error336
+		err = error335
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -932,16 +941,16 @@ func (p *AuroraAdminClient) recvDrainHosts() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error337 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error338 error
-		error338, err = error337.Read(iprot)
+		error336 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error337 error
+		error337, err = error336.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error338
+		err = error337
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1011,16 +1020,16 @@ func (p *AuroraAdminClient) recvMaintenanceStatus() (value *Response, err error)
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error339 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error340 error
-		error340, err = error339.Read(iprot)
+		error338 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error339 error
+		error339, err = error338.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error340
+		err = error339
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1090,16 +1099,16 @@ func (p *AuroraAdminClient) recvEndMaintenance() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error341 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error342 error
-		error342, err = error341.Read(iprot)
+		error340 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error341 error
+		error341, err = error340.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error342
+		err = error341
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1107,6 +1116,91 @@ func (p *AuroraAdminClient) recvEndMaintenance() (value *Response, err error) {
 		return
 	}
 	result := AuroraAdminEndMaintenanceResult{}
+	if err = result.Read(iprot); err != nil {
+		return
+	}
+	if err = iprot.ReadMessageEnd(); err != nil {
+		return
+	}
+	value = result.GetSuccess()
+	return
+}
+
+// Ask scheduler to put hosts into DRAINING mode and move scheduled tasks off of the hosts
+// such that its SLA requirements are satisfied. Use defaultSlaPolicy if it is not set for a task.
+//
+//
+// Parameters:
+//  - Hosts
+//  - DefaultSlaPolicy
+//  - TimeoutSecs
+func (p *AuroraAdminClient) SlaDrainHosts(hosts *Hosts, defaultSlaPolicy *SlaPolicy, timeoutSecs int64) (r *Response, err error) {
+	if err = p.sendSlaDrainHosts(hosts, defaultSlaPolicy, timeoutSecs); err != nil {
+		return
+	}
+	return p.recvSlaDrainHosts()
+}
+
+func (p *AuroraAdminClient) sendSlaDrainHosts(hosts *Hosts, defaultSlaPolicy *SlaPolicy, timeoutSecs int64) (err error) {
+	oprot := p.OutputProtocol
+	if oprot == nil {
+		oprot = p.ProtocolFactory.GetProtocol(p.Transport)
+		p.OutputProtocol = oprot
+	}
+	p.SeqId++
+	if err = oprot.WriteMessageBegin("slaDrainHosts", thrift.CALL, p.SeqId); err != nil {
+		return
+	}
+	args := AuroraAdminSlaDrainHostsArgs{
+		Hosts:            hosts,
+		DefaultSlaPolicy: defaultSlaPolicy,
+		TimeoutSecs:      timeoutSecs,
+	}
+	if err = args.Write(oprot); err != nil {
+		return
+	}
+	if err = oprot.WriteMessageEnd(); err != nil {
+		return
+	}
+	return oprot.Flush()
+}
+
+func (p *AuroraAdminClient) recvSlaDrainHosts() (value *Response, err error) {
+	iprot := p.InputProtocol
+	if iprot == nil {
+		iprot = p.ProtocolFactory.GetProtocol(p.Transport)
+		p.InputProtocol = iprot
+	}
+	method, mTypeId, seqId, err := iprot.ReadMessageBegin()
+	if err != nil {
+		return
+	}
+	if method != "slaDrainHosts" {
+		err = thrift.NewTApplicationException(thrift.WRONG_METHOD_NAME, "slaDrainHosts failed: wrong method name")
+		return
+	}
+	if p.SeqId != seqId {
+		err = thrift.NewTApplicationException(thrift.BAD_SEQUENCE_ID, "slaDrainHosts failed: out of sequence response")
+		return
+	}
+	if mTypeId == thrift.EXCEPTION {
+		error342 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error343 error
+		error343, err = error342.Read(iprot)
+		if err != nil {
+			return
+		}
+		if err = iprot.ReadMessageEnd(); err != nil {
+			return
+		}
+		err = error343
+		return
+	}
+	if mTypeId != thrift.REPLY {
+		err = thrift.NewTApplicationException(thrift.INVALID_MESSAGE_TYPE_EXCEPTION, "slaDrainHosts failed: invalid message type")
+		return
+	}
+	result := AuroraAdminSlaDrainHostsResult{}
 	if err = result.Read(iprot); err != nil {
 		return
 	}
@@ -1164,16 +1258,16 @@ func (p *AuroraAdminClient) recvSnapshot() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error343 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error344 error
-		error344, err = error343.Read(iprot)
+		error344 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error345 error
+		error345, err = error344.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error344
+		err = error345
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1243,16 +1337,16 @@ func (p *AuroraAdminClient) recvTriggerExplicitTaskReconciliation() (value *Resp
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error345 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error346 error
-		error346, err = error345.Read(iprot)
+		error346 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error347 error
+		error347, err = error346.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error346
+		err = error347
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1317,16 +1411,16 @@ func (p *AuroraAdminClient) recvTriggerImplicitTaskReconciliation() (value *Resp
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error347 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error348 error
-		error348, err = error347.Read(iprot)
+		error348 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error349 error
+		error349, err = error348.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error348
+		err = error349
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1398,16 +1492,16 @@ func (p *AuroraAdminClient) recvPruneTasks() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error349 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error350 error
-		error350, err = error349.Read(iprot)
+		error350 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error351 error
+		error351, err = error350.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error350
+		err = error351
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1430,25 +1524,26 @@ type AuroraAdminProcessor struct {
 }
 
 func NewAuroraAdminProcessor(handler AuroraAdmin) *AuroraAdminProcessor {
-	self351 := &AuroraAdminProcessor{NewAuroraSchedulerManagerProcessor(handler)}
-	self351.AddToProcessorMap("setQuota", &auroraAdminProcessorSetQuota{handler: handler})
-	self351.AddToProcessorMap("forceTaskState", &auroraAdminProcessorForceTaskState{handler: handler})
-	self351.AddToProcessorMap("performBackup", &auroraAdminProcessorPerformBackup{handler: handler})
-	self351.AddToProcessorMap("listBackups", &auroraAdminProcessorListBackups{handler: handler})
-	self351.AddToProcessorMap("stageRecovery", &auroraAdminProcessorStageRecovery{handler: handler})
-	self351.AddToProcessorMap("queryRecovery", &auroraAdminProcessorQueryRecovery{handler: handler})
-	self351.AddToProcessorMap("deleteRecoveryTasks", &auroraAdminProcessorDeleteRecoveryTasks{handler: handler})
-	self351.AddToProcessorMap("commitRecovery", &auroraAdminProcessorCommitRecovery{handler: handler})
-	self351.AddToProcessorMap("unloadRecovery", &auroraAdminProcessorUnloadRecovery{handler: handler})
-	self351.AddToProcessorMap("startMaintenance", &auroraAdminProcessorStartMaintenance{handler: handler})
-	self351.AddToProcessorMap("drainHosts", &auroraAdminProcessorDrainHosts{handler: handler})
-	self351.AddToProcessorMap("maintenanceStatus", &auroraAdminProcessorMaintenanceStatus{handler: handler})
-	self351.AddToProcessorMap("endMaintenance", &auroraAdminProcessorEndMaintenance{handler: handler})
-	self351.AddToProcessorMap("snapshot", &auroraAdminProcessorSnapshot{handler: handler})
-	self351.AddToProcessorMap("triggerExplicitTaskReconciliation", &auroraAdminProcessorTriggerExplicitTaskReconciliation{handler: handler})
-	self351.AddToProcessorMap("triggerImplicitTaskReconciliation", &auroraAdminProcessorTriggerImplicitTaskReconciliation{handler: handler})
-	self351.AddToProcessorMap("pruneTasks", &auroraAdminProcessorPruneTasks{handler: handler})
-	return self351
+	self352 := &AuroraAdminProcessor{NewAuroraSchedulerManagerProcessor(handler)}
+	self352.AddToProcessorMap("setQuota", &auroraAdminProcessorSetQuota{handler: handler})
+	self352.AddToProcessorMap("forceTaskState", &auroraAdminProcessorForceTaskState{handler: handler})
+	self352.AddToProcessorMap("performBackup", &auroraAdminProcessorPerformBackup{handler: handler})
+	self352.AddToProcessorMap("listBackups", &auroraAdminProcessorListBackups{handler: handler})
+	self352.AddToProcessorMap("stageRecovery", &auroraAdminProcessorStageRecovery{handler: handler})
+	self352.AddToProcessorMap("queryRecovery", &auroraAdminProcessorQueryRecovery{handler: handler})
+	self352.AddToProcessorMap("deleteRecoveryTasks", &auroraAdminProcessorDeleteRecoveryTasks{handler: handler})
+	self352.AddToProcessorMap("commitRecovery", &auroraAdminProcessorCommitRecovery{handler: handler})
+	self352.AddToProcessorMap("unloadRecovery", &auroraAdminProcessorUnloadRecovery{handler: handler})
+	self352.AddToProcessorMap("startMaintenance", &auroraAdminProcessorStartMaintenance{handler: handler})
+	self352.AddToProcessorMap("drainHosts", &auroraAdminProcessorDrainHosts{handler: handler})
+	self352.AddToProcessorMap("maintenanceStatus", &auroraAdminProcessorMaintenanceStatus{handler: handler})
+	self352.AddToProcessorMap("endMaintenance", &auroraAdminProcessorEndMaintenance{handler: handler})
+	self352.AddToProcessorMap("slaDrainHosts", &auroraAdminProcessorSlaDrainHosts{handler: handler})
+	self352.AddToProcessorMap("snapshot", &auroraAdminProcessorSnapshot{handler: handler})
+	self352.AddToProcessorMap("triggerExplicitTaskReconciliation", &auroraAdminProcessorTriggerExplicitTaskReconciliation{handler: handler})
+	self352.AddToProcessorMap("triggerImplicitTaskReconciliation", &auroraAdminProcessorTriggerImplicitTaskReconciliation{handler: handler})
+	self352.AddToProcessorMap("pruneTasks", &auroraAdminProcessorPruneTasks{handler: handler})
+	return self352
 }
 
 type auroraAdminProcessorSetQuota struct {
@@ -2058,6 +2153,54 @@ func (p *auroraAdminProcessorEndMaintenance) Process(seqId int32, iprot, oprot t
 		result.Success = retval
 	}
 	if err2 = oprot.WriteMessageBegin("endMaintenance", thrift.REPLY, seqId); err2 != nil {
+		err = err2
+	}
+	if err2 = result.Write(oprot); err == nil && err2 != nil {
+		err = err2
+	}
+	if err2 = oprot.WriteMessageEnd(); err == nil && err2 != nil {
+		err = err2
+	}
+	if err2 = oprot.Flush(); err == nil && err2 != nil {
+		err = err2
+	}
+	if err != nil {
+		return
+	}
+	return true, err
+}
+
+type auroraAdminProcessorSlaDrainHosts struct {
+	handler AuroraAdmin
+}
+
+func (p *auroraAdminProcessorSlaDrainHosts) Process(seqId int32, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
+	args := AuroraAdminSlaDrainHostsArgs{}
+	if err = args.Read(iprot); err != nil {
+		iprot.ReadMessageEnd()
+		x := thrift.NewTApplicationException(thrift.PROTOCOL_ERROR, err.Error())
+		oprot.WriteMessageBegin("slaDrainHosts", thrift.EXCEPTION, seqId)
+		x.Write(oprot)
+		oprot.WriteMessageEnd()
+		oprot.Flush()
+		return false, err
+	}
+
+	iprot.ReadMessageEnd()
+	result := AuroraAdminSlaDrainHostsResult{}
+	var retval *Response
+	var err2 error
+	if retval, err2 = p.handler.SlaDrainHosts(args.Hosts, args.DefaultSlaPolicy, args.TimeoutSecs); err2 != nil {
+		x := thrift.NewTApplicationException(thrift.INTERNAL_ERROR, "Internal error processing slaDrainHosts: "+err2.Error())
+		oprot.WriteMessageBegin("slaDrainHosts", thrift.EXCEPTION, seqId)
+		x.Write(oprot)
+		oprot.WriteMessageEnd()
+		oprot.Flush()
+		return true, err2
+	} else {
+		result.Success = retval
+	}
+	if err2 = oprot.WriteMessageBegin("slaDrainHosts", thrift.REPLY, seqId); err2 != nil {
 		err = err2
 	}
 	if err2 = result.Write(oprot); err == nil && err2 != nil {
@@ -4738,6 +4881,284 @@ func (p *AuroraAdminEndMaintenanceResult) String() string {
 		return "<nil>"
 	}
 	return fmt.Sprintf("AuroraAdminEndMaintenanceResult(%+v)", *p)
+}
+
+// Attributes:
+//  - Hosts
+//  - DefaultSlaPolicy
+//  - TimeoutSecs
+type AuroraAdminSlaDrainHostsArgs struct {
+	Hosts            *Hosts     `thrift:"hosts,1" json:"hosts"`
+	DefaultSlaPolicy *SlaPolicy `thrift:"defaultSlaPolicy,2" json:"defaultSlaPolicy"`
+	TimeoutSecs      int64      `thrift:"timeoutSecs,3" json:"timeoutSecs"`
+}
+
+func NewAuroraAdminSlaDrainHostsArgs() *AuroraAdminSlaDrainHostsArgs {
+	return &AuroraAdminSlaDrainHostsArgs{}
+}
+
+var AuroraAdminSlaDrainHostsArgs_Hosts_DEFAULT *Hosts
+
+func (p *AuroraAdminSlaDrainHostsArgs) GetHosts() *Hosts {
+	if !p.IsSetHosts() {
+		return AuroraAdminSlaDrainHostsArgs_Hosts_DEFAULT
+	}
+	return p.Hosts
+}
+
+var AuroraAdminSlaDrainHostsArgs_DefaultSlaPolicy_DEFAULT *SlaPolicy
+
+func (p *AuroraAdminSlaDrainHostsArgs) GetDefaultSlaPolicy() *SlaPolicy {
+	if !p.IsSetDefaultSlaPolicy() {
+		return AuroraAdminSlaDrainHostsArgs_DefaultSlaPolicy_DEFAULT
+	}
+	return p.DefaultSlaPolicy
+}
+
+func (p *AuroraAdminSlaDrainHostsArgs) GetTimeoutSecs() int64 {
+	return p.TimeoutSecs
+}
+func (p *AuroraAdminSlaDrainHostsArgs) IsSetHosts() bool {
+	return p.Hosts != nil
+}
+
+func (p *AuroraAdminSlaDrainHostsArgs) IsSetDefaultSlaPolicy() bool {
+	return p.DefaultSlaPolicy != nil
+}
+
+func (p *AuroraAdminSlaDrainHostsArgs) Read(iprot thrift.TProtocol) error {
+	if _, err := iprot.ReadStructBegin(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+		if err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T field %d read error: ", p, fieldId), err)
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+		switch fieldId {
+		case 1:
+			if err := p.readField1(iprot); err != nil {
+				return err
+			}
+		case 2:
+			if err := p.readField2(iprot); err != nil {
+				return err
+			}
+		case 3:
+			if err := p.readField3(iprot); err != nil {
+				return err
+			}
+		default:
+			if err := iprot.Skip(fieldTypeId); err != nil {
+				return err
+			}
+		}
+		if err := iprot.ReadFieldEnd(); err != nil {
+			return err
+		}
+	}
+	if err := iprot.ReadStructEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+	}
+	return nil
+}
+
+func (p *AuroraAdminSlaDrainHostsArgs) readField1(iprot thrift.TProtocol) error {
+	p.Hosts = &Hosts{}
+	if err := p.Hosts.Read(iprot); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", p.Hosts), err)
+	}
+	return nil
+}
+
+func (p *AuroraAdminSlaDrainHostsArgs) readField2(iprot thrift.TProtocol) error {
+	p.DefaultSlaPolicy = &SlaPolicy{}
+	if err := p.DefaultSlaPolicy.Read(iprot); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", p.DefaultSlaPolicy), err)
+	}
+	return nil
+}
+
+func (p *AuroraAdminSlaDrainHostsArgs) readField3(iprot thrift.TProtocol) error {
+	if v, err := iprot.ReadI64(); err != nil {
+		return thrift.PrependError("error reading field 3: ", err)
+	} else {
+		p.TimeoutSecs = v
+	}
+	return nil
+}
+
+func (p *AuroraAdminSlaDrainHostsArgs) Write(oprot thrift.TProtocol) error {
+	if err := oprot.WriteStructBegin("slaDrainHosts_args"); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+	}
+	if err := p.writeField1(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField2(oprot); err != nil {
+		return err
+	}
+	if err := p.writeField3(oprot); err != nil {
+		return err
+	}
+	if err := oprot.WriteFieldStop(); err != nil {
+		return thrift.PrependError("write field stop error: ", err)
+	}
+	if err := oprot.WriteStructEnd(); err != nil {
+		return thrift.PrependError("write struct stop error: ", err)
+	}
+	return nil
+}
+
+func (p *AuroraAdminSlaDrainHostsArgs) writeField1(oprot thrift.TProtocol) (err error) {
+	if err := oprot.WriteFieldBegin("hosts", thrift.STRUCT, 1); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:hosts: ", p), err)
+	}
+	if err := p.Hosts.Write(oprot); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.Hosts), err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 1:hosts: ", p), err)
+	}
+	return err
+}
+
+func (p *AuroraAdminSlaDrainHostsArgs) writeField2(oprot thrift.TProtocol) (err error) {
+	if err := oprot.WriteFieldBegin("defaultSlaPolicy", thrift.STRUCT, 2); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:defaultSlaPolicy: ", p), err)
+	}
+	if err := p.DefaultSlaPolicy.Write(oprot); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.DefaultSlaPolicy), err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 2:defaultSlaPolicy: ", p), err)
+	}
+	return err
+}
+
+func (p *AuroraAdminSlaDrainHostsArgs) writeField3(oprot thrift.TProtocol) (err error) {
+	if err := oprot.WriteFieldBegin("timeoutSecs", thrift.I64, 3); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field begin error 3:timeoutSecs: ", p), err)
+	}
+	if err := oprot.WriteI64(int64(p.TimeoutSecs)); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T.timeoutSecs (3) field write error: ", p), err)
+	}
+	if err := oprot.WriteFieldEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write field end error 3:timeoutSecs: ", p), err)
+	}
+	return err
+}
+
+func (p *AuroraAdminSlaDrainHostsArgs) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("AuroraAdminSlaDrainHostsArgs(%+v)", *p)
+}
+
+// Attributes:
+//  - Success
+type AuroraAdminSlaDrainHostsResult struct {
+	Success *Response `thrift:"success,0" json:"success,omitempty"`
+}
+
+func NewAuroraAdminSlaDrainHostsResult() *AuroraAdminSlaDrainHostsResult {
+	return &AuroraAdminSlaDrainHostsResult{}
+}
+
+var AuroraAdminSlaDrainHostsResult_Success_DEFAULT *Response
+
+func (p *AuroraAdminSlaDrainHostsResult) GetSuccess() *Response {
+	if !p.IsSetSuccess() {
+		return AuroraAdminSlaDrainHostsResult_Success_DEFAULT
+	}
+	return p.Success
+}
+func (p *AuroraAdminSlaDrainHostsResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *AuroraAdminSlaDrainHostsResult) Read(iprot thrift.TProtocol) error {
+	if _, err := iprot.ReadStructBegin(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
+	}
+
+	for {
+		_, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+		if err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T field %d read error: ", p, fieldId), err)
+		}
+		if fieldTypeId == thrift.STOP {
+			break
+		}
+		switch fieldId {
+		case 0:
+			if err := p.readField0(iprot); err != nil {
+				return err
+			}
+		default:
+			if err := iprot.Skip(fieldTypeId); err != nil {
+				return err
+			}
+		}
+		if err := iprot.ReadFieldEnd(); err != nil {
+			return err
+		}
+	}
+	if err := iprot.ReadStructEnd(); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+	}
+	return nil
+}
+
+func (p *AuroraAdminSlaDrainHostsResult) readField0(iprot thrift.TProtocol) error {
+	p.Success = &Response{}
+	if err := p.Success.Read(iprot); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", p.Success), err)
+	}
+	return nil
+}
+
+func (p *AuroraAdminSlaDrainHostsResult) Write(oprot thrift.TProtocol) error {
+	if err := oprot.WriteStructBegin("slaDrainHosts_result"); err != nil {
+		return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err)
+	}
+	if err := p.writeField0(oprot); err != nil {
+		return err
+	}
+	if err := oprot.WriteFieldStop(); err != nil {
+		return thrift.PrependError("write field stop error: ", err)
+	}
+	if err := oprot.WriteStructEnd(); err != nil {
+		return thrift.PrependError("write struct stop error: ", err)
+	}
+	return nil
+}
+
+func (p *AuroraAdminSlaDrainHostsResult) writeField0(oprot thrift.TProtocol) (err error) {
+	if p.IsSetSuccess() {
+		if err := oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field begin error 0:success: ", p), err)
+		}
+		if err := p.Success.Write(oprot); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.Success), err)
+		}
+		if err := oprot.WriteFieldEnd(); err != nil {
+			return thrift.PrependError(fmt.Sprintf("%T write field end error 0:success: ", p), err)
+		}
+	}
+	return err
+}
+
+func (p *AuroraAdminSlaDrainHostsResult) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("AuroraAdminSlaDrainHostsResult(%+v)", *p)
 }
 
 type AuroraAdminSnapshotArgs struct {

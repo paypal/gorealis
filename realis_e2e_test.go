@@ -567,6 +567,37 @@ func TestRealisClient_DrainHosts(t *testing.T) {
 
 }
 
+func TestRealisClient_SLADrainHosts(t *testing.T) {
+	hosts := []string{"localhost"}
+	policy := aurora.SlaPolicy{PercentageSlaPolicy: &aurora.PercentageSlaPolicy{Percentage: 50.0}}
+
+	_, err := r.SLADrainHosts(&policy, 30, hosts...)
+	if err != nil {
+		fmt.Printf("error: %+v\n", err.Error())
+		os.Exit(1)
+	}
+
+	// Monitor change to DRAINING and DRAINED mode
+	hostResults, err := monitor.HostMaintenance(
+		hosts,
+		[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
+		1,
+		50)
+	assert.Equal(t, map[string]bool{"localhost": true}, hostResults)
+	assert.NoError(t, err)
+
+	_, _, err = r.EndMaintenance(hosts...)
+	assert.NoError(t, err)
+
+	// Monitor change to DRAINING and DRAINED mode
+	_, err = monitor.HostMaintenance(
+		hosts,
+		[]aurora.MaintenanceMode{aurora.MaintenanceMode_NONE},
+		5,
+		10)
+	assert.NoError(t, err)
+}
+
 // Test multiple go routines using a single connection
 func TestRealisClient_SessionThreadSafety(t *testing.T) {
 

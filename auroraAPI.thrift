@@ -115,11 +115,13 @@ struct JobKey {
   3: string name
 }
 
+// TODO(jly): Deprecated, remove in 0.21. See AURORA-1959.
 /** A unique lock key. */
 union LockKey {
   1: JobKey job
 }
 
+// TODO(jly): Deprecated, remove in 0.21. See AURORA-1959.
 /** A generic lock struct to facilitate context specific resource/operation serialization. */
 struct Lock {
   /** ID of the lock - unique per storage */
@@ -238,6 +240,42 @@ union Resource {
   5: i64 numGpus
 }
 
+struct PartitionPolicy {
+  1: bool reschedule
+  2: optional i64 delaySecs
+}
+
+/** SLA requirements expressed as the percentage of instances to be RUNNING every durationSecs */
+struct PercentageSlaPolicy {
+  /* The percentage of active instances required every `durationSecs`. */
+  1: double percentage
+  /** Minimum time duration a task needs to be `RUNNING` to be treated as active */
+  2: i64 durationSecs
+}
+
+/** SLA requirements expressed as the number of instances to be RUNNING every durationSecs */
+struct CountSlaPolicy {
+  /** The number of active instances required every `durationSecs` */
+  1: i64 count
+  /** Minimum time duration a task needs to be `RUNNING` to be treated as active */
+  2: i64 durationSecs
+}
+
+/** SLA requirements to be delegated to an external coordinator */
+struct CoordinatorSlaPolicy {
+  /** URL for the coordinator service that needs to be contacted for SLA checks */
+  1: string coordinatorUrl
+  /** Field in the Coordinator response json indicating if the action is allowed or not */
+  2: string statusKey
+}
+
+/** SLA requirements expressed in one of the many types */
+union SlaPolicy {
+  1: PercentageSlaPolicy percentageSlaPolicy
+  2: CountSlaPolicy countSlaPolicy
+  3: CoordinatorSlaPolicy coordinatorSlaPolicy
+}
+
 /** Description of the tasks contained within a job. */
 struct TaskConfig {
  /** Job task belongs to. */
@@ -246,12 +284,6 @@ struct TaskConfig {
  /** contains the role component of JobKey */
  17: Identity owner
   7: bool isService
-  // TODO(maxim): Deprecated. See AURORA-1707.
-  8: double numCpus
-  // TODO(maxim): Deprecated. See AURORA-1707.
-  9: i64 ramMb
-  // TODO(maxim): Deprecated. See AURORA-1707.
- 10: i64 diskMb
  11: i32 priority
  13: i32 maxTaskFailures
  // TODO(mnurolahzade): Deprecated. See AURORA-1708.
@@ -263,8 +295,6 @@ struct TaskConfig {
  32: set<Resource> resources
 
  20: set<Constraint> constraints
- /** a list of named ports this task requests */
- 21: set<string> requestedPorts
  /** Resources to retrieve with Mesos Fetcher */
  33: optional set<MesosFetcherURI> mesosFetcherUris
  /**
@@ -278,6 +308,10 @@ struct TaskConfig {
  25: optional ExecutorConfig executorConfig
  /** Used to display additional details in the UI. */
  27: optional set<Metadata> metadata
+ /** Policy for how to deal with task partitions */
+ 34: optional PartitionPolicy partitionPolicy
+ /** SLA requirements to be met during maintenance */
+ 35: optional SlaPolicy slaPolicy
 
  // This field is deliberately placed at the end to work around a bug in the immutable wrapper
  // code generator.  See AURORA-1185 for details.
@@ -286,15 +320,6 @@ struct TaskConfig {
 }
 
 struct ResourceAggregate {
-  // TODO(maxim): Deprecated. See AURORA-1707.
-  /** Number of CPU cores allotted. */
-  1: double numCpus
-  // TODO(maxim): Deprecated. See AURORA-1707.
-  /** Megabytes of RAM allotted. */
-  2: i64 ramMb
-  // TODO(maxim): Deprecated. See AURORA-1707.
-  /** Megabytes of disk space allotted. */
-  3: i64 diskMb
   /** Aggregated resource values. */
   4: set<Resource> resources
 }
@@ -422,7 +447,11 @@ enum ScheduleStatus {
   /** A fault in the task environment has caused the system to believe the task no longer exists.
    * This can happen, for example, when a slave process disappears.
    */
-  LOST             = 7
+  LOST             = 7,
+  /**
+   * The task is currently partitioned and in an unknown state.
+   **/
+  PARTITIONED      = 18
 }
 
 // States that a task may be in while still considered active.
@@ -434,6 +463,7 @@ const set<ScheduleStatus> ACTIVE_STATES = [ScheduleStatus.ASSIGNED,
                                            ScheduleStatus.RESTARTING
                                            ScheduleStatus.RUNNING,
                                            ScheduleStatus.STARTING,
+                                           ScheduleStatus.PARTITIONED,
                                            ScheduleStatus.THROTTLED]
 
 // States that a task may be in while associated with a slave machine and non-terminal.
@@ -443,6 +473,7 @@ const set<ScheduleStatus> SLAVE_ASSIGNED_STATES = [ScheduleStatus.ASSIGNED,
                                                    ScheduleStatus.PREEMPTING,
                                                    ScheduleStatus.RESTARTING,
                                                    ScheduleStatus.RUNNING,
+                                                   ScheduleStatus.PARTITIONED,
                                                    ScheduleStatus.STARTING]
 
 // States that a task may be in while in an active sandbox.
@@ -450,6 +481,7 @@ const set<ScheduleStatus> LIVE_STATES = [ScheduleStatus.KILLING,
                                          ScheduleStatus.PREEMPTING,
                                          ScheduleStatus.RESTARTING,
                                          ScheduleStatus.DRAINING,
+                                         ScheduleStatus.PARTITIONED,
                                          ScheduleStatus.RUNNING]
 
 // States a completed task may be in.
@@ -518,6 +550,11 @@ struct ScheduledTask {
    * this task.
    */
   3: i32 failureCount
+  /**
+   * The number of partitions this task has accumulated over its lifetime.
+   */
+  6: i32 timesPartitioned
+
   /** State change history for this task. */
   4: list<TaskEvent> taskEvents
   /**
@@ -619,7 +656,6 @@ const set<JobUpdateStatus> ACTIVE_JOB_UPDATE_STATES = [JobUpdateStatus.ROLLING_F
                                                        JobUpdateStatus.ROLL_BACK_PAUSED,
                                                        JobUpdateStatus.ROLL_FORWARD_AWAITING_PULSE,
                                                        JobUpdateStatus.ROLL_BACK_AWAITING_PULSE]
-
 /** States the job update can be in while waiting for a pulse. */
 const set<JobUpdateStatus> AWAITNG_PULSE_JOB_UPDATE_STATES = [JobUpdateStatus.ROLL_FORWARD_AWAITING_PULSE,
                                                               JobUpdateStatus.ROLL_BACK_AWAITING_PULSE]
@@ -706,13 +742,19 @@ struct JobUpdateSettings {
    */
   8: bool waitForBatchCompletion
 
- /**
-  * If set, requires external calls to pulseJobUpdate RPC within the specified rate for the
-  * update to make progress. If no pulses received within specified interval the update will
-  * block. A blocked update is unable to continue but retains its current status. It may only get
-  * unblocked by a fresh pulseJobUpdate call.
-  */
+  /**
+   * If set, requires external calls to pulseJobUpdate RPC within the specified rate for the
+   * update to make progress. If no pulses received within specified interval the update will
+   * block. A blocked update is unable to continue but retains its current status. It may only get
+   * unblocked by a fresh pulseJobUpdate call.
+   */
   9: optional i32 blockIfNoPulsesAfterMs
+
+  /**
+   * If true, updates will obey the SLA requirements of the tasks being updated. If the SLA policy
+   * differs between the old and new task configurations, updates will use the newest configuration.
+   */
+  10: optional bool slaAware
 }
 
 /** Event marking a state transition in job update lifecycle. */
@@ -743,6 +785,9 @@ struct JobInstanceUpdateEvent {
 
   /** Job update action taken on the instance. */
   3: JobUpdateAction action
+
+  /** Optional message explaining the instance update event. */
+  4: optional string message
 }
 
 /** Maps instance IDs to TaskConfigs it. */
@@ -853,6 +898,13 @@ struct JobUpdateQuery {
 
   /** Number or records to serve. Used by pagination. */
   7: i32 limit
+}
+
+struct HostMaintenanceRequest {
+  1: string host
+  2: SlaPolicy defaultSlaPolicy
+  3: i64 timeoutSecs
+  4: i64 createdTimestampMs
 }
 
 struct ListBackupsResult {
@@ -1039,7 +1091,6 @@ service ReadOnlyScheduler {
   Response getJobUpdateSummaries(1: JobUpdateQuery jobUpdateQuery)
 
   /** Gets job update details. */
-  // TODO(zmanji): `key` is deprecated, remove this with AURORA-1765
   Response getJobUpdateDetails(2: JobUpdateQuery query)
 
   /** Gets the diff between client (desired) and server (current) job states. */
@@ -1191,6 +1242,12 @@ service AuroraAdmin extends AuroraSchedulerManager {
 
   /** Set the given hosts back into serving mode. */
   Response endMaintenance(1: Hosts hosts)
+
+  /**
+   * Ask scheduler to put hosts into DRAINING mode and move scheduled tasks off of the hosts
+   * such that its SLA requirements are satisfied. Use defaultSlaPolicy if it is not set for a task.
+   **/
+  Response slaDrainHosts(1: Hosts hosts, 2: SlaPolicy defaultSlaPolicy, 3: i64 timeoutSecs)
 
   /** Start a storage snapshot and block until it completes. */
   Response snapshot()
