@@ -171,7 +171,7 @@ func main() {
 			log.Fatalln(err)
 		}
 
-		if ok, mErr := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 5, 50); !ok || mErr != nil {
+		if ok, mErr := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 5*time.Second, 50*time.Second); !ok || mErr != nil {
 			err := r.KillJob(job.JobKey())
 			if err != nil {
 				log.Fatalln(err)
@@ -190,7 +190,7 @@ func main() {
 		}
 		fmt.Println(result.String())
 
-		if ok, mErr := monitor.JobUpdate(*result.GetKey(), 5, 180); !ok || mErr != nil {
+		if ok, mErr := monitor.JobUpdate(*result.GetKey(), 5*time.Second, 180*time.Second); !ok || mErr != nil {
 			err := r.AbortJobUpdate(*result.GetKey(), "Monitor timed out")
 			err = r.KillJob(job.JobKey())
 			if err != nil {
@@ -208,7 +208,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 10, 300); !ok || err != nil {
+		if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 10*time.Second, 300*time.Second); !ok || err != nil {
 			err := r.KillJob(job.JobKey())
 			if err != nil {
 				log.Fatal(err)
@@ -224,7 +224,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 10, 300); !ok || err != nil {
+		if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 10*time.Second, 300*time.Second); !ok || err != nil {
 			err := r.KillJob(job.JobKey())
 			if err != nil {
 				log.Fatal(err)
@@ -265,7 +265,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		if ok, err := monitor.Instances(job.JobKey(), 0, 5, 50); !ok || err != nil {
+		if ok, err := monitor.Instances(job.JobKey(), 0, 5*time.Second, 50*time.Second); !ok || err != nil {
 			log.Fatal("Unable to kill all instances of job")
 		}
 
@@ -321,7 +321,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		if ok, err := monitor.Instances(job.JobKey(), currInstances+numOfInstances, 5, 50); !ok || err != nil {
+		if ok, err := monitor.Instances(job.JobKey(), currInstances+numOfInstances, 5*time.Second, 50*time.Second); !ok || err != nil {
 			fmt.Println("Flexing up failed")
 		}
 
@@ -342,7 +342,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		if ok, err := monitor.Instances(job.JobKey(), currInstances-numOfInstances, 5, 100); !ok || err != nil {
+		if ok, err := monitor.Instances(job.JobKey(), currInstances-numOfInstances, 5*time.Second, 100*time.Second); !ok || err != nil {
 			fmt.Println("flexDown failed")
 		}
 
@@ -372,7 +372,7 @@ func main() {
 		}
 
 		jobUpdateKey := result.GetKey()
-		monitor.JobUpdate(*jobUpdateKey, 5, 500)
+		monitor.JobUpdate(*jobUpdateKey, 5*time.Second, 6*time.Minute)
 
 	case "pauseJobUpdate":
 		err := r.PauseJobUpdate(&aurora.JobUpdateKey{
@@ -525,8 +525,8 @@ func main() {
 		hostResult, err := monitor.HostMaintenance(
 			hosts,
 			[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
-			5,
-			10)
+			5*time.Second,
+			10*time.Second)
 		if err != nil {
 			for host, ok := range hostResult {
 				if !ok {
@@ -556,8 +556,8 @@ func main() {
 		hostResult, err := monitor.HostMaintenance(
 			hosts,
 			[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
-			5,
-			10)
+			5*time.Second,
+			10*time.Second)
 		if err != nil {
 			for host, ok := range hostResult {
 				if !ok {
@@ -584,8 +584,8 @@ func main() {
 		hostResult, err := monitor.HostMaintenance(
 			hosts,
 			[]aurora.MaintenanceMode{aurora.MaintenanceMode_NONE},
-			5,
-			10)
+			5*time.Second,
+			10*time.Second)
 		if err != nil {
 			for host, ok := range hostResult {
 				if !ok {

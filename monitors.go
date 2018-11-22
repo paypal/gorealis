@@ -33,15 +33,18 @@ type Monitor struct {
 }
 
 // Polls the scheduler every certain amount of time to see if the update has succeeded
-func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout int) (bool, error) {
+func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval, timeout time.Duration) (bool, error) {
+	if interval < 1*time.Second || timeout < 1*time.Second {
+		return false, errors.New("Interval or timeout cannot be below one second.")
+	}
 
 	updateQ := aurora.JobUpdateQuery{
 		Key:   &updateKey,
 		Limit: 1,
 	}
-	ticker := time.NewTicker(time.Second * time.Duration(interval))
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
-	timer := time.NewTimer(time.Second * time.Duration(timeout))
+	timer := time.NewTimer(timeout)
 	defer timer.Stop()
 
 	for {
@@ -83,18 +86,21 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 }
 
 // Monitor a AuroraJob until all instances enter one of the LIVE_STATES
-func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval, timeout int) (bool, error) {
+func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval, timeout time.Duration) (bool, error) {
 	return m.ScheduleStatus(key, instances, aurora.LIVE_STATES, interval, timeout)
 }
 
 // Monitor a AuroraJob until all instances enter a desired status.
 // Defaults sets of desired statuses provided by the thrift API include:
 // ACTIVE_STATES, SLAVE_ASSIGNED_STATES, LIVE_STATES, and TERMINAL_STATES
-func (m *Monitor) ScheduleStatus(key *aurora.JobKey, instanceCount int32, desiredStatuses map[aurora.ScheduleStatus]bool, interval, timeout int) (bool, error) {
+func (m *Monitor) ScheduleStatus(key *aurora.JobKey, instanceCount int32, desiredStatuses map[aurora.ScheduleStatus]bool, interval, timeout time.Duration) (bool, error) {
+	if interval < 1*time.Second || timeout < 1*time.Second {
+		return false, errors.New("Interval or timeout cannot be below one second.")
+	}
 
-	ticker := time.NewTicker(time.Second * time.Duration(interval))
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
-	timer := time.NewTimer(time.Second * time.Duration(timeout))
+	timer := time.NewTimer(timeout)
 	defer timer.Stop()
 
 	for {
@@ -119,7 +125,10 @@ func (m *Monitor) ScheduleStatus(key *aurora.JobKey, instanceCount int32, desire
 
 // Monitor host status until all hosts match the status provided. Returns a map where the value is true if the host
 // is in one of the desired mode(s) or false if it is not as of the time when the monitor exited.
-func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode, interval, timeout int) (map[string]bool, error) {
+func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode, interval, timeout time.Duration) (map[string]bool, error) {
+	if interval < 1*time.Second || timeout < 1*time.Second {
+		return nil, errors.New("Interval or timeout cannot be below one second.")
+	}
 
 	//  Transform modes to monitor for into a set for easy lookup
 	desiredMode := make(map[aurora.MaintenanceMode]struct{})
@@ -137,9 +146,9 @@ func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode
 
 	hostResult := make(map[string]bool)
 
-	ticker := time.NewTicker(time.Second * time.Duration(interval))
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
-	timer := time.NewTimer(time.Second * time.Duration(timeout))
+	timer := time.NewTimer(timeout)
 	defer timer.Stop()
 
 	for {
