@@ -101,7 +101,7 @@ private:
   bool should_use_default_ns_;
   bool should_use_namespaces_;
 
-  std::ofstream f_xml_;
+  ofstream_with_content_based_conditional_update f_xml_;
 
   std::set<string> programs_;
   std::stack<string> elements_;
@@ -391,8 +391,13 @@ void t_xml_generator::write_type(t_type* ttype) {
   if (type == "id") {
     write_attribute("type-module", ttype->get_program()->get_name());
     write_attribute("type-id", ttype->get_name());
-  } else if (type == "list" || type == "set") {
+  } else if (type == "list") {
     t_type* etype = ((t_list*)ttype)->get_elem_type();
+    write_element_start("elemType");
+    write_type(etype);
+    write_element_end();
+  } else if (type == "set") {
+    t_type* etype = ((t_set*)ttype)->get_elem_type();
     write_element_start("elemType");
     write_type(etype);
     write_element_end();
@@ -478,8 +483,8 @@ void t_xml_generator::write_const_value(t_const_value* value) {
 
   case t_const_value::CV_MAP: {
     write_element_start("map");
-    std::map<t_const_value*, t_const_value*> map = value->get_map();
-    std::map<t_const_value*, t_const_value*>::iterator mit;
+    std::map<t_const_value*, t_const_value*, t_const_value::value_compare> map = value->get_map();
+    std::map<t_const_value*, t_const_value*, t_const_value::value_compare>::iterator mit;
     for (mit = map.begin(); mit != map.end(); ++mit) {
       write_element_start("entry");
       write_element_start("key");

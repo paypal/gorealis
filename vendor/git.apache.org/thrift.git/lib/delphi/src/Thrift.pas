@@ -22,15 +22,19 @@ unit Thrift;
 interface
 
 uses
-  SysUtils, Thrift.Protocol;
+  SysUtils,
+  Thrift.Exception,
+  Thrift.Protocol;
 
 const
-  Version = '0.10.0';
+  Version = '1.0.0-dev';
 
 type
+  TException = Thrift.Exception.TException; // compatibility alias
+
   TApplicationExceptionSpecializedClass = class of TApplicationExceptionSpecialized;
 
-  TApplicationException = class( SysUtils.Exception )
+  TApplicationException = class( TException)
   public
     type
 {$SCOPEDENUMS ON}
@@ -83,30 +87,8 @@ type
   TApplicationExceptionInvalidProtocol = class (TApplicationExceptionSpecialized);
   TApplicationExceptionUnsupportedClientType = class (TApplicationExceptionSpecialized);
 
-  // base class for IDL-generated exceptions
-  TException = class( SysUtils.Exception)
-  public
-    function Message : string;        // hide inherited property: allow read, but prevent accidental writes
-    procedure UpdateMessageProperty;  // update inherited message property with toString()
-  end;
 
 implementation
-
-{ TException }
-
-function TException.Message;
-// allow read (exception summary), but prevent accidental writes
-// read will return the exception summary
-begin
-  result := Self.ToString;
-end;
-
-procedure TException.UpdateMessageProperty;
-// Update the inherited Message property to better conform to standard behaviour.
-// Nice benefit: The IDE is now able to show the exception message again.
-begin
-  inherited Message := Self.ToString;  // produces a summary text
-end;
 
 { TApplicationException }
 
@@ -172,10 +154,10 @@ end;
 
 class function TApplicationException.Read( const iprot: IProtocol): TApplicationException;
 var
-  field : IField;
+  field : TThriftField;
   msg : string;
   typ : TExceptionType;
-  struc : IStruct;
+  struc : TThriftStruct;
 begin
   msg := '';
   typ := TExceptionType.Unknown;
@@ -220,12 +202,11 @@ end;
 
 procedure TApplicationException.Write( const oprot: IProtocol);
 var
-  struc : IStruct;
-  field : IField;
-
+  struc : TThriftStruct;
+  field : TThriftField;
 begin
-  struc := TStructImpl.Create( 'TApplicationException' );
-  field := TFieldImpl.Create;
+  Init(struc, 'TApplicationException');
+  Init(field);
 
   oprot.WriteStructBegin( struc );
   if Message <> '' then

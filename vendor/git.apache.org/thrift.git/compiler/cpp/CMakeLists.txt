@@ -16,30 +16,37 @@
 # specific language governing permissions and limitations
 # under the License.
 #
+cmake_minimum_required(VERSION 2.8.12)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/thrift/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/thrift/version.h)
+if(MSVC)
+    # The winflexbison generator outputs some macros that conflict with the Visual Studio 2010 copy of stdint.h
+    # This might be fixed in later versions of Visual Studio, but an easy solution is to include stdint.h first
+    if(HAVE_STDINT_H)
+        add_definitions(-D__STDC_FORMAT_MACROS)
+        add_definitions(-D__STDC_LIMIT_MACROS)
+        add_definitions(/FI"stdint.h")
+    endif(HAVE_STDINT_H)
+endif()
 
 find_package(FLEX REQUIRED)
 find_package(BISON REQUIRED)
+
+# create directory for thrifty and thriftl
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/thrift/)
 
 # Create flex and bison files and build the lib parse static library
 BISON_TARGET(thrifty ${CMAKE_CURRENT_SOURCE_DIR}/src/thrift/thrifty.yy ${CMAKE_CURRENT_BINARY_DIR}/thrift/thrifty.cc)
 FLEX_TARGET(thriftl ${CMAKE_CURRENT_SOURCE_DIR}/src/thrift/thriftl.ll ${CMAKE_CURRENT_BINARY_DIR}/thrift/thriftl.cc)
 ADD_FLEX_BISON_DEPENDENCY(thriftl thrifty)
 
-# HACK: Work around the fact that bison crates a .hh file but we need a .h file
-add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/thrift/thrifty.h
-                   COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/thrift/thrifty.hh ${CMAKE_CURRENT_BINARY_DIR}/thrift/thrifty.h
-                   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/thrift/thrifty.hh
-                   )
-
-set(libparse_SOURCES
+set(parse_SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/thrift/thrifty.cc
     ${CMAKE_CURRENT_BINARY_DIR}/thrift/thriftl.cc
-    ${CMAKE_CURRENT_BINARY_DIR}/thrift/thrifty.h
+    ${CMAKE_CURRENT_BINARY_DIR}/thrift/thrifty.hh
 )
 
-add_library(libparse STATIC ${libparse_SOURCES})
+add_library(parse STATIC ${parse_SOURCES})
 
 # Create the thrift compiler
 set(compiler_core
@@ -55,6 +62,9 @@ set(thrift-compiler_SOURCES
     src/thrift/audit/t_audit.cpp
 )
 
+set(thrift_compiler_LANGS
+)
+
 # This macro adds an option THRIFT_COMPILER_${NAME}
 # that allows enabling or disabling certain languages
 macro(THRIFT_ADD_COMPILER name description initial)
@@ -63,6 +73,7 @@ macro(THRIFT_ADD_COMPILER name description initial)
     option(${enabler} ${description} ${initial})
     if(${enabler})
         list(APPEND thrift-compiler_SOURCES ${src})
+        list(APPEND thrift_compiler_LANGS ${name})
     endif()
 endmacro()
 
@@ -74,6 +85,7 @@ THRIFT_ADD_COMPILER(as3     "Enable compiler for ActionScript 3" ON)
 THRIFT_ADD_COMPILER(dart    "Enable compiler for Dart" ON)
 THRIFT_ADD_COMPILER(haxe    "Enable compiler for Haxe" ON)
 THRIFT_ADD_COMPILER(csharp  "Enable compiler for C#" ON)
+THRIFT_ADD_COMPILER(netcore "Enable compiler for .NET Core" ON)
 THRIFT_ADD_COMPILER(py      "Enable compiler for Python 2.0" ON)
 THRIFT_ADD_COMPILER(rb      "Enable compiler for Ruby" ON)
 THRIFT_ADD_COMPILER(perl    "Enable compiler for Perl" ON)
@@ -94,6 +106,7 @@ THRIFT_ADD_COMPILER(go      "Enable compiler for Go" ON)
 THRIFT_ADD_COMPILER(d       "Enable compiler for D" ON)
 THRIFT_ADD_COMPILER(lua     "Enable compiler for Lua" ON)
 THRIFT_ADD_COMPILER(gv      "Enable compiler for GraphViz" ON)
+THRIFT_ADD_COMPILER(rs      "Enable compiler for Rust" ON)
 THRIFT_ADD_COMPILER(xml     "Enable compiler for XML" ON)
 
 # Thrift is looking for include files in the src directory
@@ -103,6 +116,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR} src)
 if(NOT ${WITH_PLUGIN})
     list(APPEND thrift-compiler_SOURCES ${compiler_core})
 endif()
+
 add_executable(thrift-compiler ${thrift-compiler_SOURCES})
 
 if(${WITH_PLUGIN})
@@ -111,7 +125,7 @@ if(${WITH_PLUGIN})
         src/thrift/audit/t_audit.cpp
         src/thrift/generate/t_cpp_generator.cc
     )
-    target_link_libraries(thrift-bootstrap libparse)
+    target_link_libraries(thrift-bootstrap parse)
 
     set(PLUGIN_GEN_SOURCES
         ${CMAKE_CURRENT_BINARY_DIR}/thrift/plugin/plugin_types.h
@@ -144,11 +158,12 @@ if(${WITH_PLUGIN})
     LINK_AGAINST_THRIFT_LIBRARY(thrift-compiler thriftc)
 endif()
 
+set_target_properties(thrift-compiler PROPERTIES RUNTIME_OUTPUT_DIRECTORY bin/)
 set_target_properties(thrift-compiler PROPERTIES OUTPUT_NAME thrift)
 
-target_link_libraries(thrift-compiler libparse)
+target_link_libraries(thrift-compiler parse)
 
-install(TARGETS thrift-compiler DESTINATION "${BIN_INSTALL_DIR}")
+install(TARGETS thrift-compiler DESTINATION bin)
 
 if(${WITH_PLUGIN})
   # Install the headers

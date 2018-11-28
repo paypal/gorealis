@@ -18,8 +18,8 @@
 --
 
 Name:           thrift
-Version:        0.10.0
-Cabal-Version:  >= 1.8
+Version:        1.0.0-dev
+Cabal-Version:  >= 1.24
 License:        OtherLicense
 Category:       Foreign
 Build-Type:     Simple
@@ -40,7 +40,7 @@ Library
   Hs-Source-Dirs:
     src
   Build-Depends:
-    base >= 4, base < 5, containers, ghc-prim, attoparsec, binary, bytestring >= 0.10, base64-bytestring, hashable, HTTP, text, unordered-containers >= 0.2.6, vector == 0.10.12.2, QuickCheck >= 2.8.2, split
+    base >= 4, base < 5, containers, ghc-prim, attoparsec, binary, bytestring >= 0.10, base64-bytestring, hashable, HTTP, text, hspec-core > 2.4.0, unordered-containers >= 0.2.6, vector >= 0.10.12.2, QuickCheck >= 2.8.2, split
   if flag(network-uri)
      build-depends: network-uri >= 2.6, network >= 2.6
   else
@@ -49,6 +49,7 @@ Library
     Thrift,
     Thrift.Arbitraries
     Thrift.Protocol,
+    Thrift.Protocol.Header,
     Thrift.Protocol.Binary,
     Thrift.Protocol.Compact,
     Thrift.Protocol.JSON,
@@ -57,11 +58,14 @@ Library
     Thrift.Transport.Empty,
     Thrift.Transport.Framed,
     Thrift.Transport.Handle,
+    Thrift.Transport.Header,
     Thrift.Transport.HttpClient,
     Thrift.Transport.IOBuffer,
     Thrift.Transport.Memory,
     Thrift.Types
-  Extensions:
+  Default-Language:
+    Haskell2010
+  Default-Extensions:
     DeriveDataTypeable,
     ExistentialQuantification,
     FlexibleInstances,

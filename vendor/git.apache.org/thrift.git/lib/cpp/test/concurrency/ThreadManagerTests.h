@@ -36,8 +36,8 @@ namespace test {
 
 using namespace apache::thrift::concurrency;
 
-static std::deque<boost::shared_ptr<Runnable> > m_expired;
-static void expiredNotifier(boost::shared_ptr<Runnable> runnable)
+static std::deque<stdcxx::shared_ptr<Runnable> > m_expired;
+static void expiredNotifier(stdcxx::shared_ptr<Runnable> runnable)
 {
   m_expired.push_back(runnable);
 }
@@ -109,7 +109,7 @@ public:
     shared_ptr<ThreadManager> threadManager = ThreadManager::newSimpleThreadManager(workerCount);
 
     shared_ptr<PlatformThreadFactory> threadFactory
-        = shared_ptr<PlatformThreadFactory>(new PlatformThreadFactory());
+        = shared_ptr<PlatformThreadFactory>(new PlatformThreadFactory(false));
 
 #if !USE_BOOST_THREAD && !USE_STD_THREAD
     threadFactory->setPriority(PosixThreadFactory::HIGHEST);

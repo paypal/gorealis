@@ -103,7 +103,7 @@ protected:
     // Include type modules from other imported programs.
     const vector<t_program*>& includes = program_->get_includes();
     for (size_t i = 0; i < includes.size(); ++i) {
-      f_types_ << "import " << render_package(*(includes[i])) << includes[i]->get_name()
+      f_types_ << "public import " << render_package(*(includes[i])) << includes[i]->get_name()
                << "_types;" << endl;
     }
     if (!includes.empty())
@@ -118,7 +118,7 @@ protected:
   virtual void generate_consts(std::vector<t_const*> consts) {
     if (!consts.empty()) {
       string f_consts_name = package_dir_ + program_name_ + "_constants.d";
-      ofstream f_consts;
+      ofstream_with_content_based_conditional_update f_consts;
       f_consts.open(f_consts_name.c_str());
 
       f_consts << autogen_comment() << "module " << render_package(*program_) << program_name_
@@ -131,6 +131,7 @@ protected:
 
       vector<t_const*>::iterator c_iter;
       for (c_iter = consts.begin(); c_iter != consts.end(); ++c_iter) {
+        this->emit_doc(*c_iter, f_consts);
         string name = (*c_iter)->get_name();
         t_type* type = (*c_iter)->get_type();
         indent(f_consts) << "immutable(" << render_type_name(type) << ") " << name << ";" << endl;
@@ -159,6 +160,7 @@ protected:
   }
 
   virtual void generate_typedef(t_typedef* ttypedef) {
+    this->emit_doc(ttypedef, f_types_);
     f_types_ << indent() << "alias " << render_type_name(ttypedef->get_type()) << " "
              << ttypedef->get_symbolic() << ";" << endl << endl;
   }
@@ -166,21 +168,17 @@ protected:
   virtual void generate_enum(t_enum* tenum) {
     vector<t_enum_value*> constants = tenum->get_constants();
 
+    this->emit_doc(tenum, f_types_);
     string enum_name = tenum->get_name();
     f_types_ << indent() << "enum " << enum_name << " {" << endl;
 
     indent_up();
 
     vector<t_enum_value*>::const_iterator c_iter;
-    bool first = true;
     for (c_iter = constants.begin(); c_iter != constants.end(); ++c_iter) {
-      if (first) {
-        first = false;
-      } else {
-        f_types_ << "," << endl;
-      }
+      this->emit_doc(*c_iter, f_types_);
       indent(f_types_) << (*c_iter)->get_name();
-      f_types_ << " = " << (*c_iter)->get_value();
+      f_types_ << " = " << (*c_iter)->get_value() << ",";
     }
 
     f_types_ << endl;
@@ -203,7 +201,7 @@ protected:
 
     // Service implementation file includes
     string f_servicename = package_dir_ + svc_name + ".d";
-    std::ofstream f_service;
+    ofstream_with_content_based_conditional_update f_service;
     f_service.open(f_servicename.c_str());
     f_service << autogen_comment() << "module " << render_package(*program_) << svc_name << ";"
               << endl << endl;
@@ -225,6 +223,7 @@ protected:
       extends = " : " + render_type_name(tservice->get_extends());
     }
 
+    this->emit_doc(tservice, f_service);
     f_service << indent() << "interface " << svc_name << extends << " {" << endl;
     indent_up();
 
@@ -236,6 +235,7 @@ protected:
     vector<t_function*> functions = tservice->get_functions();
     vector<t_function*>::iterator fn_iter;
     for (fn_iter = functions.begin(); fn_iter != functions.end(); ++fn_iter) {
+      this->emit_doc(*fn_iter, f_service);
       f_service << indent();
       print_function_signature(f_service, *fn_iter);
       f_service << ";" << endl;
@@ -339,10 +339,24 @@ protected:
 
     // Server skeleton generation.
     string f_skeletonname = package_dir_ + svc_name + "_server.skeleton.d";
-    std::ofstream f_skeleton;
+    ofstream_with_content_based_conditional_update f_skeleton;
     f_skeleton.open(f_skeletonname.c_str());
     print_server_skeleton(f_skeleton, tservice);
     f_skeleton.close();
+  }
+
+  void emit_doc(t_doc *doc, std::ostream& out) {
+    if (!doc->has_doc()) {
+      return;
+    }
+    indent(out) << "/**" << std::endl;
+    indent_up();
+    // No endl -- comments reliably have a newline at the end.
+    // This is true even for stuff like:
+    //     /** method infos */ void foo(/** huh?*/ 1: i64 stuff)
+    indent(out) << doc->get_doc();
+    indent_down();
+    indent(out) << "*/" << std::endl;
   }
 
 private:
@@ -381,8 +395,8 @@ private:
       out << indent() << "// Your implementation goes here." << endl << indent() << "writeln(\""
           << (*f_iter)->get_name() << " called\");" << endl;
 
-      t_base_type* rt = (t_base_type*)(*f_iter)->get_returntype();
-      if (rt->get_base() != t_base_type::TYPE_VOID) {
+	  t_type* rt = (*f_iter)->get_returntype();
+	  if (!rt->is_void()) {
         indent(out) << "return typeof(return).init;" << endl;
       }
 
@@ -543,8 +557,8 @@ private:
 
         const vector<t_field*>& fields = ((t_struct*)type)->get_members();
         vector<t_field*>::const_iterator f_iter;
-        const map<t_const_value*, t_const_value*>& val = value->get_map();
-        map<t_const_value*, t_const_value*>::const_iterator v_iter;
+        const map<t_const_value*, t_const_value*, t_const_value::value_compare>& val = value->get_map();
+        map<t_const_value*, t_const_value*, t_const_value::value_compare>::const_iterator v_iter;
         for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
           t_type* field_type = NULL;
           for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
@@ -562,8 +576,8 @@ private:
       } else if (type->is_map()) {
         t_type* ktype = ((t_map*)type)->get_key_type();
         t_type* vtype = ((t_map*)type)->get_val_type();
-        const map<t_const_value*, t_const_value*>& val = value->get_map();
-        map<t_const_value*, t_const_value*>::const_iterator v_iter;
+        const map<t_const_value*, t_const_value*, t_const_value::value_compare>& val = value->get_map();
+        map<t_const_value*, t_const_value*, t_const_value::value_compare>::const_iterator v_iter;
         for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
           string key = render_const_value(ktype, v_iter->first);
           string val = render_const_value(vtype, v_iter->second);
@@ -719,8 +733,8 @@ private:
    * File streams, stored here to avoid passing them as parameters to every
    * function.
    */
-  ofstream f_types_;
-  ofstream f_header_;
+  ofstream_with_content_based_conditional_update f_types_;
+  ofstream_with_content_based_conditional_update f_header_;
 
   string package_dir_;
 };

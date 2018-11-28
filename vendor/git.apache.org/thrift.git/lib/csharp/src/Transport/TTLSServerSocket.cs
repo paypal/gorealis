@@ -76,7 +76,7 @@ namespace Thrift.Transport
         /// <param name="port">The port where the server runs.</param>
         /// <param name="certificate">The certificate object.</param>
         public TTLSServerSocket(int port, X509Certificate2 certificate)
-            : this(port,  0, certificate)
+            : this(port, 0, certificate)
         {
         }
 
@@ -108,7 +108,7 @@ namespace Thrift.Transport
             X509Certificate2 certificate,
             RemoteCertificateValidationCallback clientCertValidator = null,
             LocalCertificateSelectionCallback localCertificateSelectionCallback = null,
-            // TODO: Enable Tls1 and Tls2 (TLS 1.1 and 1.2) by default once we start using .NET 4.5+.
+            // TODO: Enable Tls11 and Tls12 (TLS 1.1 and 1.2) by default once we start using .NET 4.5+.
             SslProtocols sslProtocols = SslProtocols.Tls)
         {
             if (!certificate.HasPrivateKey)
@@ -126,13 +126,13 @@ namespace Thrift.Transport
             try
             {
                 // Create server socket
-                server = new TcpListener(System.Net.IPAddress.Any, this.port);
-                server.Server.NoDelay = true;
+                this.server = TSocketVersionizer.CreateTcpListener(this.port);
+                this.server.Server.NoDelay = true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 server = null;
-                throw new TTransportException("Could not create ServerSocket on port " + port + ".");
+                throw new TTransportException("Could not create ServerSocket on port " + this.port + ".", ex);
             }
         }
 
@@ -150,7 +150,7 @@ namespace Thrift.Transport
                 }
                 catch (SocketException sx)
                 {
-                    throw new TTransportException("Could not accept on listening socket: " + sx.Message);
+                    throw new TTransportException("Could not accept on listening socket: " + sx.Message, sx);
                 }
             }
         }
@@ -197,7 +197,7 @@ namespace Thrift.Transport
             }
             catch (Exception ex)
             {
-                throw new TTransportException(ex.ToString());
+                throw new TTransportException(ex.ToString(), ex);
             }
         }
 
@@ -214,7 +214,7 @@ namespace Thrift.Transport
                 }
                 catch (Exception ex)
                 {
-                    throw new TTransportException("WARNING: Could not close server socket: " + ex);
+                    throw new TTransportException("WARNING: Could not close server socket: " + ex, ex);
                 }
                 this.server = null;
             }

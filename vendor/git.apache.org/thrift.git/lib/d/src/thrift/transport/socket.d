@@ -18,6 +18,7 @@
  */
 module thrift.transport.socket;
 
+import core.stdc.errno: ECONNRESET;
 import core.thread : Thread;
 import core.time : dur, Duration;
 import std.array : empty;
@@ -79,8 +80,8 @@ abstract class TSocketBase : TBaseTransport {
     version (none) assert(written <= buf.length, text("Implementation wrote " ~
       "more data than requested to?! (", written, " vs. ", buf.length, ")"));
   } body {
-    assert(0, "DMD bug? – Why would contracts work for interfaces, but not "
-      "for abstract methods? "
+    assert(0, "DMD bug? – Why would contracts work for interfaces, but not " ~
+      "for abstract methods? " ~
       "(Error: function […] in and out contracts require function body");
   }
 
@@ -256,7 +257,7 @@ class TSocket : TSocketBase {
         new TCompoundOperationException(
           text(
             "All addresses tried failed (",
-            joiner(map!q{text(a._0, `: "`, a._1.msg, `"`)}(zip(addrs, errors)), ", "),
+            joiner(map!q{text(a[0], `: "`, a[1].msg, `"`)}(zip(addrs, errors)), ", "),
             ")."
           ),
           errors

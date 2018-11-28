@@ -53,20 +53,6 @@ FsyncLog* fsync_log;
  * Helper code
  **************************************************************************/
 
-// Provide BOOST_WARN_LT() and BOOST_WARN_GT(), in case we're compiled
-// with an older version of boost
-#ifndef BOOST_WARN_LT
-#define BOOST_WARN_CMP(a, b, op, check_fn)                                                         \
-  check_fn((a)op(b),                                                                               \
-           "check " BOOST_STRINGIZE(a) " " BOOST_STRINGIZE(op) " " BOOST_STRINGIZE(                \
-               b) " failed: " BOOST_STRINGIZE(a) "="                                               \
-           << (a) << " " BOOST_STRINGIZE(b) "=" << (b))
-
-#define BOOST_WARN_LT(a, b) BOOST_WARN_CMP(a, b, <, BOOST_WARN_MESSAGE)
-#define BOOST_WARN_GT(a, b) BOOST_WARN_CMP(a, b, >, BOOST_WARN_MESSAGE)
-#define BOOST_WARN_LT(a, b) BOOST_WARN_CMP(a, b, <, BOOST_WARN_MESSAGE)
-#endif // BOOST_WARN_LT
-
 /**
  * Class to record calls to fsync
  */
@@ -83,7 +69,7 @@ public:
   void fsync(int fd) {
     (void)fd;
     FsyncCall call;
-    gettimeofday(&call.time, NULL);
+    THRIFT_GETTIMEOFDAY(&call.time, NULL);
     calls_.push_back(call);
   }
 
@@ -100,6 +86,7 @@ class TempFile {
 public:
   TempFile(const char* directory, const char* prefix) {
   #ifdef __MINGW32__
+    ((void)directory);
     size_t path_len = strlen(prefix) + 8;
     path_ = new char[path_len];
     snprintf(path_, path_len, "%sXXXXXX", prefix);
@@ -208,16 +195,16 @@ BOOST_AUTO_TEST_CASE(test_destructor) {
     struct timeval start;
     struct timeval end;
 
-    gettimeofday(&start, NULL);
+    THRIFT_GETTIMEOFDAY(&start, NULL);
     delete transport;
-    gettimeofday(&end, NULL);
+    THRIFT_GETTIMEOFDAY(&end, NULL);
 
     int delta = time_diff(&start, &end);
 
     // If any attempt takes more than 500ms, treat that as a failure.
     // Treat this as a fatal failure, so we'll return now instead of
     // looping over a very slow operation.
-    BOOST_WARN_LT(delta, 500000);
+    BOOST_WARN( delta < 500000 );
 
     // Normally, it takes less than 100ms on my dev box.
     // However, if the box is heavily loaded, some of the test runs
@@ -295,7 +282,7 @@ void test_flush_max_us_impl(uint32_t flush_us, uint32_t write_us, uint32_t test_
   for (FsyncLog::CallList::const_iterator it = calls->begin(); it != calls->end(); ++it) {
     if (prev_time) {
       int delta = time_diff(prev_time, &it->time);
-      BOOST_WARN_LT(delta, max_allowed_delta);
+      BOOST_WARN( delta < max_allowed_delta );
     }
     prev_time = &it->time;
   }
@@ -331,13 +318,13 @@ BOOST_AUTO_TEST_CASE(test_noop_flush) {
   transport.write(buf, 1);
 
   struct timeval start;
-  gettimeofday(&start, NULL);
+  THRIFT_GETTIMEOFDAY(&start, NULL);
 
   for (unsigned int n = 0; n < 10; ++n) {
     transport.flush();
 
     struct timeval now;
-    gettimeofday(&now, NULL);
+    THRIFT_GETTIMEOFDAY(&now, NULL);
 
     // Fail if at any point we've been running for longer than half a second.
     // (With the buggy code, TFileTransport used to take 3 seconds per flush())
@@ -345,7 +332,7 @@ BOOST_AUTO_TEST_CASE(test_noop_flush) {
     // Use a fatal fail so we break out early, rather than continuing to make
     // many more slow flush() calls.
     int delta = time_diff(&start, &now);
-    BOOST_WARN_LT(delta, 2000000);
+    BOOST_WARN( delta < 2000000 );
   }
 }
 

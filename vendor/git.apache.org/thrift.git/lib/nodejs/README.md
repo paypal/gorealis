@@ -20,6 +20,9 @@ KIND, either express or implied. See the License for the
 specific language governing permissions and limitations
 under the License.
 
+## Compatibility
+
+node version 6 or later is required
 
 ## Install
 
@@ -35,30 +38,32 @@ You can compile IDL sources for Node.js with the following command:
 
 Here is a Cassandra example:
 
-    var thrift = require('thrift'),
-        Cassandra = require('./gen-nodejs/Cassandra')
-        ttypes = require('./gen-nodejs/cassandra_types');
+```js
+var thrift = require('thrift'),
+    Cassandra = require('./gen-nodejs/Cassandra')
+    ttypes = require('./gen-nodejs/cassandra_types');
 
-    var connection = thrift.createConnection("localhost", 9160),
-        client = thrift.createClient(Cassandra, connection);
+var connection = thrift.createConnection("localhost", 9160),
+    client = thrift.createClient(Cassandra, connection);
 
-    connection.on('error', function(err) {
-      console.error(err);
-    });
+connection.on('error', function(err) {
+  console.error(err);
+});
 
-    client.get_slice("Keyspace", "key", new ttypes.ColumnParent({column_family: "ExampleCF"}), new ttypes.SlicePredicate({slice_range: new ttypes.SliceRange({start: '', finish: ''})}), ttypes.ConsistencyLevel.ONE, function(err, data) {
-      if (err) {
-        // handle err
-      } else {
-        // data == [ttypes.ColumnOrSuperColumn, ...]
-      }
-      connection.end();
-    });
+client.get_slice("Keyspace", "key", new ttypes.ColumnParent({column_family: "ExampleCF"}), new ttypes.SlicePredicate({slice_range: new ttypes.SliceRange({start: '', finish: ''})}), ttypes.ConsistencyLevel.ONE, function(err, data) {
+  if (err) {
+    // handle err
+  } else {
+    // data == [ttypes.ColumnOrSuperColumn, ...]
+  }
+  connection.end();
+});
+```
 
 <a name="int64"></a>
 ## Int64
 
-Since JavaScript represents all numbers as doubles, int64 values cannot be accurately represented naturally. To solve this, int64 values in responses will be wrapped with Thirft.Int64 objects. The Int64 implementation used is [broofa/node-int64](https://github.com/broofa/node-int64).
+Since JavaScript represents all numbers as doubles, int64 values cannot be accurately represented naturally. To solve this, int64 values in responses will be wrapped with Thrift.Int64 objects. The Int64 implementation used is [broofa/node-int64](https://github.com/broofa/node-int64).
 
 ## Client and server examples
 

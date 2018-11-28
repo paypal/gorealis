@@ -19,8 +19,9 @@
 
 #include <thrift/thrift-config.h>
 
-#include <thrift/concurrency/PosixThreadFactory.h>
 #include <thrift/concurrency/Exception.h>
+#include <thrift/concurrency/Monitor.h>
+#include <thrift/concurrency/PosixThreadFactory.h>
 
 #if GOOGLE_PERFTOOLS_REGISTER_THREAD
 #include <google/profiler.h>
@@ -31,14 +32,11 @@
 
 #include <iostream>
 
-#include <boost/weak_ptr.hpp>
+#include <thrift/stdcxx.h>
 
 namespace apache {
 namespace thrift {
 namespace concurrency {
-
-using boost::shared_ptr;
-using boost::weak_ptr;
 
 /**
  * The POSIX thread class.
@@ -55,11 +53,12 @@ public:
 
 private:
   pthread_t pthread_;
-  STATE state_;
+  Monitor monitor_;		// guard to protect state_ and also notification
+  STATE state_;         // to protect proper thread start behavior
   int policy_;
   int priority_;
   int stackSize_;
-  weak_ptr<PthreadThread> self_;
+  stdcxx::weak_ptr<PthreadThread> self_;
   bool detached_;
 
 public:
@@ -67,13 +66,12 @@ public:
                 int priority,
                 int stackSize,
                 bool detached,
-                shared_ptr<Runnable> runnable)
+                stdcxx::shared_ptr<Runnable> runnable)
     :
 
 #ifndef _WIN32
       pthread_(0),
 #endif // _WIN32
-
       state_(uninitialized),
       policy_(policy),
       priority_(priority),
@@ -96,8 +94,26 @@ public:
     }
   }
 
+  STATE getState() const
+  {
+    Synchronized sync(monitor_);
+    return state_;
+  }
+
+  void setState(STATE newState)
+  {
+    Synchronized sync(monitor_);
+    state_ = newState;
+
+    // unblock start() with the knowledge that the thread has actually
+    // started running, which avoids a race in detached threads.
+    if (newState == started) {
+	  monitor_.notify();
+    }
+  }
+
   void start() {
-    if (state_ != uninitialized) {
+    if (getState() != uninitialized) {
       return;
     }
 
@@ -139,18 +155,27 @@ public:
     }
 
     // Create reference
-    shared_ptr<PthreadThread>* selfRef = new shared_ptr<PthreadThread>();
+    stdcxx::shared_ptr<PthreadThread>* selfRef = new stdcxx::shared_ptr<PthreadThread>();
     *selfRef = self_.lock();
 
-    state_ = starting;
+    setState(starting);
 
+	Synchronized sync(monitor_);
+	
     if (pthread_create(&pthread_, &thread_attr, threadMain, (void*)selfRef) != 0) {
       throw SystemResourceException("pthread_create failed");
     }
+    
+    // The caller may not choose to guarantee the scope of the Runnable
+    // being used in the thread, so we must actually wait until the thread
+    // starts before we return.  If we do not wait, it would be possible
+    // for the caller to start destructing the Runnable and the Thread,
+    // and we would end up in a race.  This was identified with valgrind.
+    monitor_.wait();
   }
 
   void join() {
-    if (!detached_ && state_ != uninitialized) {
+    if (!detached_ && getState() != uninitialized) {
       void* ignore;
       /* XXX
          If join fails it is most likely due to the fact
@@ -164,8 +189,6 @@ public:
       if (res != 0) {
         GlobalOutput.printf("PthreadThread::join(): fail with code %d", res);
       }
-    } else {
-      GlobalOutput.printf("PthreadThread::join(): detached thread");
     }
   }
 
@@ -178,36 +201,31 @@ public:
 #endif // _WIN32
   }
 
-  shared_ptr<Runnable> runnable() const { return Thread::runnable(); }
+  stdcxx::shared_ptr<Runnable> runnable() const { return Thread::runnable(); }
 
-  void runnable(shared_ptr<Runnable> value) { Thread::runnable(value); }
+  void runnable(stdcxx::shared_ptr<Runnable> value) { Thread::runnable(value); }
 
-  void weakRef(shared_ptr<PthreadThread> self) {
+  void weakRef(stdcxx::shared_ptr<PthreadThread> self) {
     assert(self.get() == this);
-    self_ = weak_ptr<PthreadThread>(self);
+    self_ = stdcxx::weak_ptr<PthreadThread>(self);
   }
 };
 
 void* PthreadThread::threadMain(void* arg) {
-  shared_ptr<PthreadThread> thread = *(shared_ptr<PthreadThread>*)arg;
-  delete reinterpret_cast<shared_ptr<PthreadThread>*>(arg);
-
-  if (thread == NULL) {
-    return (void*)0;
-  }
-
-  if (thread->state_ != starting) {
-    return (void*)0;
-  }
+  stdcxx::shared_ptr<PthreadThread> thread = *(stdcxx::shared_ptr<PthreadThread>*)arg;
+  delete reinterpret_cast<stdcxx::shared_ptr<PthreadThread>*>(arg);
 
 #if GOOGLE_PERFTOOLS_REGISTER_THREAD
   ProfilerRegisterThread();
 #endif
 
-  thread->state_ = started;
+  thread->setState(started);
+
   thread->runnable()->run();
-  if (thread->state_ != stopping && thread->state_ != stopped) {
-    thread->state_ = stopping;
+
+  STATE _s = thread->getState();
+  if (_s != stopping && _s != stopped) {
+    thread->setState(stopping);
   }
 
   return (void*)0;
@@ -276,9 +294,9 @@ PosixThreadFactory::PosixThreadFactory(bool detached)
     stackSize_(1) {
 }
 
-shared_ptr<Thread> PosixThreadFactory::newThread(shared_ptr<Runnable> runnable) const {
-  shared_ptr<PthreadThread> result
-      = shared_ptr<PthreadThread>(new PthreadThread(toPthreadPolicy(policy_),
+stdcxx::shared_ptr<Thread> PosixThreadFactory::newThread(stdcxx::shared_ptr<Runnable> runnable) const {
+  stdcxx::shared_ptr<PthreadThread> result
+      = stdcxx::shared_ptr<PthreadThread>(new PthreadThread(toPthreadPolicy(policy_),
                                                     toPthreadPriority(policy_, priority_),
                                                     stackSize_,
                                                     isDetached(),

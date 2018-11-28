@@ -26,10 +26,10 @@ using System.Net;
 using System.Threading;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using System.IO.Compression;
 
 namespace Thrift.Transport
 {
-
     public class THttpClient : TTransport, IDisposable
     {
         private readonly Uri uri;
@@ -42,7 +42,7 @@ namespace Thrift.Transport
 
         private int readTimeout = 30000;
 
-        private IDictionary<String, String> customHeaders = new Dictionary<string, string>();
+        private IDictionary<string, string> customHeaders = new Dictionary<string, string>();
 
 #if !SILVERLIGHT
         private IWebProxy proxy = WebRequest.DefaultWebProxy;
@@ -63,7 +63,7 @@ namespace Thrift.Transport
         {
             set
             {
-               connectTimeout = value;
+                connectTimeout = value;
             }
         }
 
@@ -75,7 +75,7 @@ namespace Thrift.Transport
             }
         }
 
-        public IDictionary<String, String> CustomHeaders
+        public IDictionary<string, string> CustomHeaders
         {
             get
             {
@@ -139,7 +139,7 @@ namespace Thrift.Transport
             }
             catch (IOException iox)
             {
-                throw new TTransportException(TTransportException.ExceptionType.Unknown, iox.ToString());
+                throw new TTransportException(TTransportException.ExceptionType.Unknown, iox.ToString(), iox);
             }
         }
 
@@ -166,6 +166,7 @@ namespace Thrift.Transport
             try
             {
                 HttpWebRequest connection = CreateRequest();
+                connection.Headers.Add("Accept-Encoding", "gzip, deflate");
 
                 byte[] data = outputStream.ToArray();
                 connection.ContentLength = data.Length;
@@ -184,25 +185,68 @@ namespace Thrift.Transport
                             // Copy the response to a memory stream so that we can
                             // cleanly close the response and response stream.
                             inputStream = new MemoryStream();
-                            byte[] buffer = new byte[8096];
+                            byte[] buffer = new byte[8192];  // multiple of 4096
                             int bytesRead;
                             while ((bytesRead = responseStream.Read(buffer, 0, buffer.Length)) > 0)
                             {
-                                inputStream.Write (buffer, 0, bytesRead);
+                                inputStream.Write(buffer, 0, bytesRead);
                             }
                             inputStream.Seek(0, 0);
+                        }
+
+                        var encodings = response.Headers.GetValues("Content-Encoding");
+                        if (encodings != null)
+                        {
+                            foreach (var encoding in encodings)
+                            {
+                                switch (encoding)
+                                {
+                                    case "gzip":
+                                        DecompressGZipped(ref inputStream);
+                                        break;
+                                    case "deflate":
+                                        DecompressDeflated(ref inputStream);
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
                         }
                     }
                 }
             }
             catch (IOException iox)
             {
-                throw new TTransportException(TTransportException.ExceptionType.Unknown, iox.ToString());
+                throw new TTransportException(TTransportException.ExceptionType.Unknown, iox.ToString(), iox);
             }
             catch (WebException wx)
             {
-                throw new TTransportException(TTransportException.ExceptionType.Unknown, "Couldn't connect to server: " + wx);
+                throw new TTransportException(TTransportException.ExceptionType.Unknown, "Couldn't connect to server: " + wx, wx);
             }
+        }
+
+        private void DecompressDeflated(ref Stream inputStream)
+        {
+            var tmp = new MemoryStream();
+            using (var decomp = new DeflateStream(inputStream, CompressionMode.Decompress))
+            {
+                decomp.CopyTo(tmp);
+            }
+            inputStream.Dispose();
+            inputStream = tmp;
+            inputStream.Seek(0, 0);
+        }
+
+        private void DecompressGZipped(ref Stream inputStream)
+        {
+            var tmp = new MemoryStream();
+            using (var decomp = new GZipStream(inputStream, CompressionMode.Decompress))
+            {
+                decomp.CopyTo(tmp);
+            }
+            inputStream.Dispose();
+            inputStream = tmp;
+            inputStream.Seek(0, 0);
         }
 #endif
         private HttpWebRequest CreateRequest()
@@ -272,7 +316,7 @@ namespace Thrift.Transport
             }
             catch (IOException iox)
             {
-                throw new TTransportException(iox.ToString());
+                throw new TTransportException(iox.ToString(), iox);
             }
         }
 
@@ -280,7 +324,7 @@ namespace Thrift.Transport
         {
             try
             {
-                var flushAsyncResult = (FlushAsyncResult) asyncResult;
+                var flushAsyncResult = (FlushAsyncResult)asyncResult;
 
                 if (!flushAsyncResult.IsCompleted)
                 {
@@ -293,7 +337,8 @@ namespace Thrift.Transport
                 {
                     throw flushAsyncResult.AsyncException;
                 }
-            } finally
+            }
+            finally
             {
                 outputStream = new MemoryStream();
             }
@@ -315,7 +360,7 @@ namespace Thrift.Transport
             }
             catch (Exception exception)
             {
-                flushAsyncResult.AsyncException = new TTransportException(exception.ToString());
+                flushAsyncResult.AsyncException = new TTransportException(exception.ToString(), exception);
                 flushAsyncResult.UpdateStatusToComplete();
                 flushAsyncResult.NotifyCallbackWhenAvailable();
             }
@@ -330,7 +375,7 @@ namespace Thrift.Transport
             }
             catch (Exception exception)
             {
-                flushAsyncResult.AsyncException = new TTransportException(exception.ToString());
+                flushAsyncResult.AsyncException = new TTransportException(exception.ToString(), exception);
             }
             flushAsyncResult.UpdateStatusToComplete();
             flushAsyncResult.NotifyCallbackWhenAvailable();
@@ -342,9 +387,9 @@ namespace Thrift.Transport
             private volatile Boolean _isCompleted;
             private ManualResetEvent _evt;
             private readonly AsyncCallback _cbMethod;
-            private readonly Object _state;
+            private readonly object _state;
 
-            public FlushAsyncResult(AsyncCallback cbMethod, Object state)
+            public FlushAsyncResult(AsyncCallback cbMethod, object state)
             {
                 _cbMethod = cbMethod;
                 _state = state;
@@ -370,7 +415,7 @@ namespace Thrift.Transport
             {
                 get { return _isCompleted; }
             }
-            private readonly Object _locker = new Object();
+            private readonly object _locker = new object();
             private ManualResetEvent GetEvtHandle()
             {
                 lock (_locker)
@@ -407,7 +452,7 @@ namespace Thrift.Transport
             }
         }
 
-#region " IDisposable Support "
+        #region " IDisposable Support "
         private bool _IsDisposed;
 
         // IDisposable
@@ -425,6 +470,6 @@ namespace Thrift.Transport
             }
             _IsDisposed = true;
         }
-#endregion
+        #endregion
     }
 }

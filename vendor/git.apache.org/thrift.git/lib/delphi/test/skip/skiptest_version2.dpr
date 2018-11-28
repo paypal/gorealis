@@ -25,13 +25,13 @@ uses
   Classes, Windows, SysUtils,
   Skiptest.Two,
   Thrift in '..\..\src\Thrift.pas',
+  Thrift.Exception in '..\..\src\Thrift.Exception.pas',
   Thrift.Socket in '..\..\src\Thrift.Socket.pas',
   Thrift.Transport in '..\..\src\Thrift.Transport.pas',
   Thrift.Protocol in '..\..\src\Thrift.Protocol.pas',
   Thrift.Protocol.JSON in '..\..\src\Thrift.Protocol.JSON.pas',
   Thrift.Collections in '..\..\src\Thrift.Collections.pas',
   Thrift.Server in '..\..\src\Thrift.Server.pas',
-  Thrift.Console in '..\..\src\Thrift.Console.pas',
   Thrift.Utils in '..\..\src\Thrift.Utils.pas',
   Thrift.TypeRegistry in '..\..\src\Thrift.TypeRegistry.pas',
   Thrift.Stream in '..\..\src\Thrift.Stream.pas';
@@ -45,7 +45,7 @@ var list : IThriftList<IPong>;
     set_ : IHashSet<string>;
 begin
   result := TPingImpl.Create;
-  result.Version1  := Skiptest.Two.TConstants.SKIPTESTSERVICE_VERSION;
+  result.Version1  := Tskiptest_version_2Constants.SKIPTESTSERVICE_VERSION;
   result.BoolVal   := TRUE;
   result.ByteVal   := 2;
   result.DbVal     := 3;
@@ -206,7 +206,7 @@ const
   FILE_JSON   = 'pingpong.json';
 begin
   try
-    Writeln( 'Delphi SkipTest '+IntToStr(TConstants.SKIPTESTSERVICE_VERSION)+' using '+Thrift.Version);
+    Writeln( 'Delphi SkipTest '+IntToStr(Tskiptest_version_2Constants.SKIPTESTSERVICE_VERSION)+' using '+Thrift.Version);
 
     Writeln;
     Writeln('Binary protocol');

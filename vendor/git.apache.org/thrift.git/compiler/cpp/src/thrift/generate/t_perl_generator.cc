@@ -31,7 +31,7 @@
 #include "thrift/generate/t_oop_generator.h"
 
 using std::map;
-using std::ofstream;
+using std::ostream;
 using std::ostringstream;
 using std::string;
 using std::stringstream;
@@ -48,7 +48,7 @@ public:
   t_perl_generator(t_program* program,
                    const std::map<std::string, std::string>& parsed_options,
                    const std::string& option_string)
-    : t_oop_generator(program) {
+    : t_oop_generator(program), f_types_use_includes_emitted_(false) {
     (void)option_string;
     std::map<std::string, std::string>::const_iterator iter;
 
@@ -87,11 +87,11 @@ public:
    */
 
   void generate_perl_struct(t_struct* tstruct, bool is_exception);
-  void generate_perl_struct_definition(std::ofstream& out,
+  void generate_perl_struct_definition(std::ostream& out,
                                        t_struct* tstruct,
                                        bool is_xception = false);
-  void generate_perl_struct_reader(std::ofstream& out, t_struct* tstruct);
-  void generate_perl_struct_writer(std::ofstream& out, t_struct* tstruct);
+  void generate_perl_struct_reader(std::ostream& out, t_struct* tstruct);
+  void generate_perl_struct_writer(std::ostream& out, t_struct* tstruct);
   void generate_perl_function_helpers(t_function* tfunction);
 
   /**
@@ -104,42 +104,43 @@ public:
   void generate_service_client(t_service* tservice);
   void generate_service_processor(t_service* tservice);
   void generate_process_function(t_service* tservice, t_function* tfunction);
+  void generate_use_includes(std::ostream& os, bool& done, t_type *type, bool selfish);
 
   /**
    * Serialization constructs
    */
 
-  void generate_deserialize_field(std::ofstream& out,
+  void generate_deserialize_field(std::ostream& out,
                                   t_field* tfield,
                                   std::string prefix = "",
                                   bool inclass = false);
 
-  void generate_deserialize_struct(std::ofstream& out, t_struct* tstruct, std::string prefix = "");
+  void generate_deserialize_struct(std::ostream& out, t_struct* tstruct, std::string prefix = "");
 
-  void generate_deserialize_container(std::ofstream& out, t_type* ttype, std::string prefix = "");
+  void generate_deserialize_container(std::ostream& out, t_type* ttype, std::string prefix = "");
 
-  void generate_deserialize_set_element(std::ofstream& out, t_set* tset, std::string prefix = "");
+  void generate_deserialize_set_element(std::ostream& out, t_set* tset, std::string prefix = "");
 
-  void generate_deserialize_map_element(std::ofstream& out, t_map* tmap, std::string prefix = "");
+  void generate_deserialize_map_element(std::ostream& out, t_map* tmap, std::string prefix = "");
 
-  void generate_deserialize_list_element(std::ofstream& out,
+  void generate_deserialize_list_element(std::ostream& out,
                                          t_list* tlist,
                                          std::string prefix = "");
 
-  void generate_serialize_field(std::ofstream& out, t_field* tfield, std::string prefix = "");
+  void generate_serialize_field(std::ostream& out, t_field* tfield, std::string prefix = "");
 
-  void generate_serialize_struct(std::ofstream& out, t_struct* tstruct, std::string prefix = "");
+  void generate_serialize_struct(std::ostream& out, t_struct* tstruct, std::string prefix = "");
 
-  void generate_serialize_container(std::ofstream& out, t_type* ttype, std::string prefix = "");
+  void generate_serialize_container(std::ostream& out, t_type* ttype, std::string prefix = "");
 
-  void generate_serialize_map_element(std::ofstream& out,
+  void generate_serialize_map_element(std::ostream& out,
                                       t_map* tmap,
                                       std::string kiter,
                                       std::string viter);
 
-  void generate_serialize_set_element(std::ofstream& out, t_set* tmap, std::string iter);
+  void generate_serialize_set_element(std::ostream& out, t_set* tmap, std::string iter);
 
-  void generate_serialize_list_element(std::ofstream& out, t_list* tlist, std::string iter);
+  void generate_serialize_list_element(std::ostream& out, t_list* tlist, std::string iter);
 
   /**
    * Helper rendering functions
@@ -207,10 +208,12 @@ private:
   /**
    * File streams
    */
-  std::ofstream f_types_;
-  std::ofstream f_consts_;
-  std::ofstream f_helpers_;
-  std::ofstream f_service_;
+  ofstream_with_content_based_conditional_update f_types_;
+  ofstream_with_content_based_conditional_update f_consts_;
+  ofstream_with_content_based_conditional_update f_helpers_;
+  ofstream_with_content_based_conditional_update f_service_;
+
+  bool f_types_use_includes_emitted_;
 };
 
 /**
@@ -252,10 +255,12 @@ void t_perl_generator::init_generator() {
 string t_perl_generator::perl_includes() {
   string inc;
 
-  inc = "require 5.6.0;\n";
+  inc  = "use 5.10.0;\n";
   inc += "use strict;\n";
   inc += "use warnings;\n";
-  inc += "use Thrift;\n\n";
+  inc += "use Thrift::Exception;\n";
+  inc += "use Thrift::MessageType;\n";
+  inc += "use Thrift::Type;\n\n";
 
   return inc;
 }
@@ -351,10 +356,11 @@ string t_perl_generator::render_const_value(t_type* type, t_const_value* value) 
   } else if (type->is_struct() || type->is_xception()) {
     out << "new " << perl_namespace(type->get_program()) << type->get_name() << "({" << endl;
     indent_up();
+
     const vector<t_field*>& fields = ((t_struct*)type)->get_members();
     vector<t_field*>::const_iterator f_iter;
-    const map<t_const_value*, t_const_value*>& val = value->get_map();
-    map<t_const_value*, t_const_value*>::const_iterator v_iter;
+    const map<t_const_value*, t_const_value*, t_const_value::value_compare>& val = value->get_map();
+    map<t_const_value*, t_const_value*, t_const_value::value_compare>::const_iterator v_iter;
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
       t_type* field_type = NULL;
       for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
@@ -365,29 +371,30 @@ string t_perl_generator::render_const_value(t_type* type, t_const_value* value) 
       if (field_type == NULL) {
         throw "type error: " + type->get_name() + " has no field " + v_iter->first->get_string();
       }
-      out << render_const_value(g_type_string, v_iter->first);
+      indent(out) << render_const_value(g_type_string, v_iter->first);
       out << " => ";
       out << render_const_value(field_type, v_iter->second);
       out << ",";
       out << endl;
     }
-
-    out << "})";
+    indent_down();
+    indent(out) << "})";
   } else if (type->is_map()) {
     t_type* ktype = ((t_map*)type)->get_key_type();
     t_type* vtype = ((t_map*)type)->get_val_type();
     out << "{" << endl;
+    indent_up();
 
-    const map<t_const_value*, t_const_value*>& val = value->get_map();
-    map<t_const_value*, t_const_value*>::const_iterator v_iter;
+    const map<t_const_value*, t_const_value*, t_const_value::value_compare>& val = value->get_map();
+    map<t_const_value*, t_const_value*, t_const_value::value_compare>::const_iterator v_iter;
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
-      out << render_const_value(ktype, v_iter->first);
+      indent(out) << render_const_value(ktype, v_iter->first);
       out << " => ";
       out << render_const_value(vtype, v_iter->second);
       out << "," << endl;
     }
-
-    out << "}";
+    indent_down();
+    indent(out) << "}";
   } else if (type->is_list() || type->is_set()) {
     t_type* etype;
     if (type->is_list()) {
@@ -396,17 +403,20 @@ string t_perl_generator::render_const_value(t_type* type, t_const_value* value) 
       etype = ((t_set*)type)->get_elem_type();
     }
     out << "[" << endl;
+    indent_up();
+
     const vector<t_const_value*>& val = value->get_list();
     vector<t_const_value*>::const_iterator v_iter;
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
 
-      out << render_const_value(etype, *v_iter);
+      indent(out) << render_const_value(etype, *v_iter);
       if (type->is_set()) {
         out << " => 1";
       }
       out << "," << endl;
     }
-    out << "]";
+    indent_down();
+    indent(out) << "]";
   }
   return out.str();
 }
@@ -432,6 +442,7 @@ void t_perl_generator::generate_xception(t_struct* txception) {
  * Structs can be normal or exceptions.
  */
 void t_perl_generator::generate_perl_struct(t_struct* tstruct, bool is_exception) {
+  generate_use_includes(f_types_, f_types_use_includes_emitted_, tstruct, false);
   generate_perl_struct_definition(f_types_, tstruct, is_exception);
 }
 
@@ -442,7 +453,7 @@ void t_perl_generator::generate_perl_struct(t_struct* tstruct, bool is_exception
  *
  * @param tstruct The struct definition
  */
-void t_perl_generator::generate_perl_struct_definition(ofstream& out,
+void t_perl_generator::generate_perl_struct_definition(ostream& out,
                                                        t_struct* tstruct,
                                                        bool is_exception) {
   const vector<t_field*>& members = tstruct->get_members();
@@ -520,7 +531,7 @@ void t_perl_generator::generate_perl_struct_definition(ofstream& out,
 /**
  * Generates the read() method for a struct
  */
-void t_perl_generator::generate_perl_struct_reader(ofstream& out, t_struct* tstruct) {
+void t_perl_generator::generate_perl_struct_reader(ostream& out, t_struct* tstruct) {
   const vector<t_field*>& fields = tstruct->get_members();
   vector<t_field*>::const_iterator f_iter;
 
@@ -542,7 +553,7 @@ void t_perl_generator::generate_perl_struct_reader(ofstream& out, t_struct* tstr
   indent(out) << "$xfer += $input->readFieldBegin(\\$fname, \\$ftype, \\$fid);" << endl;
 
   // Check for field STOP marker and break
-  indent(out) << "if ($ftype == TType::STOP) {" << endl;
+  indent(out) << "if ($ftype == Thrift::TType::STOP) {" << endl;
   indent_up();
   indent(out) << "last;" << endl;
   indent_down();
@@ -590,7 +601,7 @@ void t_perl_generator::generate_perl_struct_reader(ofstream& out, t_struct* tstr
 /**
  * Generates the write() method for a struct
  */
-void t_perl_generator::generate_perl_struct_writer(ofstream& out, t_struct* tstruct) {
+void t_perl_generator::generate_perl_struct_writer(ostream& out, t_struct* tstruct) {
   string name = tstruct->get_name();
   const vector<t_field*>& fields = tstruct->get_sorted_members();
   vector<t_field*>::const_iterator f_iter;
@@ -630,6 +641,31 @@ void t_perl_generator::generate_perl_struct_writer(ofstream& out, t_struct* tstr
 }
 
 /**
+ * Generates use clauses for included entities
+ *
+ * @param  os       The output stream
+ * @param  done     A flag reference to debounce the action
+ * @param  type     The type being processed
+ * @param  selfish  Flag to indicate if the current namespace types should be "use"d as well.
+ */
+void t_perl_generator::generate_use_includes(std::ostream& os, bool& done, t_type *type, bool selfish) {
+  t_program *current = type->get_program();
+  if (current && !done) {
+    std::vector<t_program*>& currInc = current->get_includes();
+    std::vector<t_program*>::size_type numInc = currInc.size();
+    if (selfish) {
+      os << "use " << perl_namespace(current) << "Types;" << endl;
+    }
+    for (std::vector<t_program*>::size_type i = 0; i < numInc; ++i) {
+      t_program* incProgram = currInc.at(i);
+      os << "use " << perl_namespace(incProgram) << "Types;" << endl;
+    }
+    os << endl;
+    done = true;
+  }
+}
+
+/**
  * Generates a thrift service.
  *
  * @param tservice The service definition
@@ -638,11 +674,10 @@ void t_perl_generator::generate_service(t_service* tservice) {
   string f_service_name = get_namespace_out_dir() + service_name_ + ".pm";
   f_service_.open(f_service_name.c_str());
 
-  f_service_ <<
-      ///      "package "<<service_name_<<";"<<endl<<
-      autogen_comment() << perl_includes();
+  f_service_ << autogen_comment() << perl_includes();
 
-  f_service_ << "use " << perl_namespace(tservice->get_program()) << "Types;" << endl;
+  bool done = false;
+  generate_use_includes(f_service_, done, tservice, true);
 
   t_service* extends_s = tservice->get_extends();
   if (extends_s != NULL) {
@@ -721,11 +756,11 @@ void t_perl_generator::generate_service_processor(t_service* tservice) {
              << "if (!$self->can($methodname)) {" << endl;
   indent_up();
 
-  f_service_ << indent() << "$input->skip(TType::STRUCT);" << endl << indent()
+  f_service_ << indent() << "$input->skip(Thrift::TType::STRUCT);" << endl << indent()
              << "$input->readMessageEnd();" << endl << indent()
-             << "my $x = new TApplicationException('Function '.$fname.' not implemented.', "
-                "TApplicationException::UNKNOWN_METHOD);" << endl << indent()
-             << "$output->writeMessageBegin($fname, TMessageType::EXCEPTION, $rseqid);" << endl
+             << "my $x = new Thrift::TApplicationException('Function '.$fname.' not implemented.', "
+                "Thrift::TApplicationException::UNKNOWN_METHOD);" << endl << indent()
+             << "$output->writeMessageBegin($fname, Thrift::TMessageType::EXCEPTION, $rseqid);" << endl
              << indent() << "$x->write($output);" << endl << indent()
              << "$output->writeMessageEnd();" << endl << indent()
              << "$output->getTransport()->flush();" << endl << indent() << "return;" << endl;
@@ -823,8 +858,8 @@ void t_perl_generator::generate_process_function(t_service* tservice, t_function
     f_service_ << indent() << "if ($@) {" << endl;
     indent_up();
     f_service_ << indent() << "$@ =~ s/^\\s+|\\s+$//g;" << endl
-               << indent() << "my $err = new TApplicationException(\"Unexpected Exception: \" . $@, TApplicationException::INTERNAL_ERROR);" << endl
-               << indent() << "$output->writeMessageBegin('" << tfunction->get_name() << "', TMessageType::EXCEPTION, $seqid);" << endl
+               << indent() << "my $err = new Thrift::TApplicationException(\"Unexpected Exception: \" . $@, Thrift::TApplicationException::INTERNAL_ERROR);" << endl
+               << indent() << "$output->writeMessageBegin('" << tfunction->get_name() << "', Thrift::TMessageType::EXCEPTION, $seqid);" << endl
                << indent() << "$err->write($output);" << endl
                << indent() << "$output->writeMessageEnd();" << endl
                << indent() << "$output->getTransport()->flush();" << endl
@@ -843,7 +878,7 @@ void t_perl_generator::generate_process_function(t_service* tservice, t_function
   }
 
   // Serialize the reply
-  f_service_ << indent() << "$output->writeMessageBegin('" << tfunction->get_name() << "', TMessageType::REPLY, $seqid);" << endl
+  f_service_ << indent() << "$output->writeMessageBegin('" << tfunction->get_name() << "', Thrift::TMessageType::REPLY, $seqid);" << endl
              << indent() << "$result->write($output);" << endl
              << indent() << "$output->writeMessageEnd();" << endl
              << indent() << "$output->getTransport()->flush();" << endl;
@@ -1068,7 +1103,7 @@ void t_perl_generator::generate_service_client(t_service* tservice) {
 
     // Serialize the request header
     f_service_ << indent() << "$self->{output}->writeMessageBegin('" << (*f_iter)->get_name()
-               << "', " << ((*f_iter)->is_oneway() ? "TMessageType::ONEWAY" : "TMessageType::CALL")
+               << "', " << ((*f_iter)->is_oneway() ? "Thrift::TMessageType::ONEWAY" : "Thrift::TMessageType::CALL")
                << ", $self->{seqid});" << endl;
 
     f_service_ << indent() << "my $args = new " << argsname << "();" << endl;
@@ -1104,8 +1139,8 @@ void t_perl_generator::generate_service_client(t_service* tservice) {
                  << indent() << "my $mtype = 0;" << endl << endl;
 
       f_service_ << indent() << "$self->{input}->readMessageBegin(\\$fname, \\$mtype, \\$rseqid);"
-                 << endl << indent() << "if ($mtype == TMessageType::EXCEPTION) {" << endl
-                 << indent() << "  my $x = new TApplicationException();" << endl << indent()
+                 << endl << indent() << "if ($mtype == Thrift::TMessageType::EXCEPTION) {" << endl
+                 << indent() << "  my $x = new Thrift::TApplicationException();" << endl << indent()
                  << "  $x->read($self->{input});" << endl << indent()
                  << "  $self->{input}->readMessageEnd();" << endl << indent() << "  die $x;" << endl
                  << indent() << "}" << endl;
@@ -1148,7 +1183,7 @@ void t_perl_generator::generate_service_client(t_service* tservice) {
 /**
  * Deserializes a field of any type.
  */
-void t_perl_generator::generate_deserialize_field(ofstream& out,
+void t_perl_generator::generate_deserialize_field(ostream& out,
                                                   t_field* tfield,
                                                   string prefix,
                                                   bool inclass) {
@@ -1221,15 +1256,15 @@ void t_perl_generator::generate_deserialize_field(ofstream& out,
  * buffer for deserialization, and that there is a variable protocol which
  * is a reference to a TProtocol serialization object.
  */
-void t_perl_generator::generate_deserialize_struct(ofstream& out,
+void t_perl_generator::generate_deserialize_struct(ostream& out,
                                                    t_struct* tstruct,
                                                    string prefix) {
-  out << indent() << "$" << prefix << " = new " << perl_namespace(tstruct->get_program())
-      << tstruct->get_name() << "();" << endl << indent() << "$xfer += $" << prefix
+  out << indent() << "$" << prefix << " = " << perl_namespace(tstruct->get_program())
+      << tstruct->get_name() << "->new();" << endl << indent() << "$xfer += $" << prefix
       << "->read($input);" << endl;
 }
 
-void t_perl_generator::generate_deserialize_container(ofstream& out, t_type* ttype, string prefix) {
+void t_perl_generator::generate_deserialize_container(ostream& out, t_type* ttype, string prefix) {
   scope_up(out);
 
   string size = tmp("_size");
@@ -1297,7 +1332,7 @@ void t_perl_generator::generate_deserialize_container(ofstream& out, t_type* tty
 /**
  * Generates code to deserialize a map
  */
-void t_perl_generator::generate_deserialize_map_element(ofstream& out, t_map* tmap, string prefix) {
+void t_perl_generator::generate_deserialize_map_element(ostream& out, t_map* tmap, string prefix) {
   string key = tmp("key");
   string val = tmp("val");
   t_field fkey(tmap->get_key_type(), key);
@@ -1312,7 +1347,7 @@ void t_perl_generator::generate_deserialize_map_element(ofstream& out, t_map* tm
   indent(out) << "$" << prefix << "->{$" << key << "} = $" << val << ";" << endl;
 }
 
-void t_perl_generator::generate_deserialize_set_element(ofstream& out, t_set* tset, string prefix) {
+void t_perl_generator::generate_deserialize_set_element(ostream& out, t_set* tset, string prefix) {
   string elem = tmp("elem");
   t_field felem(tset->get_elem_type(), elem);
 
@@ -1323,7 +1358,7 @@ void t_perl_generator::generate_deserialize_set_element(ofstream& out, t_set* ts
   indent(out) << "$" << prefix << "->{$" << elem << "} = 1;" << endl;
 }
 
-void t_perl_generator::generate_deserialize_list_element(ofstream& out,
+void t_perl_generator::generate_deserialize_list_element(ostream& out,
                                                          t_list* tlist,
                                                          string prefix) {
   string elem = tmp("elem");
@@ -1342,7 +1377,7 @@ void t_perl_generator::generate_deserialize_list_element(ofstream& out,
  * @param tfield The field to serialize
  * @param prefix Name to prepend to field name
  */
-void t_perl_generator::generate_serialize_field(ofstream& out, t_field* tfield, string prefix) {
+void t_perl_generator::generate_serialize_field(ostream& out, t_field* tfield, string prefix) {
   t_type* type = get_true_type(tfield->get_type());
 
   // Do nothing for void types
@@ -1413,7 +1448,7 @@ void t_perl_generator::generate_serialize_field(ofstream& out, t_field* tfield, 
  * @param tstruct The struct to serialize
  * @param prefix  String prefix to attach to all fields
  */
-void t_perl_generator::generate_serialize_struct(ofstream& out, t_struct* tstruct, string prefix) {
+void t_perl_generator::generate_serialize_struct(ostream& out, t_struct* tstruct, string prefix) {
   (void)tstruct;
   indent(out) << "$xfer += $" << prefix << "->write($output);" << endl;
 }
@@ -1421,7 +1456,7 @@ void t_perl_generator::generate_serialize_struct(ofstream& out, t_struct* tstruc
 /**
  * Writes out a container
  */
-void t_perl_generator::generate_serialize_container(ofstream& out, t_type* ttype, string prefix) {
+void t_perl_generator::generate_serialize_container(ostream& out, t_type* ttype, string prefix) {
   scope_up(out);
 
   if (ttype->is_map()) {
@@ -1485,7 +1520,7 @@ void t_perl_generator::generate_serialize_container(ofstream& out, t_type* ttype
  * Serializes the members of a map.
  *
  */
-void t_perl_generator::generate_serialize_map_element(ofstream& out,
+void t_perl_generator::generate_serialize_map_element(ostream& out,
                                                       t_map* tmap,
                                                       string kiter,
                                                       string viter) {
@@ -1499,7 +1534,7 @@ void t_perl_generator::generate_serialize_map_element(ofstream& out,
 /**
  * Serializes the members of a set.
  */
-void t_perl_generator::generate_serialize_set_element(ofstream& out, t_set* tset, string iter) {
+void t_perl_generator::generate_serialize_set_element(ostream& out, t_set* tset, string iter) {
   t_field efield(tset->get_elem_type(), iter);
   generate_serialize_field(out, &efield);
 }
@@ -1507,7 +1542,7 @@ void t_perl_generator::generate_serialize_set_element(ofstream& out, t_set* tset
 /**
  * Serializes the members of a list.
  */
-void t_perl_generator::generate_serialize_list_element(ofstream& out, t_list* tlist, string iter) {
+void t_perl_generator::generate_serialize_list_element(ostream& out, t_list* tlist, string iter) {
   t_field efield(tlist->get_elem_type(), iter);
   generate_serialize_field(out, &efield);
 }
@@ -1616,30 +1651,30 @@ string t_perl_generator::type_to_enum(t_type* type) {
     case t_base_type::TYPE_VOID:
       throw "NO T_VOID CONSTRUCT";
     case t_base_type::TYPE_STRING:
-      return "TType::STRING";
+      return "Thrift::TType::STRING";
     case t_base_type::TYPE_BOOL:
-      return "TType::BOOL";
+      return "Thrift::TType::BOOL";
     case t_base_type::TYPE_I8:
-      return "TType::BYTE";
+      return "Thrift::TType::BYTE";
     case t_base_type::TYPE_I16:
-      return "TType::I16";
+      return "Thrift::TType::I16";
     case t_base_type::TYPE_I32:
-      return "TType::I32";
+      return "Thrift::TType::I32";
     case t_base_type::TYPE_I64:
-      return "TType::I64";
+      return "Thrift::TType::I64";
     case t_base_type::TYPE_DOUBLE:
-      return "TType::DOUBLE";
+      return "Thrift::TType::DOUBLE";
     }
   } else if (type->is_enum()) {
-    return "TType::I32";
+    return "Thrift::TType::I32";
   } else if (type->is_struct() || type->is_xception()) {
-    return "TType::STRUCT";
+    return "Thrift::TType::STRUCT";
   } else if (type->is_map()) {
-    return "TType::MAP";
+    return "Thrift::TType::MAP";
   } else if (type->is_set()) {
-    return "TType::SET";
+    return "Thrift::TType::SET";
   } else if (type->is_list()) {
-    return "TType::LIST";
+    return "Thrift::TType::LIST";
   }
 
   throw "INVALID TYPE IN type_to_enum: " + type->get_name();

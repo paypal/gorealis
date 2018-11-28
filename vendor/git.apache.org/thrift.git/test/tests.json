@@ -6,12 +6,25 @@
     ],
     "server": {
       "command": [
-        "test_server"
+        "test_server",
+        "--lt-debug"
+      ],
+      "protocols": [
+        "binary:multi",
+        "compact:multic"
       ]
     },
     "client": {
       "command": [
-        "test_client"
+        "test_client",
+        "--lt-debug"
+      ],
+      "protocols": [
+        "multi:binary",
+        "multic:compact"
+      ],
+      "sockets": [
+        "ip-ssl"
       ]
     },
     "transports": [
@@ -23,15 +36,35 @@
     ],
     "protocols": [
       "binary",
-      "compact"
+      "compact",
+      "multi",
+      "multic"
     ],
     "workdir": "c_glib"
+  },
+  {
+    "name": "cl",
+    "server": {
+      "command": ["TestServer"],
+      "workdir": "cl",
+      "protocols": ["binary", "multi"],
+      "transports": ["buffered", "framed"],
+      "sockets": ["ip"]
+    },
+    "client": {
+      "command": ["TestClient"],
+      "workdir": "cl",
+      "protocols": ["binary", "multi"],
+      "transports": ["buffered", "framed"],
+      "sockets": ["ip"]
+    }
   },
   {
     "name": "d",
     "server": {
       "command": [
-        "thrift_test_server"
+        "thrift_test_server",
+        "--trace"
       ]
     },
     "client": {
@@ -72,7 +105,8 @@
     "transports": [
       "buffered",
       "framed",
-      "http"
+      "http",
+      "zlib"
     ],
     "sockets": [
       "ip",
@@ -87,29 +121,30 @@
   },
   {
     "name": "java",
-    "join_args": true,
-    "command": [
-      "ant",
-      "-f",
-      "build.xml",
-      "-Dno-gen-thrift=\"\"",
-      "-Dtestargs"
-    ],
-    "prepare": [
-      "ant",
-      "-f",
-      "build.xml",
-      "compile-test"
-    ],
+    "join_args": false,
     "server": {
-      "delay": 10,
-      "extra_args": ["run-testserver"]
+      "delay": 15,
+      "command": [
+        "build/runserver"
+      ],
+      "protocols": [
+        "binary:multi",
+        "compact:multic",
+        "json:multij"
+      ]
     },
     "client": {
       "timeout": 13,
-      "extra_args": ["run-testclient"],
+      "command": [
+        "build/runclient"
+      ],
       "transports": [
         "http"
+      ],
+      "protocols": [
+        "multi:binary",
+        "multic:compact",
+        "multij:json"
       ]
     },
     "transports": [
@@ -118,13 +153,16 @@
       "framed:fastframed"
     ],
     "sockets": [
-      "ip-ssl",
-      "ip"
+      "ip",
+      "ip-ssl"
     ],
     "protocols": [
-      "compact",
       "binary",
-      "json"
+      "compact",
+      "json",
+      "multi",
+      "multic",
+      "multij"
     ],
     "workdir": "../lib/java"
   },
@@ -141,7 +179,7 @@
       ]
     },
     "client": {
-      "timeout": 2.9,
+      "timeout": 6,
       "command": [
         "node",
         "client.js",
@@ -150,11 +188,13 @@
     },
     "transports": [
       "buffered",
-      "framed"
+      "framed",
+      "http"
     ],
     "sockets": [
       "ip",
-      "ip-ssl"
+      "ip-ssl",
+      "domain"
     ],
     "protocols": [
       "compact",
@@ -187,6 +227,7 @@
       "ip"
     ],
     "protocols": [
+      "header",
       "compact",
       "binary",
       "json"
@@ -210,11 +251,20 @@
         "--verbose",
         "--host=localhost",
         "--genpydir=gen-py"
+      ],
+      "protocols": [
+        "multi",
+        "multi:multia",
+        "multic",
+        "multic:multiac",
+        "multij"
       ]
     },
     "transports": [
       "buffered",
-      "framed"
+      "framed",
+      "http",
+      "zlib"
     ],
     "sockets": [
       "ip",
@@ -225,7 +275,8 @@
       "binary",
       "json",
       "binary:accel",
-      "compact:accelc"
+      "compact:accelc",
+      "header"
     ],
     "workdir": "py"
   },
@@ -248,22 +299,32 @@
         "TestClient.py",
         "--host=localhost",
         "--genpydir=gen-py"
+      ],
+      "protocols": [
+        "multi",
+        "multi:multia",
+        "multic",
+        "multic:multiac",
+        "multij"
       ]
     },
     "transports": [
       "buffered",
-      "framed"
+      "framed",
+      "http",
+      "zlib"
     ],
     "sockets": [
-      "ip-ssl",
-      "ip"
+      "ip",
+      "ip-ssl"
     ],
     "protocols": [
       "compact",
       "binary",
       "json",
       "binary:accel",
-      "compact:accelc"
+      "compact:accelc",
+      "header"
     ],
     "workdir": "py"
   },
@@ -272,18 +333,31 @@
     "server": {
       "command": [
         "TestServer"
+      ],
+      "protocols": [
+        "binary:multi",
+        "compact:multic",
+        "header:multih",
+        "json:multij"
       ]
     },
     "client": {
       "timeout": 8,
       "command": [
         "TestClient"
+      ],
+      "protocols": [
+        "multi:binary",
+        "multic:compact",
+        "multih:header",
+        "multij:json"
       ]
     },
     "transports": [
       "buffered",
       "http",
-      "framed"
+      "framed",
+      "zlib"
     ],
     "sockets": [
       "ip",
@@ -294,7 +368,11 @@
       "compact",
       "binary",
       "json",
-      "header"
+      "header",
+      "multi",
+      "multic",
+      "multih",
+      "multij"
     ],
     "workdir": "cpp"
   },
@@ -310,7 +388,8 @@
       "timeout": 5,
       "command": [
         "ruby",
-        "../integration/TestClient.rb"
+        "../integration/TestClient.rb",
+        "--"
       ]
     },
     "transports": [
@@ -318,13 +397,15 @@
       "framed"
     ],
     "sockets": [
-      "ip"
+      "domain",
+      "ip",
+      "ip-ssl"
     ],
     "protocols": [
-      "compact",
       "binary",
-      "json",
-      "binary:accel"
+      "binary:accel",
+      "compact",
+      "json"
     ],
     "workdir": "rb/gen-rb"
   },
@@ -359,9 +440,51 @@
         "mono",
         "TestClientServer.exe",
         "client"
+      ],
+      "protocols": [
+        "multi",
+        "multic",
+        "multi:binary",
+        "multic:compact"
       ]
     },
     "workdir": "csharp"
+  },
+  {
+    "name": "netcore",
+    "transports": [
+      "buffered",
+      "framed"
+    ],
+    "sockets": [
+      "ip",
+      "ip-ssl"
+    ],
+    "protocols": [
+      "binary",
+      "compact",
+      "json"
+    ],
+    "server": {
+      "command": [
+        "dotnet",
+        "run",
+        "--no-build",
+        "--project=Server/Server.csproj",
+        "server"
+      ]
+    },
+    "client": {
+      "timeout": 10,
+      "command": [
+        "dotnet",
+        "run",
+        "--no-build",
+        "--project=Client/Client.csproj",
+        "client"
+      ]
+    },
+        "workdir": "netcore"
   },
   {
     "name": "perl",
@@ -375,7 +498,8 @@
       "domain"
     ],
     "protocols": [
-      "binary"
+      "binary",
+      "multi"
     ],
     "client": {
       "command": [
@@ -383,7 +507,12 @@
         "-Igen-perl/",
         "-I../../lib/perl/lib/",
         "TestClient.pl",
-        "--cert=../keys/client.pem"
+        "--ca=../keys/CA.pem",
+        "--cert=../keys/client.crt",
+        "--key=../keys/client.key"
+      ],
+      "protocols": [
+        "multi:binary"
       ]
     },
     "server": {
@@ -392,8 +521,11 @@
         "-Igen-perl/",
         "-I../../lib/perl/lib/",
         "TestServer.pl",
-        "--cert=../keys/server.pem",
+        "--cert=../keys/server.crt",
         "--key=../keys/server.key"
+      ],
+      "protocols": [
+        "binary:multi"
       ]
     },
     "workdir": "perl"
@@ -416,8 +548,8 @@
       ],
       "command": [
         "php",
-        "-dextension_dir=../../lib/php/src/ext/thrift_protocol/modules/",
-        "--php-ini=../../lib/php/thrift_protocol.ini",
+        "-dextension_dir=php_ext_dir",
+        "--php-ini=test_php.ini",
         "--no-php-ini",
         "-ddisplay_errors=stderr",
         "-dlog_errors=0",
@@ -546,5 +678,45 @@
       ]
     },
     "workdir": "lua"
+  },
+  {
+    "name": "rs",
+    "env": {
+      "RUST_BACKTRACE": "1",
+      "RUST_LOG": "info"
+    },
+    "server": {
+      "command": [
+        "test_server"
+      ],
+      "protocols": [
+        "binary:multi",
+        "compact:multic"
+      ]
+    },
+    "client": {
+      "timeout": 6,
+      "command": [
+        "test_client"
+      ],
+      "protocols": [
+        "multi:binary",
+        "multic:compact"
+      ]
+    },
+    "sockets": [
+      "ip"
+    ],
+    "transports": [
+      "buffered",
+      "framed"
+    ],
+    "protocols": [
+      "binary",
+      "compact",
+      "multi",
+      "multic"
+    ],
+    "workdir": "rs/bin"
   }
 ]

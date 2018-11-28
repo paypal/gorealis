@@ -2,7 +2,8 @@
 
 namespace test\php;
 
-require_once __DIR__.'/../../lib/php/lib/Thrift/ClassLoader/ThriftClassLoader.php';
+/** @var \Composer\Autoload\ClassLoader $loader */
+$loader = require __DIR__ . '/../../vendor/autoload.php';
 
 use Thrift\ClassLoader\ThriftClassLoader;
 
@@ -13,14 +14,14 @@ if (!isset($MODE)) {
   $MODE = 'normal';
 }
 
-$loader = new ThriftClassLoader();
-$loader->registerNamespace('Thrift', __DIR__ . '/../../lib/php/lib');
-if ($GEN_DIR === 'gen-php-psr4') {
-  $loader->registerNamespace('ThriftTest', $GEN_DIR);
+
+if ($GEN_DIR == 'gen-php') {
+  $loader->addPsr4('', $GEN_DIR);
 } else {
+  $loader = new ThriftClassLoader();
   $loader->registerDefinition('ThriftTest', $GEN_DIR);
+  $loader->register();
 }
-$loader->register();
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -94,7 +95,7 @@ foreach ($argv as $arg) {
     $MODE = substr($arg, 12);
   } else if (substr($arg, 0, 11) == '--protocol=') {
     $PROTO = substr($arg, 11);
-  } 
+  }
 }
 
 $hosts = array('localhost');
@@ -261,6 +262,39 @@ foreach ($mapin as $key => $val) {
 }
 print_r("}\n");
 
+if ($mapin != $mapout) {
+    echo "**FAILED**\n";
+    $exitcode |= ERR_CONTAINERS;
+}
+
+$mapout = array();
+for ($i = 0; $i < 10; $i++) {
+    $mapout["key$i"] = "val$i";
+}
+print_r('testStringMap({');
+$first = true;
+foreach ($mapout as $key => $val) {
+  if ($first) {
+    $first = false;
+  } else {
+    print_r(", ");
+  }
+  print_r("\"$key\" => \"$val\"");
+}
+print_r("})");
+$mapin = $testClient->testStringMap($mapout);
+print_r(" = {");
+$first = true;
+foreach ($mapin as $key => $val) {
+  if ($first) {
+    $first = false;
+  } else {
+    print_r(", ");
+  }
+  print_r("\"$key\" => \"$val\"");
+}
+print_r("}\n");
+ksort($mapin);
 if ($mapin != $mapout) {
     echo "**FAILED**\n";
     $exitcode |= ERR_CONTAINERS;
@@ -459,6 +493,24 @@ try {
   print_r(' caught xception '.$x->errorCode.': '.$x->message."\n");
 }
 
+// Regression test for THRIFT-4263
+print_r("testBinarySerializer_Deserialize('foo')");
+try {
+  \Thrift\Serializer\TBinarySerializer::deserialize(base64_decode('foo'), \ThriftTest\Xtruct2::class);
+  echo "**FAILED**\n";
+  $exitcode |= ERR_STRUCTS;
+} catch (\Thrift\Exception\TTransportException $happy_exception) {
+  // We expected this due to binary data of base64_decode('foo') is less then 4
+  // bytes and it tries to find thrift version number in the transport by
+  // reading i32() at the beginning.  Casting to string validates that
+  // exception is still accessible in memory and not corrupted.  Without patch,
+  // PHP will error log that the exception doesn't have any tostring method,
+  // which is a lie due to corrupted memory.
+  for($i=99; $i > 0; $i--) {
+    (string)$happy_exception;
+  }
+  print_r("  SUCCESS\n");
+}
 
 /**
  * Normal tests done.
@@ -471,6 +523,19 @@ print_r("Total time: $elp ms\n");
 /**
  * Extraneous "I don't trust PHP to pack/unpack integer" tests
  */
+
+if ($protocol instanceof TBinaryProtocolAccelerated) {
+    // Regression check: check that method name is not double-freed
+    // Method name should not be an interned string.
+    $method_name = "Void";
+    $method_name = "test$method_name";
+
+    $seqid = 0;
+    $args = new \ThriftTest\ThriftTest_testVoid_args();
+    thrift_protocol_write_binary($protocol, $method_name, \Thrift\Type\TMessageType::CALL, $args, $seqid, $protocol->isStrictWrite());
+    $testClient->recv_testVoid();
+
+}
 
 // Max I32
 $num = pow(2, 30) + (pow(2, 30) - 1);

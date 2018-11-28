@@ -37,6 +37,7 @@ namespace delphi Thrift.Test
 namespace cocoa ThriftTest
 namespace lua ThriftTest
 namespace xsd test (uri = 'http://thrift.apache.org/ns/ThriftTest')
+namespace netcore ThriftTest
 
 // Presence of namespaces and sub-namespaces for which there is
 // no generator should compile with warnings only
@@ -320,13 +321,12 @@ service ThriftTest
 
 service SecondService
 {
-  void blahBlah()
   /**
    * Prints 'testString("%s")' with thing as '%s'
    * @param string thing - the string to print
    * @return string - returns the string 'thing'
    */
-  string       secondtestString(1: string thing),
+  string secondtestString(1: string thing)
 }
 
 struct VersioningTestV1 {

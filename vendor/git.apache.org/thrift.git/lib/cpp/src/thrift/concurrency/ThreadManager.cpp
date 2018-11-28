@@ -24,22 +24,18 @@
 #include <thrift/concurrency/Monitor.h>
 #include <thrift/concurrency/Util.h>
 
-#include <boost/shared_ptr.hpp>
+#include <thrift/stdcxx.h>
 
 #include <stdexcept>
 #include <deque>
 #include <set>
 
-#if defined(DEBUG)
-#include <iostream>
-#endif // defined(DEBUG)
-
 namespace apache {
 namespace thrift {
 namespace concurrency {
 
-using boost::shared_ptr;
-using boost::dynamic_pointer_cast;
+using stdcxx::shared_ptr;
+using stdcxx::dynamic_pointer_cast;
 
 /**
  * ThreadManager class
@@ -508,7 +504,7 @@ void ThreadManager::Impl::remove(shared_ptr<Runnable> task) {
   }
 }
 
-boost::shared_ptr<Runnable> ThreadManager::Impl::removeNextPending() {
+stdcxx::shared_ptr<Runnable> ThreadManager::Impl::removeNextPending() {
   Guard g(mutex_);
   if (state_ != ThreadManager::STARTED) {
     throw IllegalStateException(
@@ -517,7 +513,7 @@ boost::shared_ptr<Runnable> ThreadManager::Impl::removeNextPending() {
   }
 
   if (tasks_.empty()) {
-    return boost::shared_ptr<Runnable>();
+    return stdcxx::shared_ptr<Runnable>();
   }
 
   shared_ptr<ThreadManager::Task> task = tasks_.front();

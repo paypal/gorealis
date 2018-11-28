@@ -87,7 +87,7 @@ protected:
   void print_const_value(t_type* type, t_const_value* tvalue);
 
 private:
-  std::ofstream f_out_;
+  ofstream_with_content_based_conditional_update f_out_;
   std::list<string> edges;
   bool exception_arrows;
 };
@@ -225,7 +225,7 @@ void t_gv_generator::print_type(t_type* ttype, string struct_field_ref) {
       f_out_ << "\\>";
     }
   } else if (ttype->is_base_type()) {
-    f_out_ << (((t_base_type*)ttype)->is_binary() ? "binary" : ttype->get_name());
+    f_out_ << (ttype->is_binary() ? "binary" : ttype->get_name());
   } else {
     f_out_ << ttype->get_name();
     edges.push_back(struct_field_ref + " -> " + ttype->get_name());
@@ -249,8 +249,8 @@ void t_gv_generator::print_const_value(t_type* type, t_const_value* tvalue) {
     break;
   case t_const_value::CV_MAP: {
     f_out_ << "\\{ ";
-    map<t_const_value*, t_const_value*> map_elems = tvalue->get_map();
-    map<t_const_value*, t_const_value*>::iterator map_iter;
+    map<t_const_value*, t_const_value*, t_const_value::value_compare> map_elems = tvalue->get_map();
+    map<t_const_value*, t_const_value*, t_const_value::value_compare>::iterator map_iter;
     for (map_iter = map_elems.begin(); map_iter != map_elems.end(); map_iter++) {
       if (!first) {
         f_out_ << ", ";

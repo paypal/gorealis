@@ -42,7 +42,7 @@ CLIENT_CERT = os.path.join(ROOT_DIR, 'test', 'keys', 'client_v3.crt')
 CLIENT_KEY = os.path.join(ROOT_DIR, 'test', 'keys', 'client_v3.key')
 CLIENT_CA = os.path.join(ROOT_DIR, 'test', 'keys', 'CA.pem')
 
-TEST_CIPHERS = 'DES-CBC3-SHA'
+TEST_CIPHERS = 'DES-CBC3-SHA:ECDHE-RSA-AES128-GCM-SHA256'
 
 
 class ServerAcceptor(threading.Thread):
@@ -95,6 +95,11 @@ class ServerAcceptor(threading.Thread):
         self._client_accepted.wait()
         return self._client
 
+    def close(self):
+        if self._client:
+            self._client.close()
+        self._server.close()
+
 
 # Python 2.6 compat
 class AssertRaises(object):
@@ -125,9 +130,7 @@ class TSSLSocketTest(unittest.TestCase):
             client = TSSLSocket(host, port, unix_socket=path, **client_kwargs)
             yield acc, client
         finally:
-            if acc.client:
-                acc.client.close()
-            server.close()
+            acc.close()
 
     def _assert_connection_failure(self, server, path=None, **client_args):
         logging.disable(logging.CRITICAL)
@@ -237,6 +240,9 @@ class TSSLSocketTest(unittest.TestCase):
         self._assert_connection_success(server, cert_reqs=ssl.CERT_REQUIRED, ca_certs=SERVER_CERT)
 
     def test_client_cert(self):
+        if not _match_has_ipaddress:
+            print('skipping test_client_cert')
+            return
         server = self._server_socket(
             cert_reqs=ssl.CERT_REQUIRED, keyfile=SERVER_KEY,
             certfile=SERVER_CERT, ca_certs=CLIENT_CERT)
@@ -331,9 +337,10 @@ class TSSLSocketTest(unittest.TestCase):
 
         self._assert_connection_success(server, ssl_context=client_context)
 
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.WARN)
-    from thrift.transport.TSSLSocket import TSSLSocket, TSSLServerSocket
+    from thrift.transport.TSSLSocket import TSSLSocket, TSSLServerSocket, _match_has_ipaddress
     from thrift.transport.TTransport import TTransportException
 
     unittest.main()
