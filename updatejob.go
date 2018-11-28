@@ -35,7 +35,7 @@ func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 	job.jobConfig.TaskConfig = config
 
 	// Rebuild resource map from TaskConfig
-	for ptr := range config.Resources {
+	for _, ptr := range config.Resources {
 		if ptr.NumCpus != nil {
 			job.resources["cpu"].NumCpus = ptr.NumCpus
 			continue // Guard against Union violations that Go won't enforce
@@ -53,7 +53,7 @@ func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 	}
 
 	// Mirrors defaults set by Pystachio
-	req.Settings.UpdateOnlyTheseInstances = make(map[*aurora.Range]bool)
+	req.Settings.UpdateOnlyTheseInstances = []*aurora.Range{}
 	req.Settings.UpdateGroupSize = 1
 	req.Settings.WaitForBatchCompletion = false
 	req.Settings.MinWaitInInstanceRunningMs = 45000
@@ -75,7 +75,7 @@ func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings)
 	job.jobConfig.TaskConfig = config
 
 	// Rebuild resource map from TaskConfig
-	for ptr := range config.Resources {
+	for _, ptr := range config.Resources {
 		if ptr.NumCpus != nil {
 			job.resources["cpu"].NumCpus = ptr.NumCpus
 			continue // Guard against Union violations that Go won't enforce
@@ -142,7 +142,7 @@ func NewUpdateSettings() *aurora.JobUpdateSettings {
 
 	us := aurora.JobUpdateSettings{}
 	// Mirrors defaults set by Pystachio
-	us.UpdateOnlyTheseInstances = make(map[*aurora.Range]bool)
+	us.UpdateOnlyTheseInstances = []*aurora.Range{}
 	us.UpdateGroupSize = 1
 	us.WaitForBatchCompletion = false
 	us.MinWaitInInstanceRunningMs = 45000

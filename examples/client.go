@@ -294,47 +294,44 @@ func main() {
 			log.Fatal(err)
 		}
 
-		fmt.Println("Number of live instances: ", len(live))
+		fmt.Println("Active instances: ", live)
 
 	case "flexUp":
 		fmt.Println("Flexing up job")
 
-		numOfInstances := int32(4)
+		numOfInstances := 4
 
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
 		if err != nil {
 			log.Fatal(err)
 		}
-		currInstances := int32(len(live))
+		currInstances := len(live)
 		fmt.Println("Current num of instances: ", currInstances)
-		var instId int32
-		for k := range live {
-			instId = k
-		}
+
 		err = r.AddInstances(aurora.InstanceKey{
 			JobKey:     job.JobKey(),
-			InstanceId: instId,
+			InstanceId: live[0],
 		},
-			numOfInstances)
+			int32(numOfInstances))
 
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		if ok, err := monitor.Instances(job.JobKey(), currInstances+numOfInstances, 5*time.Second, 50*time.Second); !ok || err != nil {
+		if ok, err := monitor.Instances(job.JobKey(), int32(currInstances+numOfInstances), 5*time.Second, 50*time.Second); !ok || err != nil {
 			fmt.Println("Flexing up failed")
 		}
 
 	case "flexDown":
 		fmt.Println("Flexing down job")
 
-		numOfInstances := int32(2)
+		numOfInstances := 2
 
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
 		if err != nil {
 			log.Fatal(err)
 		}
-		currInstances := int32(len(live))
+		currInstances := len(live)
 		fmt.Println("Current num of instances: ", currInstances)
 
 		err = r.RemoveInstances(job.JobKey(), numOfInstances)
@@ -342,7 +339,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		if ok, err := monitor.Instances(job.JobKey(), currInstances-numOfInstances, 5*time.Second, 100*time.Second); !ok || err != nil {
+		if ok, err := monitor.Instances(job.JobKey(), int32(currInstances-numOfInstances), 5*time.Second, 100*time.Second); !ok || err != nil {
 			fmt.Println("flexDown failed")
 		}
 
@@ -352,13 +349,9 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		var instId int32
-		for k := range live {
-			instId = k
-		}
 		taskConfig, err := r.FetchTaskConfig(aurora.InstanceKey{
 			JobKey:     job.JobKey(),
-			InstanceId: instId,
+			InstanceId: live[0],
 		})
 		if err != nil {
 			log.Fatal(err)
@@ -451,14 +444,9 @@ func main() {
 			log.Fatal(err)
 
 		}
-		var instId int32
-		for k := range live {
-			instId = k
-			break
-		}
 		config, err := r.FetchTaskConfig(aurora.InstanceKey{
 			JobKey:     job.JobKey(),
-			InstanceId: instId,
+			InstanceId: live[0],
 		})
 
 		if err != nil {

@@ -59,9 +59,16 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval, timeout tim
 				m.Client.RealisConfig().logger.Println("No update found")
 				return false, errors.New("No update found for " + updateKey.String())
 			}
+
 			status := updateDetail.GetDetailsList()[0].Update.Summary.State.Status
 
-			if _, ok := aurora.ACTIVE_JOB_UPDATE_STATES[status]; !ok {
+			// Convert Thrift Set to Golang map for quick lookup
+			activeStatus := map[aurora.JobUpdateStatus]bool{}
+			for _, stat := range aurora.ACTIVE_JOB_UPDATE_STATES {
+				activeStatus[stat] = true
+			}
+
+			if _, ok := activeStatus[status]; !ok {
 
 				// Rolled forward is the only state in which an update has been successfully updated
 				// if we encounter an inactive state and it is not at rolled forward, update failed
@@ -93,7 +100,7 @@ func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval, timeo
 // Monitor a AuroraJob until all instances enter a desired status.
 // Defaults sets of desired statuses provided by the thrift API include:
 // ACTIVE_STATES, SLAVE_ASSIGNED_STATES, LIVE_STATES, and TERMINAL_STATES
-func (m *Monitor) ScheduleStatus(key *aurora.JobKey, instanceCount int32, desiredStatuses map[aurora.ScheduleStatus]bool, interval, timeout time.Duration) (bool, error) {
+func (m *Monitor) ScheduleStatus(key *aurora.JobKey, instanceCount int32, desiredStatuses []aurora.ScheduleStatus, interval, timeout time.Duration) (bool, error) {
 	if interval < 1*time.Second || timeout < 1*time.Second {
 		return false, errors.New("Interval or timeout cannot be below one second.")
 	}
@@ -164,7 +171,7 @@ func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode
 				return hostResult, errors.Wrap(err, "client error in monitor")
 			}
 
-			for status := range result.GetStatuses() {
+			for _, status := range result.GetStatuses() {
 
 				if _, ok := desiredMode[status.GetMode()]; ok {
 					hostResult[status.GetHost()] = true
