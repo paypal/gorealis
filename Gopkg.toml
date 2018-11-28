@@ -1,7 +1,6 @@
 [[constraint]]
     name = "git.apache.org/thrift.git"
-    branch = "0.10.0-http-client-fix"
-    source = "github.com/rdelval/thrift"
+    branch = "0.12.0"
 
 [[constraint]]
     name = "github.com/pkg/errors"

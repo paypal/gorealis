@@ -2,43 +2,59 @@
 
 
 [[projects]]
-  branch = "0.10.0-http-client-fix"
+  branch = "0.12.0"
+  digest = "1:0d6d7a897b900dd5924e36bfa05dea429d7049b4b0b87bd3f93cb5f0acc35a21"
   name = "git.apache.org/thrift.git"
   packages = ["lib/go/thrift"]
-  revision = "cb1afec972a85791e9b24a04b60fc9dbbfc3cda3"
-  source = "github.com/rdelval/thrift"
+  pruneopts = ""
+  revision = "5c1ecb67cde4d9aff7ed3188ab11566184b27bf0"
 
 [[projects]]
+  digest = "1:56c130d885a4aacae1dd9c7b71cfe39912c7ebc1ff7d2b46083c8812996dc43b"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
+  pruneopts = ""
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
   version = "v1.1.0"
 
 [[projects]]
+  digest = "1:df48fb76fb2a40edea0c9b3d960bc95e326660d82ff1114e1f88001f7a236b40"
   name = "github.com/pkg/errors"
   packages = ["."]
+  pruneopts = ""
   revision = "e881fd58d78e04cf6d0de1217f8707c8cc2249bc"
 
 [[projects]]
+  digest = "1:256484dbbcd271f9ecebc6795b2df8cad4c458dd0f5fd82a8c2fa0c29f233411"
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
+  pruneopts = ""
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:78bea5e26e82826dacc5fd64a1013a6711b7075ec8072819b89e6ad76cb8196d"
   name = "github.com/samuel/go-zookeeper"
   packages = ["zk"]
+  pruneopts = ""
   revision = "471cd4e61d7a78ece1791fa5faa0345dc8c7d5a5"
 
 [[projects]]
+  digest = "1:2d0dc026c4aef5e2f3a0e06a4dabe268b840d8f63190cf6894e02134a03f52c5"
   name = "github.com/stretchr/testify"
   packages = ["assert"]
+  pruneopts = ""
   revision = "b91bfb9ebec76498946beb6af7c0230c7cc7ba6c"
   version = "v1.2.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fdb631400420ca7299ad56b66175c9157ca073e3de52f666a84fc1d6fa893978"
+  input-imports = [
+    "git.apache.org/thrift.git/lib/go/thrift",
+    "github.com/pkg/errors",
+    "github.com/samuel/go-zookeeper/zk",
+    "github.com/stretchr/testify/assert",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
