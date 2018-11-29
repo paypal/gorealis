@@ -606,34 +606,34 @@ func (r *RealisClient) ScheduleCronJob(auroraJob *AuroraJob) error {
 	return nil
 }
 
-func (r *RealisClient) DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, error) {
+func (r *RealisClient) DescheduleCronJob(key *aurora.JobKey) error {
 
 	r.logger.DebugPrintf("DescheduleCronJob Thrift Payload: %+v\n", key)
 
-	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
+	_, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.DescheduleCronJob(nil, key)
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Error sending Cron AuroraJob De-schedule message to Aurora Scheduler")
+		return errors.Wrap(retryErr, "Error sending Cron AuroraJob De-schedule message to Aurora Scheduler")
 
 	}
-	return resp, nil
+	return nil
 
 }
 
-func (r *RealisClient) StartCronJob(key *aurora.JobKey) (*aurora.Response, error) {
+func (r *RealisClient) StartCronJob(key *aurora.JobKey) error {
 
 	r.logger.DebugPrintf("StartCronJob Thrift Payload: %+v\n", key)
 
-	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
+	_, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return r.client.StartCronJob(nil, key)
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Error sending Start Cron AuroraJob  message to Aurora Scheduler")
+		return errors.Wrap(retryErr, "Error sending Start Cron AuroraJob  message to Aurora Scheduler")
 	}
-	return resp, nil
+	return nil
 
 }
 
@@ -739,7 +739,7 @@ func (r *RealisClient) ResumeJobUpdate(updateKey *aurora.JobUpdateKey, message s
 }
 
 // Pulse AuroraJob Update on Aurora. UpdateID is returned from StartJobUpdate or the Aurora web UI.
-func (r *RealisClient) PulseJobUpdate(updateKey *aurora.JobUpdateKey) (*aurora.PulseJobUpdateResult_, error) {
+func (r *RealisClient) PulseJobUpdate(updateKey *aurora.JobUpdateKey) (aurora.JobUpdatePulseStatus, error) {
 
 	r.logger.DebugPrintf("PulseJobUpdate Thrift Payload: %+v\n", updateKey)
 
@@ -748,10 +748,15 @@ func (r *RealisClient) PulseJobUpdate(updateKey *aurora.JobUpdateKey) (*aurora.P
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Error sending PulseJobUpdate command to Aurora Scheduler")
+		return aurora.JobUpdatePulseStatus(0), errors.Wrap(retryErr, "Error sending PulseJobUpdate command to Aurora Scheduler")
 	}
 
-	return resp.GetResult_().GetPulseJobUpdateResult_(), nil
+	if resp.GetResult_() != nil && resp.GetResult_().GetPulseJobUpdateResult_() != nil {
+		return resp.GetResult_().GetPulseJobUpdateResult_().GetStatus(), nil
+	} else {
+		return aurora.JobUpdatePulseStatus(0), errors.New("Thrift error, field was nil unexpectedly")
+	}
+
 }
 
 // Scale up the number of instances under a job configuration using the configuration for specific
@@ -892,7 +897,7 @@ func (r *RealisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.Task
 	return tasks[0].AssignedTask.Task, nil
 }
 
-func (r *RealisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aurora.GetJobUpdateDetailsResult_, error) {
+func (r *RealisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) ([]*aurora.JobUpdateDetails, error) {
 
 	r.logger.DebugPrintf("GetJobUpdateDetails Thrift Payload: %+v\n", updateQuery)
 
@@ -903,7 +908,12 @@ func (r *RealisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aur
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "Unable to get job update details")
 	}
-	return resp.GetResult_().GetGetJobUpdateDetailsResult_(), nil
+
+	if resp.GetResult_() != nil && resp.GetResult_().GetGetJobUpdateDetailsResult_() != nil {
+		return resp.GetResult_().GetGetJobUpdateDetailsResult_().GetDetailsList(), nil
+	} else {
+		return nil, errors.New("Unknown Thrift error, field is nil.")
+	}
 }
 
 func (r *RealisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string) error {
@@ -927,9 +937,7 @@ func (r *RealisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string
 // Set a list of nodes to DRAINING. This means nothing will be able to be scheduled on them and any existing
 // tasks will be killed and re-scheduled elsewhere in the cluster. Tasks from DRAINING nodes are not guaranteed
 // to return to running unless there is enough capacity in the cluster to run them.
-func (r *RealisClient) DrainHosts(hosts ...string) (*aurora.DrainHostsResult_, error) {
-
-	var result *aurora.DrainHostsResult_
+func (r *RealisClient) DrainHosts(hosts ...string) ([]*aurora.HostStatus, error) {
 
 	if len(hosts) == 0 {
 		return nil, errors.New("no hosts provided to drain")
@@ -945,21 +953,20 @@ func (r *RealisClient) DrainHosts(hosts ...string) (*aurora.DrainHostsResult_, e
 	})
 
 	if retryErr != nil {
-		return result, errors.Wrap(retryErr, "Unable to recover connection")
+		return nil, errors.Wrap(retryErr, "Unable to recover connection")
 	}
 
-	if resp.GetResult_() != nil {
-		result = resp.GetResult_().GetDrainHostsResult_()
+	if resp.GetResult_() != nil && resp.GetResult_().GetDrainHostsResult_() != nil {
+		return resp.GetResult_().GetDrainHostsResult_().GetStatuses(), nil
+	} else {
+		return nil, errors.New("Thrift error: Field in response is nil unexpectedly.")
 	}
-
-	return result, nil
 }
 
 // Start SLA Aware Drain.
 // defaultSlaPolicy is the fallback SlaPolicy to use if a task does not have an SlaPolicy.
 // After timeoutSecs, tasks will be forcefully drained without checking SLA.
-func (r *RealisClient) SLADrainHosts(policy *aurora.SlaPolicy, timeout int64, hosts ...string) (*aurora.DrainHostsResult_, error) {
-	var result *aurora.DrainHostsResult_
+func (r *RealisClient) SLADrainHosts(policy *aurora.SlaPolicy, timeout int64, hosts ...string) ([]*aurora.HostStatus, error) {
 
 	if len(hosts) == 0 {
 		return nil, errors.New("no hosts provided to drain")
@@ -975,19 +982,17 @@ func (r *RealisClient) SLADrainHosts(policy *aurora.SlaPolicy, timeout int64, ho
 	})
 
 	if retryErr != nil {
-		return result, errors.Wrap(retryErr, "Unable to recover connection")
+		return nil, errors.Wrap(retryErr, "Unable to recover connection")
 	}
 
-	if resp.GetResult_() != nil {
-		result = resp.GetResult_().GetDrainHostsResult_()
+	if resp.GetResult_() != nil && resp.GetResult_().GetDrainHostsResult_() != nil {
+		return resp.GetResult_().GetDrainHostsResult_().GetStatuses(), nil
+	} else {
+		return nil, errors.New("Thrift error: Field in response is nil unexpectedly.")
 	}
-
-	return result, nil
 }
 
-func (r *RealisClient) StartMaintenance(hosts ...string) (*aurora.StartMaintenanceResult_, error) {
-
-	var result *aurora.StartMaintenanceResult_
+func (r *RealisClient) StartMaintenance(hosts ...string) ([]*aurora.HostStatus, error) {
 
 	if len(hosts) == 0 {
 		return nil, errors.New("no hosts provided to start maintenance on")
@@ -1003,19 +1008,17 @@ func (r *RealisClient) StartMaintenance(hosts ...string) (*aurora.StartMaintenan
 	})
 
 	if retryErr != nil {
-		return result, errors.Wrap(retryErr, "Unable to recover connection")
+		return nil, errors.Wrap(retryErr, "Unable to recover connection")
 	}
 
-	if resp.GetResult_() != nil {
-		result = resp.GetResult_().GetStartMaintenanceResult_()
+	if resp.GetResult_() != nil && resp.GetResult_().GetStartMaintenanceResult_() != nil {
+		return resp.GetResult_().GetStartMaintenanceResult_().GetStatuses(), nil
+	} else {
+		return nil, errors.New("Thrift error: Field in response is nil unexpectedly.")
 	}
-
-	return result, nil
 }
 
-func (r *RealisClient) EndMaintenance(hosts ...string) (*aurora.EndMaintenanceResult_, error) {
-
-	var result *aurora.EndMaintenanceResult_
+func (r *RealisClient) EndMaintenance(hosts ...string) ([]*aurora.HostStatus, error) {
 
 	if len(hosts) == 0 {
 		return nil, errors.New("no hosts provided to end maintenance on")
@@ -1031,14 +1034,15 @@ func (r *RealisClient) EndMaintenance(hosts ...string) (*aurora.EndMaintenanceRe
 	})
 
 	if retryErr != nil {
-		return result, errors.Wrap(retryErr, "Unable to recover connection")
+		return nil, errors.Wrap(retryErr, "Unable to recover connection")
 	}
 
-	if resp.GetResult_() != nil {
-		result = resp.GetResult_().GetEndMaintenanceResult_()
+	if resp.GetResult_() != nil && resp.GetResult_().GetEndMaintenanceResult_() != nil {
+		return resp.GetResult_().GetEndMaintenanceResult_().GetStatuses(), nil
+	} else {
+		return nil, errors.New("Thrift error: Field in response is nil unexpectedly.")
 	}
 
-	return result, nil
 }
 
 func (r *RealisClient) MaintenanceStatus(hosts ...string) (*aurora.MaintenanceStatusResult_, error) {
@@ -1105,7 +1109,12 @@ func (r *RealisClient) GetQuota(role string) (*aurora.GetQuotaResult_, error) {
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "Unable to get role quota")
 	}
-	return resp.GetResult_().GetGetQuotaResult_(), retryErr
+
+	if resp.GetResult_() != nil {
+		return resp.GetResult_().GetGetQuotaResult_(), nil
+	} else {
+		return nil, errors.New("Thrift error: Field in response is nil unexpectedly.")
+	}
 }
 
 // Force Aurora Scheduler to perform a snapshot and write to Mesos log
