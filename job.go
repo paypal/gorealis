@@ -29,26 +29,29 @@ type AuroraJob struct {
 
 // Create a AuroraJob object with everything initialized.
 func NewJob() *AuroraJob {
-	jobConfig := aurora.NewJobConfiguration()
-	taskConfig := aurora.NewTaskConfig()
-	jobKey := aurora.NewJobKey()
 
-	// AuroraJob Config
-	jobConfig.Key = jobKey
-	jobConfig.TaskConfig = taskConfig
+	jobKey := &aurora.JobKey{}
 
 	// Task Config
-	taskConfig.Job = jobKey
-	taskConfig.Container = aurora.NewContainer()
-	taskConfig.Container.Mesos = aurora.NewMesosContainer()
-	taskConfig.MesosFetcherUris = make([]*aurora.MesosFetcherURI, 0)
-	taskConfig.Metadata = make([]*aurora.Metadata, 0)
-	taskConfig.Constraints = make([]*aurora.Constraint, 0)
+	taskConfig := &aurora.TaskConfig{
+		Job:              jobKey,
+		MesosFetcherUris: make([]*aurora.MesosFetcherURI, 0),
+		Metadata:         make([]*aurora.Metadata, 0),
+		Constraints:      make([]*aurora.Constraint, 0),
+		// Container is a Union so one container field must be set. Set Mesos by default.
+		Container: NewMesosContainer().Build(),
+	}
+
+	// AuroraJob Config
+	jobConfig := &aurora.JobConfiguration{
+		Key:        jobKey,
+		TaskConfig: taskConfig,
+	}
 
 	// Resources
-	numCpus := aurora.NewResource()
-	ramMb := aurora.NewResource()
-	diskMb := aurora.NewResource()
+	numCpus := &aurora.Resource{}
+	ramMb := &aurora.Resource{}
+	diskMb := &aurora.Resource{}
 
 	numCpus.NumCpus = new(float64)
 	ramMb.RamMb = new(int64)
@@ -78,7 +81,7 @@ func (j *AuroraJob) Environment(env string) *AuroraJob {
 func (j *AuroraJob) Role(role string) *AuroraJob {
 	j.jobConfig.Key.Role = role
 
-	//Will be deprecated
+	// Will be deprecated
 	identity := &aurora.Identity{User: role}
 	j.jobConfig.Owner = identity
 	j.jobConfig.TaskConfig.Owner = identity
