@@ -125,7 +125,7 @@ func init() {
 	}
 }
 
-func CreateRealisClient(config *Config) (realis.Realis, error) {
+func CreateRealisClient(config *Config) (*realis.RealisClient, error) {
 	var transportOption realis.ClientOption
 	// Configuring transport protocol. If not transport is provided, then using JSON as the
 	// default transport protocol.
@@ -205,20 +205,18 @@ func main() {
 		}
 
 		fmt.Println("Creating Job...")
-		if resp, jobCreationErr := r.CreateJob(auroraJob); jobCreationErr != nil {
+		if jobCreationErr := r.CreateJob(auroraJob); jobCreationErr != nil {
 			fmt.Println("Error creating Aurora job: ", jobCreationErr)
 			os.Exit(1)
 		} else {
-			if resp.ResponseCode == aurora.ResponseCode_OK {
-				if ok, monitorErr := monitor.Instances(auroraJob.JobKey(), auroraJob.GetInstanceCount(), 5, 50); !ok || monitorErr != nil {
-					if _, jobErr := r.KillJob(auroraJob.JobKey()); jobErr !=
-						nil {
-						fmt.Println(jobErr)
-						os.Exit(1)
-					} else {
-						fmt.Println("ok: ", ok)
-						fmt.Println("jobErr: ", jobErr)
-					}
+			if ok, monitorErr := monitor.Instances(auroraJob.JobKey(), auroraJob.GetInstanceCount(), 5, 50); !ok || monitorErr != nil {
+				if jobErr := r.KillJob(auroraJob.JobKey()); jobErr !=
+					nil {
+					fmt.Println(jobErr)
+					os.Exit(1)
+				} else {
+					fmt.Println("ok: ", ok)
+					fmt.Println("jobErr: ", jobErr)
 				}
 			}
 		}
