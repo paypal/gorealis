@@ -243,19 +243,17 @@ func main() {
 
 	case "startCron":
 		fmt.Println("Starting a Cron job")
-		resp, err := r.StartCronJob(job.JobKey())
+		err := r.StartCronJob(job.JobKey())
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(resp.String())
 
 	case "descheduleCron":
 		fmt.Println("Descheduling a Cron job")
-		resp, err := r.DescheduleCronJob(job.JobKey())
+		err := r.DescheduleCronJob(job.JobKey())
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(resp.String())
 
 	case "kill":
 		fmt.Println("Killing job")
@@ -504,7 +502,7 @@ func main() {
 			log.Fatal("No hosts specified to drain")
 		}
 		hosts := strings.Split(hostList, ",")
-		result, err := r.DrainHosts(hosts...)
+		_, err := r.DrainHosts(hosts...)
 		if err != nil {
 			log.Fatalf("error: %+v\n", err.Error())
 		}
@@ -523,8 +521,6 @@ func main() {
 			}
 			log.Fatalf("error: %+v\n", err.Error())
 		}
-
-		fmt.Print(result.String())
 
 	case "SLADrainHosts":
 		fmt.Println("Setting hosts to DRAINING using SLA aware draining")
@@ -535,7 +531,7 @@ func main() {
 
 		policy := aurora.SlaPolicy{PercentageSlaPolicy: &aurora.PercentageSlaPolicy{Percentage: 50.0}}
 
-		result, err := r.SLADrainHosts(&policy, 30, hosts...)
+		_, err := r.SLADrainHosts(&policy, 30, hosts...)
 		if err != nil {
 			log.Fatalf("error: %+v\n", err.Error())
 		}
@@ -555,15 +551,13 @@ func main() {
 			log.Fatalf("error: %+v\n", err.Error())
 		}
 
-		fmt.Print(result.String())
-
 	case "endMaintenance":
 		fmt.Println("Setting hosts to ACTIVE")
 		if hostList == "" {
 			log.Fatal("No hosts specified to drain")
 		}
 		hosts := strings.Split(hostList, ",")
-		result, err := r.EndMaintenance(hosts...)
+		_, err := r.EndMaintenance(hosts...)
 		if err != nil {
 			log.Fatalf("error: %+v\n", err.Error())
 		}
@@ -582,8 +576,6 @@ func main() {
 			}
 			log.Fatalf("error: %+v\n", err.Error())
 		}
-
-		fmt.Print(result.String())
 
 	case "getPendingReasons":
 		fmt.Println("Getting pending reasons")
