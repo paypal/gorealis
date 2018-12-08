@@ -125,7 +125,7 @@ func init() {
 	}
 }
 
-func CreateRealisClient(config *Config) (*realis.RealisClient, error) {
+func CreateRealisClient(config *Config) (*realis.Client, error) {
 	var transportOption realis.ClientOption
 	// Configuring transport protocol. If not transport is provided, then using JSON as the
 	// default transport protocol.
@@ -157,7 +157,7 @@ func CreateRealisClient(config *Config) (*realis.RealisClient, error) {
 		clientOptions = append(clientOptions, realis.Debug())
 	}
 
-	return realis.NewRealisClient(clientOptions...)
+	return realis.NewClient(clientOptions...)
 }
 
 func main() {
@@ -165,7 +165,6 @@ func main() {
 		fmt.Println(clientCreationErr)
 		os.Exit(1)
 	} else {
-		monitor := &realis.Monitor{Client: r}
 		defer r.Close()
 		uris := job.URIs
 		labels := job.Labels
@@ -209,7 +208,7 @@ func main() {
 			fmt.Println("Error creating Aurora job: ", jobCreationErr)
 			os.Exit(1)
 		} else {
-			if ok, monitorErr := monitor.Instances(auroraJob.JobKey(), auroraJob.GetInstanceCount(), 5, 50); !ok || monitorErr != nil {
+			if ok, monitorErr := r.InstancesMonitor(auroraJob.JobKey(), auroraJob.GetInstanceCount(), 5, 50); !ok || monitorErr != nil {
 				if jobErr := r.KillJob(auroraJob.JobKey()); jobErr !=
 					nil {
 					fmt.Println(jobErr)

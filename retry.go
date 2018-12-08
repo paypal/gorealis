@@ -116,12 +116,12 @@ func ExponentialBackoff(backoff Backoff, logger Logger, condition ConditionFunc)
 type auroraThriftCall func() (resp *aurora.Response, err error)
 
 // Duplicates the functionality of ExponentialBackoff but is specifically targeted towards ThriftCalls.
-func (r *RealisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*aurora.Response, error) {
+func (c *Client) thriftCallWithRetries(thriftCall auroraThriftCall) (*aurora.Response, error) {
 	var resp *aurora.Response
 	var clientErr error
 	var curStep int
 
-	backoff := r.config.backoff
+	backoff := c.config.backoff
 	duration := backoff.Duration
 
 	for curStep = 0; curStep < backoff.Steps; curStep++ {
@@ -133,7 +133,7 @@ func (r *RealisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 				adjusted = Jitter(duration, backoff.Jitter)
 			}
 
-			r.logger.Printf("A retriable error occurred during thrift call, backing off for %v before retry %v\n", adjusted, curStep)
+			c.logger.Printf("A retriable error occurred during thrift call, backing off for %v before retry %v\n", adjusted, curStep)
 
 			time.Sleep(adjusted)
 			duration = time.Duration(float64(duration) * backoff.Factor)
@@ -143,12 +143,12 @@ func (r *RealisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 		// Placing this in an anonymous function in order to create a new, short-lived stack allowing unlock
 		// to be run in case of a panic inside of thriftCall.
 		func() {
-			r.lock.Lock()
-			defer r.lock.Unlock()
+			c.lock.Lock()
+			defer c.lock.Unlock()
 
 			resp, clientErr = thriftCall()
 
-			r.logger.DebugPrintf("Aurora Thrift Call ended resp: %v clientErr: %v\n", resp, clientErr)
+			c.logger.DebugPrintf("Aurora Thrift Call ended resp: %v clientErr: %v\n", resp, clientErr)
 		}()
 
 		// Check if our thrift call is returning an error. This is a retriable event as we don't know
@@ -156,12 +156,12 @@ func (r *RealisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 		if clientErr != nil {
 
 			// Print out the error to the user
-			r.logger.Printf("Client Error: %v\n", clientErr)
+			c.logger.Printf("Client Error: %v\n", clientErr)
 
 			// Determine if error is a temporary URL error by going up the stack
 			e, ok := clientErr.(thrift.TTransportException)
 			if ok {
-				r.logger.DebugPrint("Encountered a transport exception")
+				c.logger.DebugPrint("Encountered a transport exception")
 
 				e, ok := e.Err().(*url.Error)
 				if ok {
@@ -176,7 +176,7 @@ func (r *RealisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 
 			// In the future, reestablish connection should be able to check if it is actually possible
 			// to make a thrift call to Aurora. For now, a reconnect should always lead to a retry.
-			r.ReestablishConn()
+			c.ReestablishConn()
 
 		} else {
 
@@ -195,31 +195,31 @@ func (r *RealisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 
 			// If the response code is transient, continue retrying
 			case aurora.ResponseCode_ERROR_TRANSIENT:
-				r.logger.Println("Aurora replied with Transient error code, retrying")
+				c.logger.Println("Aurora replied with Transient error code, retrying")
 				continue
 
-			// Failure scenarios, these indicate a bad payload or a bad config. Stop retrying.
+			// Failure scenarios, these indicate a bad payload or a bad clientConfig. Stop retrying.
 			case aurora.ResponseCode_INVALID_REQUEST,
 				aurora.ResponseCode_ERROR,
 				aurora.ResponseCode_AUTH_FAILED,
 				aurora.ResponseCode_JOB_UPDATING_ERROR:
-				r.logger.Printf("Terminal Response Code %v from Aurora, won't retry\n", resp.GetResponseCode().String())
+				c.logger.Printf("Terminal Response Code %v from Aurora, won't retry\n", resp.GetResponseCode().String())
 				return resp, errors.New(response.CombineMessage(resp))
 
 				// The only case that should fall down to here is a WARNING response code.
 				// It is currently not used as a response in the scheduler so it is unknown how to handle it.
 			default:
-				r.logger.DebugPrintf("unhandled response code %v received from Aurora\n", responseCode)
+				c.logger.DebugPrintf("unhandled response code %v received from Aurora\n", responseCode)
 				return nil, errors.Errorf("unhandled response code from Aurora %v\n", responseCode.String())
 			}
 		}
 
 	}
 
-	r.logger.DebugPrintf("it took %v retries to complete this operation\n", curStep)
+	c.logger.DebugPrintf("it took %v retries to complete this operation\n", curStep)
 
 	if curStep > 1 {
-		r.config.logger.Printf("retried this thrift call %d time(s)", curStep)
+		c.config.logger.Printf("retried this thrift call %d time(s)", curStep)
 	}
 
 	// Provide more information to the user wherever possible.

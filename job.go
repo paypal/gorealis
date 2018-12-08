@@ -32,7 +32,7 @@ func NewJob() *AuroraJob {
 
 	jobKey := &aurora.JobKey{}
 
-	// Task Config
+	// Task clientConfig
 	taskConfig := &aurora.TaskConfig{
 		Job:              jobKey,
 		MesosFetcherUris: make([]*aurora.MesosFetcherURI, 0),
@@ -42,7 +42,7 @@ func NewJob() *AuroraJob {
 		Container: NewMesosContainer().Build(),
 	}
 
-	// AuroraJob Config
+	// AuroraJob clientConfig
 	jobConfig := &aurora.JobConfiguration{
 		Key:        jobKey,
 		TaskConfig: taskConfig,

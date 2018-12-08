@@ -75,8 +75,7 @@ func main() {
 
 	var job *realis.AuroraJob
 	var err error
-	var monitor *realis.Monitor
-	var r *realis.RealisClient
+	var r *realis.Client
 
 	clientOptions := []realis.ClientOption{
 		realis.BasicAuth(username, password),
@@ -91,7 +90,7 @@ func main() {
 		realis.Debug(),
 	}
 
-	//check if zkUrl is available.
+	// Check if zkUrl is available.
 	if zkUrl != "" {
 		fmt.Println("zkUrl: ", zkUrl)
 		clientOptions = append(clientOptions, realis.ZKUrl(zkUrl))
@@ -107,11 +106,10 @@ func main() {
 		clientOptions = append(clientOptions, realis.ClientCerts(clientKey, clientCert))
 	}
 
-	r, err = realis.NewRealisClient(clientOptions...)
+	r, err = realis.NewClient(clientOptions...)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	monitor = &realis.Monitor{r}
 	defer r.Close()
 
 	switch executor {
@@ -171,7 +169,7 @@ func main() {
 			log.Fatalln(err)
 		}
 
-		if ok, mErr := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 5*time.Second, 50*time.Second); !ok || mErr != nil {
+		if ok, mErr := r.InstancesMonitor(job.JobKey(), job.GetInstanceCount(), 5*time.Second, 50*time.Second); !ok || mErr != nil {
 			err := r.KillJob(job.JobKey())
 			if err != nil {
 				log.Fatalln(err)
@@ -190,7 +188,7 @@ func main() {
 		}
 		fmt.Println(result.String())
 
-		if ok, mErr := monitor.JobUpdate(*result.GetKey(), 5*time.Second, 180*time.Second); !ok || mErr != nil {
+		if ok, mErr := r.JobUpdateMonitor(*result.GetKey(), 5*time.Second, 180*time.Second); !ok || mErr != nil {
 			err := r.AbortJobUpdate(*result.GetKey(), "Monitor timed out")
 			err = r.KillJob(job.JobKey())
 			if err != nil {
@@ -208,7 +206,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 10*time.Second, 300*time.Second); !ok || err != nil {
+		if ok, err := r.InstancesMonitor(job.JobKey(), job.GetInstanceCount(), 10*time.Second, 300*time.Second); !ok || err != nil {
 			err := r.KillJob(job.JobKey())
 			if err != nil {
 				log.Fatal(err)
@@ -224,7 +222,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 10*time.Second, 300*time.Second); !ok || err != nil {
+		if ok, err := r.InstancesMonitor(job.JobKey(), job.GetInstanceCount(), 10*time.Second, 300*time.Second); !ok || err != nil {
 			err := r.KillJob(job.JobKey())
 			if err != nil {
 				log.Fatal(err)
@@ -263,7 +261,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		if ok, err := monitor.Instances(job.JobKey(), 0, 5*time.Second, 50*time.Second); !ok || err != nil {
+		if ok, err := r.InstancesMonitor(job.JobKey(), 0, 5*time.Second, 50*time.Second); !ok || err != nil {
 			log.Fatal("Unable to kill all instances of job")
 		}
 
@@ -316,7 +314,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		if ok, err := monitor.Instances(job.JobKey(), int32(currInstances+numOfInstances), 5*time.Second, 50*time.Second); !ok || err != nil {
+		if ok, err := r.InstancesMonitor(job.JobKey(), int32(currInstances+numOfInstances), 5*time.Second, 50*time.Second); !ok || err != nil {
 			fmt.Println("Flexing up failed")
 		}
 
@@ -337,7 +335,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		if ok, err := monitor.Instances(job.JobKey(), int32(currInstances-numOfInstances), 5*time.Second, 100*time.Second); !ok || err != nil {
+		if ok, err := r.InstancesMonitor(job.JobKey(), int32(currInstances-numOfInstances), 5*time.Second, 100*time.Second); !ok || err != nil {
 			fmt.Println("flexDown failed")
 		}
 
@@ -363,7 +361,10 @@ func main() {
 		}
 
 		jobUpdateKey := result.GetKey()
-		monitor.JobUpdate(*jobUpdateKey, 5*time.Second, 6*time.Minute)
+		_, err = r.JobUpdateMonitor(*jobUpdateKey, 5*time.Second, 6*time.Minute)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 	case "pauseJobUpdate":
 		err := r.PauseJobUpdate(&aurora.JobUpdateKey{
@@ -508,7 +509,7 @@ func main() {
 		}
 
 		// Monitor change to DRAINING and DRAINED mode
-		hostResult, err := monitor.HostMaintenance(
+		hostResult, err := r.HostMaintenanceMonitor(
 			hosts,
 			[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
 			5*time.Second,
@@ -537,7 +538,7 @@ func main() {
 		}
 
 		// Monitor change to DRAINING and DRAINED mode
-		hostResult, err := monitor.HostMaintenance(
+		hostResult, err := r.HostMaintenanceMonitor(
 			hosts,
 			[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
 			5*time.Second,
@@ -563,7 +564,7 @@ func main() {
 		}
 
 		// Monitor change to DRAINING and DRAINED mode
-		hostResult, err := monitor.HostMaintenance(
+		hostResult, err := r.HostMaintenanceMonitor(
 			hosts,
 			[]aurora.MaintenanceMode{aurora.MaintenanceMode_NONE},
 			5*time.Second,

@@ -28,15 +28,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var r *realis.RealisClient
-var monitor *realis.Monitor
+var r *realis.Client
 var thermosPayload []byte
 
 func TestMain(m *testing.M) {
 	var err error
 
 	// New configuration to connect to docker container
-	r, err = realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
+	r, err = realis.NewClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
 		realis.BasicAuth("aurora", "secret"),
 		realis.Timeout(20*time.Second))
 
@@ -46,9 +45,6 @@ func TestMain(m *testing.M) {
 	}
 
 	defer r.Close()
-
-	// Create monitor
-	monitor = &realis.Monitor{Client: r}
 
 	thermosPayload, err = ioutil.ReadFile("examples/thermos_payload.json")
 	if err != nil {
@@ -67,7 +63,7 @@ func TestNonExistentEndpoint(t *testing.T) {
 		Jitter:   0.1}
 
 	// Attempt to connect to a bad endpoint
-	r, err := realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081/doesntexist/"),
+	r, err := realis.NewClient(realis.SchedulerUrl("http://192.168.33.7:8081/doesntexist/"),
 		realis.Timeout(200*time.Millisecond),
 		realis.BackOff(backoff),
 	)
@@ -90,7 +86,7 @@ func TestNonExistentEndpoint(t *testing.T) {
 }
 
 func TestThriftBinary(t *testing.T) {
-	r, err := realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
+	r, err := realis.NewClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
 		realis.BasicAuth("aurora", "secret"),
 		realis.Timeout(20*time.Second),
 		realis.ThriftBinary())
@@ -112,7 +108,7 @@ func TestThriftBinary(t *testing.T) {
 }
 
 func TestThriftJSON(t *testing.T) {
-	r, err := realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
+	r, err := realis.NewClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
 		realis.BasicAuth("aurora", "secret"),
 		realis.Timeout(20*time.Second),
 		realis.ThriftJSON())
@@ -134,7 +130,7 @@ func TestThriftJSON(t *testing.T) {
 }
 
 func TestNoopLogger(t *testing.T) {
-	r, err := realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
+	r, err := realis.NewClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
 		realis.BasicAuth("aurora", "secret"),
 		realis.SetLogger(realis.NoopLogger{}))
 
@@ -196,7 +192,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Test Instances Monitor
-	success, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 1*time.Second, 50*time.Second)
+	success, err := r.InstancesMonitor(job.JobKey(), job.GetInstanceCount(), 1*time.Second, 50*time.Second)
 	assert.True(t, success)
 	assert.NoError(t, err)
 
@@ -223,7 +219,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		err := r.KillJob(job.JobKey())
 		assert.NoError(t, err)
 
-		success, err := monitor.Instances(job.JobKey(), 0, 1*time.Second, 50*time.Second)
+		success, err := r.InstancesMonitor(job.JobKey(), 0, 1*time.Second, 50*time.Second)
 		assert.True(t, success)
 		assert.NoError(t, err)
 	})
@@ -352,8 +348,9 @@ func TestRealisClient_CreateService_WithPulse_Thermos(t *testing.T) {
 	}
 
 	t.Run("TestRealisClient_KillJob_Thermos", func(t *testing.T) {
-		r.AbortJobUpdate(*updateDetails[0].GetUpdate().GetSummary().GetKey(), "")
-		err := r.KillJob(job.JobKey())
+		err := r.AbortJobUpdate(*updateDetails[0].GetUpdate().GetSummary().GetKey(), "")
+		assert.NoError(t, err)
+		err = r.KillJob(job.JobKey())
 		assert.NoError(t, err)
 	})
 
@@ -386,7 +383,7 @@ func TestRealisClient_CreateService(t *testing.T) {
 	var ok bool
 	var mErr error
 
-	if ok, mErr = monitor.JobUpdate(*result.GetKey(), 5*time.Second, 180*time.Second); !ok || mErr != nil {
+	if ok, mErr = r.JobUpdateMonitor(*result.GetKey(), 5*time.Second, 180*time.Second); !ok || mErr != nil {
 		// Update may already be in a terminal state so don't check for error
 		err := r.AbortJobUpdate(*result.GetKey(), "Monitor timed out.")
 
@@ -466,7 +463,7 @@ func TestRealisClient_StartMaintenance(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Monitor change to DRAINING and DRAINED mode
-	hostResults, err := monitor.HostMaintenance(
+	hostResults, err := r.HostMaintenanceMonitor(
 		hosts,
 		[]aurora.MaintenanceMode{aurora.MaintenanceMode_SCHEDULED},
 		1*time.Second,
@@ -478,7 +475,7 @@ func TestRealisClient_StartMaintenance(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Monitor change to DRAINING and DRAINED mode
-	_, err = monitor.HostMaintenance(
+	_, err = r.HostMaintenanceMonitor(
 		hosts,
 		[]aurora.MaintenanceMode{aurora.MaintenanceMode_NONE},
 		5*time.Second,
@@ -492,7 +489,7 @@ func TestRealisClient_DrainHosts(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Monitor change to DRAINING and DRAINED mode
-	hostResults, err := monitor.HostMaintenance(
+	hostResults, err := r.HostMaintenanceMonitor(
 		hosts,
 		[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
 		1*time.Second,
@@ -502,7 +499,7 @@ func TestRealisClient_DrainHosts(t *testing.T) {
 
 	t.Run("TestRealisClient_MonitorNontransitioned", func(t *testing.T) {
 		// Monitor change to DRAINING and DRAINED mode
-		hostResults, err := monitor.HostMaintenance(
+		hostResults, err := r.HostMaintenanceMonitor(
 			append(hosts, "IMAGINARY_HOST"),
 			[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
 			1*time.Second,
@@ -518,7 +515,7 @@ func TestRealisClient_DrainHosts(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Monitor change to DRAINING and DRAINED mode
-		_, err = monitor.HostMaintenance(
+		_, err = r.HostMaintenanceMonitor(
 			hosts,
 			[]aurora.MaintenanceMode{aurora.MaintenanceMode_NONE},
 			5*time.Second,
@@ -539,7 +536,7 @@ func TestRealisClient_SLADrainHosts(t *testing.T) {
 	}
 
 	// Monitor change to DRAINING and DRAINED mode
-	hostResults, err := monitor.HostMaintenance(
+	hostResults, err := r.HostMaintenanceMonitor(
 		hosts,
 		[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
 		1*time.Second,
@@ -551,7 +548,7 @@ func TestRealisClient_SLADrainHosts(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Monitor change to DRAINING and DRAINED mode
-	_, err = monitor.HostMaintenance(
+	_, err = r.HostMaintenanceMonitor(
 		hosts,
 		[]aurora.MaintenanceMode{aurora.MaintenanceMode_NONE},
 		5*time.Second,
@@ -587,7 +584,7 @@ func TestRealisClient_SessionThreadSafety(t *testing.T) {
 			defer wg.Done()
 
 			// Test Schedule status monitor for terminal state and timing out after 30 seconds
-			success, err := monitor.ScheduleStatus(job.JobKey(), job.GetInstanceCount(), aurora.LIVE_STATES, 1, 30)
+			success, err := r.ScheduleStatusMonitor(job.JobKey(), job.GetInstanceCount(), aurora.LIVE_STATES, 1, 30)
 			assert.False(t, success)
 			assert.Error(t, err)
 

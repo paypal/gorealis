@@ -29,7 +29,7 @@ const (
 )
 
 // Polls the scheduler every certain amount of time to see if the update has succeeded
-func (c *RealisClient) JobUpdateMonitor(updateKey aurora.JobUpdateKey, interval, timeout time.Duration) (bool, error) {
+func (c *Client) JobUpdateMonitor(updateKey aurora.JobUpdateKey, interval, timeout time.Duration) (bool, error) {
 	if interval < 1*time.Second {
 		interval = interval * time.Second
 	}
@@ -50,13 +50,13 @@ func (c *RealisClient) JobUpdateMonitor(updateKey aurora.JobUpdateKey, interval,
 	for {
 		select {
 		case <-ticker.C:
-			updateDetail, cliErr := m.JobUpdateDetails(updateQ)
+			updateDetail, cliErr := c.JobUpdateDetails(updateQ)
 			if cliErr != nil {
 				return false, cliErr
 			}
 
 			if len(updateDetail) == 0 {
-				m.RealisConfig().logger.Println("No update found")
+				c.RealisConfig().logger.Println("No update found")
 				return false, errors.New("No update found for " + updateKey.String())
 			}
 
@@ -88,14 +88,14 @@ func (c *RealisClient) JobUpdateMonitor(updateKey aurora.JobUpdateKey, interval,
 }
 
 // Monitor a AuroraJob until all instances enter one of the LiveStates
-func (c *RealisClient) InstancesMonitor(key *aurora.JobKey, instances int32, interval, timeout time.Duration) (bool, error) {
+func (c *Client) InstancesMonitor(key *aurora.JobKey, instances int32, interval, timeout time.Duration) (bool, error) {
 	return c.ScheduleStatusMonitor(key, instances, aurora.LIVE_STATES, interval, timeout)
 }
 
 // Monitor a AuroraJob until all instances enter a desired status.
 // Defaults sets of desired statuses provided by the thrift API include:
 // ActiveStates, SlaveAssignedStates, LiveStates, and TerminalStates
-func (c *RealisClient) ScheduleStatusMonitor(key *aurora.JobKey, instanceCount int32, desiredStatuses []aurora.ScheduleStatus, interval, timeout time.Duration) (bool, error) {
+func (c *Client) ScheduleStatusMonitor(key *aurora.JobKey, instanceCount int32, desiredStatuses []aurora.ScheduleStatus, interval, timeout time.Duration) (bool, error) {
 	if interval < 1*time.Second {
 		interval = interval * time.Second
 	}
@@ -131,7 +131,7 @@ func (c *RealisClient) ScheduleStatusMonitor(key *aurora.JobKey, instanceCount i
 
 // Monitor host status until all hosts match the status provided. Returns a map where the value is true if the host
 // is in one of the desired mode(s) or false if it is not as of the time when the monitor exited.
-func (c *RealisClient) HostMaintenanceMonitor(hosts []string, modes []aurora.MaintenanceMode, interval, timeout time.Duration) (map[string]bool, error) {
+func (c *Client) HostMaintenanceMonitor(hosts []string, modes []aurora.MaintenanceMode, interval, timeout time.Duration) (map[string]bool, error) {
 	if interval < 1*time.Second {
 		interval = interval * time.Second
 	}
