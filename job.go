@@ -134,6 +134,12 @@ func (j *AuroraJob) Disk(disk int64) *AuroraJob {
 	return j
 }
 
+func (j *AuroraJob) Tier(tier string) *AuroraJob {
+	*j.jobConfig.TaskConfig.Tier = tier
+
+	return j
+}
+
 // How many failures to tolerate before giving up.
 func (j *AuroraJob) MaxFailure(maxFail int32) *AuroraJob {
 	j.jobConfig.TaskConfig.MaxTaskFailures = maxFail
