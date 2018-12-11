@@ -677,12 +677,12 @@ func (c *Client) RestartJob(key *aurora.JobKey) error {
 }
 
 // Update all tasks under a job configuration. Currently gorealis doesn't support for canary deployments.
-func (c *Client) StartJobUpdate(updateJob *UpdateJob, message string) (*aurora.StartJobUpdateResult_, error) {
+func (c *Client) StartJobUpdate(updateJob *JobUpdate, message string) (*aurora.StartJobUpdateResult_, error) {
 
 	c.logger.DebugPrintf("StartJobUpdate Thrift Payload: %+v %v\n", updateJob, message)
 
 	resp, retryErr := c.thriftCallWithRetries(func() (*aurora.Response, error) {
-		return c.client.StartJobUpdate(nil, updateJob.req, message)
+		return c.client.StartJobUpdate(nil, updateJob.request, message)
 	})
 
 	if retryErr != nil {

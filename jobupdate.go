@@ -20,31 +20,31 @@ import (
 
 // Structure to collect all information required to create job update
 type JobUpdate struct {
-	Job     *AuroraJob
+	Task    *Task
 	request *aurora.JobUpdateRequest
 }
 
 // Create a default JobUpdate object.
-func NewDefaultJobUpdate(job *AuroraJob) *JobUpdate {
+func NewDefaultJobUpdate(task *Task) *JobUpdate {
 
 	req := aurora.JobUpdateRequest{}
-	req.TaskConfig = job.jobConfig.TaskConfig
+	req.TaskConfig = task.task
 	req.Settings = NewUpdateSettings()
 
 	// Rebuild resource map from TaskConfig
-	for _, ptr := range job.jobConfig.TaskConfig.Resources {
+	for _, ptr := range task.task.Resources {
 		if ptr.NumCpus != nil {
-			job.resources["cpu"].NumCpus = ptr.NumCpus
+			task.resources["cpu"].NumCpus = ptr.NumCpus
 			continue // Guard against Union violations that Go won't enforce
 		}
 
 		if ptr.RamMb != nil {
-			job.resources["ram"].RamMb = ptr.RamMb
+			task.resources["ram"].RamMb = ptr.RamMb
 			continue
 		}
 
 		if ptr.DiskMb != nil {
-			job.resources["disk"].DiskMb = ptr.DiskMb
+			task.resources["disk"].DiskMb = ptr.DiskMb
 			continue
 		}
 	}
@@ -58,8 +58,8 @@ func NewDefaultJobUpdate(job *AuroraJob) *JobUpdate {
 	req.Settings.MaxFailedInstances = 0
 	req.Settings.RollbackOnFailure = true
 
-	//TODO(rdelvalle): Deep copy job struct to avoid unexpected behavior
-	return &JobUpdate{Job: job, request: &req}
+	//TODO(rdelvalle): Deep copy task struct to avoid unexpected behavior
+	return &JobUpdate{Task: task, request: &req}
 }
 
 func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings) *JobUpdate {
@@ -68,29 +68,29 @@ func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings)
 	req.TaskConfig = config
 	req.Settings = settings
 
-	job := NewJob()
-	job.jobConfig.TaskConfig = config
+	task := NewTask()
+	task.task = config
 
 	// Rebuild resource map from TaskConfig
 	for _, ptr := range config.Resources {
 		if ptr.NumCpus != nil {
-			job.resources["cpu"].NumCpus = ptr.NumCpus
+			task.resources["cpu"].NumCpus = ptr.NumCpus
 			continue // Guard against Union violations that Go won't enforce
 		}
 
 		if ptr.RamMb != nil {
-			job.resources["ram"].RamMb = ptr.RamMb
+			task.resources["ram"].RamMb = ptr.RamMb
 			continue
 		}
 
 		if ptr.DiskMb != nil {
-			job.resources["disk"].DiskMb = ptr.DiskMb
+			task.resources["disk"].DiskMb = ptr.DiskMb
 			continue
 		}
 	}
 
 	//TODO(rdelvalle): Deep copy job struct to avoid unexpected behavior
-	return &JobUpdate{Job: job, request: req}
+	return &JobUpdate{Task: task, request: req}
 }
 
 // Set instance count the job will have after the update.
