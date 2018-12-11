@@ -19,23 +19,20 @@ import (
 )
 
 // Structure to collect all information required to create job update
-type UpdateJob struct {
-	*AuroraJob // SetInstanceCount for job is hidden, access via full qualifier
-	req        *aurora.JobUpdateRequest
+type JobUpdate struct {
+	Job     *AuroraJob
+	request *aurora.JobUpdateRequest
 }
 
-// Create a default UpdateJob object.
-func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
+// Create a default JobUpdate object.
+func NewDefaultJobUpdate(job *AuroraJob) *JobUpdate {
 
 	req := aurora.JobUpdateRequest{}
-	req.TaskConfig = config
+	req.TaskConfig = job.jobConfig.TaskConfig
 	req.Settings = NewUpdateSettings()
 
-	job := NewJob()
-	job.jobConfig.TaskConfig = config
-
 	// Rebuild resource map from TaskConfig
-	for _, ptr := range config.Resources {
+	for _, ptr := range job.jobConfig.TaskConfig.Resources {
 		if ptr.NumCpus != nil {
 			job.resources["cpu"].NumCpus = ptr.NumCpus
 			continue // Guard against Union violations that Go won't enforce
@@ -62,10 +59,10 @@ func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 	req.Settings.RollbackOnFailure = true
 
 	//TODO(rdelvalle): Deep copy job struct to avoid unexpected behavior
-	return &UpdateJob{AuroraJob: job, req: &req}
+	return &JobUpdate{Job: job, request: &req}
 }
 
-func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings) *UpdateJob {
+func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings) *JobUpdate {
 
 	req := aurora.NewJobUpdateRequest()
 	req.TaskConfig = config
@@ -93,48 +90,48 @@ func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings)
 	}
 
 	//TODO(rdelvalle): Deep copy job struct to avoid unexpected behavior
-	return &UpdateJob{AuroraJob: job, req: req}
+	return &JobUpdate{Job: job, request: req}
 }
 
 // Set instance count the job will have after the update.
-func (u *UpdateJob) InstanceCount(inst int32) *UpdateJob {
-	u.req.InstanceCount = inst
+func (u *JobUpdate) InstanceCount(inst int32) *JobUpdate {
+	u.request.InstanceCount = inst
 	return u
 }
 
 // Max number of instances being updated at any given moment.
-func (u *UpdateJob) BatchSize(size int32) *UpdateJob {
-	u.req.Settings.UpdateGroupSize = size
+func (u *JobUpdate) BatchSize(size int32) *JobUpdate {
+	u.request.Settings.UpdateGroupSize = size
 	return u
 }
 
 // Minimum number of seconds a shard must remain in RUNNING state before considered a success.
-func (u *UpdateJob) WatchTime(ms int32) *UpdateJob {
-	u.req.Settings.MinWaitInInstanceRunningMs = ms
+func (u *JobUpdate) WatchTime(ms int32) *JobUpdate {
+	u.request.Settings.MinWaitInInstanceRunningMs = ms
 	return u
 }
 
 // Wait for all instances in a group to be done before moving on.
-func (u *UpdateJob) WaitForBatchCompletion(batchWait bool) *UpdateJob {
-	u.req.Settings.WaitForBatchCompletion = batchWait
+func (u *JobUpdate) WaitForBatchCompletion(batchWait bool) *JobUpdate {
+	u.request.Settings.WaitForBatchCompletion = batchWait
 	return u
 }
 
 // Max number of instance failures to tolerate before marking instance as FAILED.
-func (u *UpdateJob) MaxPerInstanceFailures(inst int32) *UpdateJob {
-	u.req.Settings.MaxPerInstanceFailures = inst
+func (u *JobUpdate) MaxPerInstanceFailures(inst int32) *JobUpdate {
+	u.request.Settings.MaxPerInstanceFailures = inst
 	return u
 }
 
 // Max number of FAILED instances to tolerate before terminating the update.
-func (u *UpdateJob) MaxFailedInstances(inst int32) *UpdateJob {
-	u.req.Settings.MaxFailedInstances = inst
+func (u *JobUpdate) MaxFailedInstances(inst int32) *JobUpdate {
+	u.request.Settings.MaxFailedInstances = inst
 	return u
 }
 
 // When False, prevents auto rollback of a failed update.
-func (u *UpdateJob) RollbackOnFail(rollback bool) *UpdateJob {
-	u.req.Settings.RollbackOnFailure = rollback
+func (u *JobUpdate) RollbackOnFail(rollback bool) *JobUpdate {
+	u.request.Settings.RollbackOnFailure = rollback
 	return u
 }
 
