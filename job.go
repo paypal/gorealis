@@ -21,7 +21,7 @@ import (
 // Structure to collect all information pertaining to an Aurora job.
 type AuroraJob struct {
 	jobConfig *aurora.JobConfiguration
-	task      *Task
+	task      *AuroraTask
 }
 
 // Create a AuroraJob object with everything initialized.
@@ -29,7 +29,7 @@ func NewJob() *AuroraJob {
 
 	jobKey := &aurora.JobKey{}
 
-	// Task clientConfig
+	// AuroraTask clientConfig
 	task := NewTask()
 	task.task.Job = jobKey
 
@@ -45,7 +45,7 @@ func NewJob() *AuroraJob {
 	}
 }
 
-// Set AuroraJob Key environment. Explicit changes to Task's job key are not needed
+// Set AuroraJob Key environment. Explicit changes to AuroraTask's job key are not needed
 // because they share a pointer to the same JobKey.
 func (j *AuroraJob) Environment(env string) *AuroraJob {
 	j.jobConfig.Key.Environment = env
@@ -101,7 +101,7 @@ func (j *AuroraJob) JobConfig() *aurora.JobConfiguration {
 }
 
 /*
-   Task specific API, see task.go for further documentation.
+   AuroraTask specific API, see task.go for further documentation.
    These functions are provided for the convenience of chaining API calls.
 */
 
