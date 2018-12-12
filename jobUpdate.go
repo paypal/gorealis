@@ -15,6 +15,9 @@
 package realis
 
 import (
+	"time"
+
+	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 )
 
@@ -25,23 +28,33 @@ type JobUpdate struct {
 }
 
 // Create a default JobUpdate object with an empty task and no fields filled in.
-func NewJobUpdate(task *AuroraTask) *JobUpdate {
+func NewJobUpdate() *JobUpdate {
 	newTask := NewTask()
 
 	req := aurora.JobUpdateRequest{}
 	req.TaskConfig = newTask.TaskConfig()
-	req.Settings = NewUpdateSettings()
+	req.Settings = newUpdateSettings()
 
 	return &JobUpdate{task: newTask, request: &req}
 }
 
-func JobUpdateFormTask(task *AuroraTask) *JobUpdate {
-	// Perform a deep copy to avoid unexpected behavior
+func JobUpdateFromAuroraTask(task *AuroraTask) *JobUpdate {
 	newTask := task.Clone()
 
 	req := aurora.JobUpdateRequest{}
 	req.TaskConfig = newTask.TaskConfig()
-	req.Settings = NewUpdateSettings()
+	req.Settings = newUpdateSettings()
+
+	return &JobUpdate{task: newTask, request: &req}
+}
+
+func JobUpdateFromConfig(task *aurora.TaskConfig) *JobUpdate {
+	// Perform a deep copy to avoid unexpected behavior
+	newTask := TaskFromThrift(task)
+
+	req := aurora.JobUpdateRequest{}
+	req.TaskConfig = newTask.TaskConfig()
+	req.Settings = newUpdateSettings()
 
 	return &JobUpdate{task: newTask, request: &req}
 }
@@ -59,8 +72,8 @@ func (j *JobUpdate) BatchSize(size int32) *JobUpdate {
 }
 
 // Minimum number of seconds a shard must remain in RUNNING state before considered a success.
-func (j *JobUpdate) WatchTime(ms int32) *JobUpdate {
-	j.request.Settings.MinWaitInInstanceRunningMs = ms
+func (j *JobUpdate) WatchTime(timeout time.Duration) *JobUpdate {
+	j.request.Settings.MinWaitInInstanceRunningMs = int32(timeout.Seconds() * 1000)
 	return j
 }
 
@@ -88,7 +101,13 @@ func (j *JobUpdate) RollbackOnFail(rollback bool) *JobUpdate {
 	return j
 }
 
-func NewUpdateSettings() *aurora.JobUpdateSettings {
+// Sets the interval at which pulses should be received by the job update before timing out.
+func (j *JobUpdate) PulseIntervalTimeout(timeout time.Duration) *JobUpdate {
+	j.request.Settings.BlockIfNoPulsesAfterMs = thrift.Int32Ptr(int32(timeout.Seconds() * 1000))
+	return j
+}
+
+func newUpdateSettings() *aurora.JobUpdateSettings {
 
 	us := aurora.JobUpdateSettings{}
 	// Mirrors defaults set by Pystachio
@@ -104,9 +123,26 @@ func NewUpdateSettings() *aurora.JobUpdateSettings {
 }
 
 /*
-   AuroraTask specific API, see task.go for further documentation.
-   These functions are provided for the convenience of chaining API calls.
+   These methods are provided for user convenience in order to chain
+   calls for configuration.
+   API below here are wrappers around modifying an AuroraTask instance.
+   See task.go for further documentation.
 */
+
+func (t *JobUpdate) Environment(env string) *JobUpdate {
+	t.task.Environment(env)
+	return t
+}
+
+func (t *JobUpdate) Role(role string) *JobUpdate {
+	t.task.Role(role)
+	return t
+}
+
+func (t *JobUpdate) Name(name string) *JobUpdate {
+	t.task.Name(name)
+	return t
+}
 
 func (j *JobUpdate) ExecutorName(name string) *JobUpdate {
 	j.task.ExecutorName(name)
@@ -189,4 +225,8 @@ func (j *JobUpdate) AddDedicatedConstraint(role, name string) *JobUpdate {
 func (j *JobUpdate) Container(container Container) *JobUpdate {
 	j.task.Container(container)
 	return j
+}
+
+func (j *JobUpdate) JobKey() aurora.JobKey {
+	return j.task.JobKey()
 }

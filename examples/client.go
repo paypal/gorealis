@@ -180,9 +180,8 @@ func main() {
 	case "createService":
 		// Create a service with three instances using the update API instead of the createJob API
 		fmt.Println("Creating service")
-		settings := realis.NewUpdateSettings()
-		job.InstanceCount(3)
-		result, err := r.CreateService(job, settings)
+		settings := realis.JobUpdateFromConfig(job.TaskConfig()).InstanceCount(3)
+		result, err := r.CreateService(settings)
 		if err != nil {
 			log.Fatal("error: ", err)
 		}
@@ -304,8 +303,9 @@ func main() {
 		currInstances := len(live)
 		fmt.Println("Current num of instances: ", currInstances)
 
+		key := job.JobKey()
 		err = r.AddInstances(aurora.InstanceKey{
-			JobKey:     job.JobKey(),
+			JobKey:     &key,
 			InstanceId: live[0],
 		},
 			int32(numOfInstances))
@@ -345,15 +345,16 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		key := job.JobKey()
 		taskConfig, err := r.FetchTaskConfig(aurora.InstanceKey{
-			JobKey:     job.JobKey(),
+			JobKey:     &key,
 			InstanceId: live[0],
 		})
 		if err != nil {
 			log.Fatal(err)
 		}
-		updateJob := realis.NewDefaultUpdateJob(taskConfig)
-		updateJob.InstanceCount(5).RAM(128)
+		updateJob := realis.JobUpdateFromConfig(taskConfig).InstanceCount(5).RAM(128)
 
 		result, err := r.StartJobUpdate(updateJob, "")
 		if err != nil {
@@ -367,8 +368,9 @@ func main() {
 		}
 
 	case "pauseJobUpdate":
+		key := job.JobKey()
 		err := r.PauseJobUpdate(&aurora.JobUpdateKey{
-			Job: job.JobKey(),
+			Job: &key,
 			ID:  updateId,
 		}, "")
 
@@ -377,8 +379,9 @@ func main() {
 		}
 
 	case "resumeJobUpdate":
+		key := job.JobKey()
 		err := r.ResumeJobUpdate(&aurora.JobUpdateKey{
-			Job: job.JobKey(),
+			Job: &key,
 			ID:  updateId,
 		}, "")
 
@@ -387,8 +390,9 @@ func main() {
 		}
 
 	case "pulseJobUpdate":
+		key := job.JobKey()
 		resp, err := r.PulseJobUpdate(&aurora.JobUpdateKey{
-			Job: job.JobKey(),
+			Job: &key,
 			ID:  updateId,
 		})
 		if err != nil {
@@ -398,9 +402,10 @@ func main() {
 		fmt.Println("PulseJobUpdate response: ", resp.String())
 
 	case "updateDetails":
+		key := job.JobKey()
 		result, err := r.JobUpdateDetails(aurora.JobUpdateQuery{
 			Key: &aurora.JobUpdateKey{
-				Job: job.JobKey(),
+				Job: &key,
 				ID:  updateId,
 			},
 			Limit: 1,
@@ -414,8 +419,9 @@ func main() {
 
 	case "abortUpdate":
 		fmt.Println("Abort update")
+		key := job.JobKey()
 		err := r.AbortJobUpdate(aurora.JobUpdateKey{
-			Job: job.JobKey(),
+			Job: &key,
 			ID:  updateId,
 		},
 			"")
@@ -426,8 +432,9 @@ func main() {
 
 	case "rollbackUpdate":
 		fmt.Println("Abort update")
+		key := job.JobKey()
 		err := r.RollbackJobUpdate(aurora.JobUpdateKey{
-			Job: job.JobKey(),
+			Job: &key,
 			ID:  updateId,
 		},
 			"")
@@ -443,8 +450,9 @@ func main() {
 			log.Fatal(err)
 
 		}
+		key := job.JobKey()
 		config, err := r.FetchTaskConfig(aurora.InstanceKey{
-			JobKey:     job.JobKey(),
+			JobKey:     &key,
 			InstanceId: live[0],
 		})
 
@@ -456,9 +464,10 @@ func main() {
 
 	case "updatesummary":
 		fmt.Println("Getting job update summary")
+		key := job.JobKey()
 		jobquery := &aurora.JobUpdateQuery{
-			Role:   &job.JobKey().Role,
-			JobKey: job.JobKey(),
+			Role:   &key.Role,
+			JobKey: &key,
 		}
 		updatesummary, err := r.GetJobUpdateSummaries(jobquery)
 		if err != nil {
@@ -469,10 +478,11 @@ func main() {
 
 	case "taskStatus":
 		fmt.Println("Getting task status")
+		key := job.JobKey()
 		taskQ := &aurora.TaskQuery{
-			Role:        &job.JobKey().Role,
-			Environment: &job.JobKey().Environment,
-			JobName:     &job.JobKey().Name,
+			Role:        &key.Role,
+			Environment: &key.Environment,
+			JobName:     &key.Name,
 		}
 		tasks, err := r.GetTaskStatus(taskQ)
 		if err != nil {
@@ -484,10 +494,11 @@ func main() {
 
 	case "tasksWithoutConfig":
 		fmt.Println("Getting task status")
+		key := job.JobKey()
 		taskQ := &aurora.TaskQuery{
-			Role:        &job.JobKey().Role,
-			Environment: &job.JobKey().Environment,
-			JobName:     &job.JobKey().Name,
+			Role:        &key.Role,
+			Environment: &key.Environment,
+			JobName:     &key.Name,
 		}
 		tasks, err := r.GetTasksWithoutConfigs(taskQ)
 		if err != nil {
@@ -580,10 +591,11 @@ func main() {
 
 	case "getPendingReasons":
 		fmt.Println("Getting pending reasons")
+		key := job.JobKey()
 		taskQ := &aurora.TaskQuery{
-			Role:        &job.JobKey().Role,
-			Environment: &job.JobKey().Environment,
-			JobName:     &job.JobKey().Name,
+			Role:        &key.Role,
+			Environment: &key.Environment,
+			JobName:     &key.Name,
 		}
 		reasons, err := r.GetPendingReason(taskQ)
 		if err != nil {
