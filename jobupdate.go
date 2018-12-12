@@ -20,119 +20,72 @@ import (
 
 // Structure to collect all information required to create job update
 type JobUpdate struct {
-	Task    *Task
+	task    *AuroraTask
 	request *aurora.JobUpdateRequest
 }
 
-// Create a default JobUpdate object.
-func NewDefaultJobUpdate(task *Task) *JobUpdate {
+// Create a default JobUpdate object with an empty task and no fields filled in.
+func NewJobUpdate(task *AuroraTask) *JobUpdate {
+	newTask := NewTask()
 
 	req := aurora.JobUpdateRequest{}
-	req.TaskConfig = task.task
+	req.TaskConfig = newTask.TaskConfig()
 	req.Settings = NewUpdateSettings()
 
-	// Rebuild resource map from TaskConfig
-	for _, ptr := range task.task.Resources {
-		if ptr.NumCpus != nil {
-			task.resources["cpu"].NumCpus = ptr.NumCpus
-			continue // Guard against Union violations that Go won't enforce
-		}
-
-		if ptr.RamMb != nil {
-			task.resources["ram"].RamMb = ptr.RamMb
-			continue
-		}
-
-		if ptr.DiskMb != nil {
-			task.resources["disk"].DiskMb = ptr.DiskMb
-			continue
-		}
-	}
-
-	// Mirrors defaults set by Pystachio
-	req.Settings.UpdateOnlyTheseInstances = []*aurora.Range{}
-	req.Settings.UpdateGroupSize = 1
-	req.Settings.WaitForBatchCompletion = false
-	req.Settings.MinWaitInInstanceRunningMs = 45000
-	req.Settings.MaxPerInstanceFailures = 0
-	req.Settings.MaxFailedInstances = 0
-	req.Settings.RollbackOnFailure = true
-
-	//TODO(rdelvalle): Deep copy task struct to avoid unexpected behavior
-	return &JobUpdate{Task: task, request: &req}
+	return &JobUpdate{task: newTask, request: &req}
 }
 
-func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings) *JobUpdate {
+func JobUpdateFormTask(task *AuroraTask) *JobUpdate {
+	// Perform a deep copy to avoid unexpected behavior
+	newTask := task.Clone()
 
-	req := aurora.NewJobUpdateRequest()
-	req.TaskConfig = config
-	req.Settings = settings
+	req := aurora.JobUpdateRequest{}
+	req.TaskConfig = newTask.TaskConfig()
+	req.Settings = NewUpdateSettings()
 
-	task := NewTask()
-	task.task = config
-
-	// Rebuild resource map from TaskConfig
-	for _, ptr := range config.Resources {
-		if ptr.NumCpus != nil {
-			task.resources["cpu"].NumCpus = ptr.NumCpus
-			continue // Guard against Union violations that Go won't enforce
-		}
-
-		if ptr.RamMb != nil {
-			task.resources["ram"].RamMb = ptr.RamMb
-			continue
-		}
-
-		if ptr.DiskMb != nil {
-			task.resources["disk"].DiskMb = ptr.DiskMb
-			continue
-		}
-	}
-
-	//TODO(rdelvalle): Deep copy job struct to avoid unexpected behavior
-	return &JobUpdate{Task: task, request: req}
+	return &JobUpdate{task: newTask, request: &req}
 }
 
 // Set instance count the job will have after the update.
-func (u *JobUpdate) InstanceCount(inst int32) *JobUpdate {
-	u.request.InstanceCount = inst
-	return u
+func (j *JobUpdate) InstanceCount(inst int32) *JobUpdate {
+	j.request.InstanceCount = inst
+	return j
 }
 
 // Max number of instances being updated at any given moment.
-func (u *JobUpdate) BatchSize(size int32) *JobUpdate {
-	u.request.Settings.UpdateGroupSize = size
-	return u
+func (j *JobUpdate) BatchSize(size int32) *JobUpdate {
+	j.request.Settings.UpdateGroupSize = size
+	return j
 }
 
 // Minimum number of seconds a shard must remain in RUNNING state before considered a success.
-func (u *JobUpdate) WatchTime(ms int32) *JobUpdate {
-	u.request.Settings.MinWaitInInstanceRunningMs = ms
-	return u
+func (j *JobUpdate) WatchTime(ms int32) *JobUpdate {
+	j.request.Settings.MinWaitInInstanceRunningMs = ms
+	return j
 }
 
 // Wait for all instances in a group to be done before moving on.
-func (u *JobUpdate) WaitForBatchCompletion(batchWait bool) *JobUpdate {
-	u.request.Settings.WaitForBatchCompletion = batchWait
-	return u
+func (j *JobUpdate) WaitForBatchCompletion(batchWait bool) *JobUpdate {
+	j.request.Settings.WaitForBatchCompletion = batchWait
+	return j
 }
 
 // Max number of instance failures to tolerate before marking instance as FAILED.
-func (u *JobUpdate) MaxPerInstanceFailures(inst int32) *JobUpdate {
-	u.request.Settings.MaxPerInstanceFailures = inst
-	return u
+func (j *JobUpdate) MaxPerInstanceFailures(inst int32) *JobUpdate {
+	j.request.Settings.MaxPerInstanceFailures = inst
+	return j
 }
 
 // Max number of FAILED instances to tolerate before terminating the update.
-func (u *JobUpdate) MaxFailedInstances(inst int32) *JobUpdate {
-	u.request.Settings.MaxFailedInstances = inst
-	return u
+func (j *JobUpdate) MaxFailedInstances(inst int32) *JobUpdate {
+	j.request.Settings.MaxFailedInstances = inst
+	return j
 }
 
 // When False, prevents auto rollback of a failed update.
-func (u *JobUpdate) RollbackOnFail(rollback bool) *JobUpdate {
-	u.request.Settings.RollbackOnFailure = rollback
-	return u
+func (j *JobUpdate) RollbackOnFail(rollback bool) *JobUpdate {
+	j.request.Settings.RollbackOnFailure = rollback
+	return j
 }
 
 func NewUpdateSettings() *aurora.JobUpdateSettings {
@@ -148,4 +101,92 @@ func NewUpdateSettings() *aurora.JobUpdateSettings {
 	us.RollbackOnFailure = true
 
 	return &us
+}
+
+/*
+   AuroraTask specific API, see task.go for further documentation.
+   These functions are provided for the convenience of chaining API calls.
+*/
+
+func (j *JobUpdate) ExecutorName(name string) *JobUpdate {
+	j.task.ExecutorName(name)
+	return j
+}
+
+func (j *JobUpdate) ExecutorData(data string) *JobUpdate {
+	j.task.ExecutorData(data)
+	return j
+}
+
+func (j *JobUpdate) CPU(cpus float64) *JobUpdate {
+	j.task.CPU(cpus)
+	return j
+}
+
+func (j *JobUpdate) RAM(ram int64) *JobUpdate {
+	j.task.RAM(ram)
+	return j
+}
+
+func (j *JobUpdate) Disk(disk int64) *JobUpdate {
+	j.task.Disk(disk)
+	return j
+}
+
+func (j *JobUpdate) Tier(tier string) *JobUpdate {
+	j.task.Tier(tier)
+	return j
+}
+
+func (j *JobUpdate) MaxFailure(maxFail int32) *JobUpdate {
+	j.task.MaxFailure(maxFail)
+	return j
+}
+
+func (j *JobUpdate) IsService(isService bool) *JobUpdate {
+	j.task.IsService(isService)
+	return j
+}
+
+func (j *JobUpdate) TaskConfig() *aurora.TaskConfig {
+	return j.task.TaskConfig()
+}
+
+func (j *JobUpdate) AddURIs(extract bool, cache bool, values ...string) *JobUpdate {
+	j.task.AddURIs(extract, cache, values...)
+	return j
+}
+
+func (j *JobUpdate) AddLabel(key string, value string) *JobUpdate {
+	j.task.AddLabel(key, value)
+	return j
+}
+
+func (j *JobUpdate) AddNamedPorts(names ...string) *JobUpdate {
+	j.task.AddNamedPorts(names...)
+	return j
+}
+
+func (j *JobUpdate) AddPorts(num int) *JobUpdate {
+	j.task.AddPorts(num)
+	return j
+}
+func (j *JobUpdate) AddValueConstraint(name string, negated bool, values ...string) *JobUpdate {
+	j.task.AddValueConstraint(name, negated, values...)
+	return j
+}
+
+func (j *JobUpdate) AddLimitConstraint(name string, limit int32) *JobUpdate {
+	j.task.AddLimitConstraint(name, limit)
+	return j
+}
+
+func (j *JobUpdate) AddDedicatedConstraint(role, name string) *JobUpdate {
+	j.task.AddDedicatedConstraint(role, name)
+	return j
+}
+
+func (j *JobUpdate) Container(container Container) *JobUpdate {
+	j.task.Container(container)
+	return j
 }
