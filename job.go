@@ -91,8 +91,8 @@ func (j *AuroraJob) GetInstanceCount() int32 {
 }
 
 // Get the current job configurations key to use for some realis calls.
-func (j *AuroraJob) JobKey() *aurora.JobKey {
-	return j.jobConfig.Key
+func (j *AuroraJob) JobKey() aurora.JobKey {
+	return *j.jobConfig.Key
 }
 
 // Get the current job configurations key to use for some realis calls.

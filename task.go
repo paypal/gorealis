@@ -67,6 +67,123 @@ func NewTask() *AuroraTask {
 		portCount: 0}
 }
 
+// Helper method to convert aurora.TaskConfig to gorealis AuroraTask type
+func TaskFromThrift(config *aurora.TaskConfig) *AuroraTask {
+
+	newTask := NewTask()
+
+	// Pass values using receivers as much as possible
+	newTask.
+		Environment(config.Job.Environment).
+		Role(config.Job.Role).
+		Name(config.Job.Name).
+		MaxFailure(config.MaxTaskFailures).
+		IsService(config.IsService)
+
+	if config.Tier != nil {
+		newTask.Tier(*config.Tier)
+	}
+
+	if config.ExecutorConfig != nil {
+		newTask.
+			ExecutorName(config.ExecutorConfig.Name).
+			ExecutorData(config.ExecutorConfig.Data)
+	}
+
+	// Make a deep copy of the task's container
+	if config.Container != nil {
+		if config.Container.Mesos != nil {
+			mesosContainer := NewMesosContainer()
+
+			if config.Container.Mesos.Image != nil {
+				if config.Container.Mesos.Image.Appc != nil {
+					mesosContainer.AppcImage(config.Container.Mesos.Image.Appc.Name, config.Container.Mesos.Image.Appc.ImageId)
+				} else if config.Container.Mesos.Image.Docker != nil {
+					mesosContainer.DockerImage(config.Container.Mesos.Image.Docker.Name, config.Container.Mesos.Image.Docker.Tag)
+				}
+			}
+
+			for _, vol := range config.Container.Mesos.Volumes {
+				mesosContainer.AddVolume(vol.ContainerPath, vol.HostPath, vol.Mode)
+			}
+
+			newTask.Container(mesosContainer)
+		} else if config.Container.Docker != nil {
+			dockerContainer := NewDockerContainer()
+			dockerContainer.Image(config.Container.Docker.Image)
+
+			for _, param := range config.Container.Docker.Parameters {
+				dockerContainer.AddParameter(param.Name, param.Value)
+			}
+
+			newTask.Container(dockerContainer)
+		}
+	}
+
+	// Copy all ports
+	for _, resource := range config.Resources {
+		// Copy only ports, skip CPU, RAM, and DISK
+		if resource != nil {
+			if resource.NamedPort != nil {
+				newTask.task.Resources = append(newTask.task.Resources, &aurora.Resource{NamedPort: thrift.StringPtr(*resource.NamedPort)})
+				newTask.portCount++
+			}
+
+			if resource.RamMb != nil {
+				newTask.RAM(*resource.RamMb)
+			}
+
+			if resource.NumCpus != nil {
+				newTask.CPU(*resource.NumCpus)
+			}
+
+			if resource.DiskMb != nil {
+				newTask.Disk(*resource.DiskMb)
+			}
+		}
+	}
+
+	// Copy constraints
+	for _, constraint := range config.Constraints {
+		if constraint != nil && constraint.Constraint != nil {
+
+			newConstraint := aurora.Constraint{Name: constraint.Name}
+
+			taskConstraint := constraint.Constraint
+			if taskConstraint.Limit != nil {
+				newConstraint.Constraint = &aurora.TaskConstraint{Limit: &aurora.LimitConstraint{Limit: taskConstraint.Limit.Limit}}
+				newTask.task.Constraints = append(newTask.task.Constraints, &newConstraint)
+
+			} else if taskConstraint.Value != nil {
+
+				values := make([]string, 0)
+				for _, val := range taskConstraint.Value.Values {
+					values = append(values, val)
+				}
+
+				newConstraint.Constraint = &aurora.TaskConstraint{
+					Value: &aurora.ValueConstraint{Negated: taskConstraint.Value.Negated, Values: values}}
+
+				newTask.task.Constraints = append(newTask.task.Constraints, &newConstraint)
+			}
+		}
+	}
+
+	// Copy labels
+	for _, label := range config.Metadata {
+		newTask.task.Metadata = append(newTask.task.Metadata, &aurora.Metadata{Key: label.Key, Value: label.Value})
+	}
+
+	// Copy Mesos fetcher URIs
+	for _, uri := range config.MesosFetcherUris {
+		newTask.task.MesosFetcherUris = append(
+			newTask.task.MesosFetcherUris,
+			&aurora.MesosFetcherURI{Value: uri.Value, Extract: thrift.BoolPtr(*uri.Extract), Cache: thrift.BoolPtr(*uri.Cache)})
+	}
+
+	return newTask
+}
+
 // Set AuroraTask Key environment.
 func (t *AuroraTask) Environment(env string) *AuroraTask {
 	t.task.Job.Environment = env
@@ -240,107 +357,11 @@ func (t *AuroraTask) TaskConfig() *aurora.TaskConfig {
 	return t.task
 }
 
+func (t *AuroraTask) JobKey() aurora.JobKey {
+	return *t.task.Job
+}
+
 func (t *AuroraTask) Clone() *AuroraTask {
-
-	newTask := NewTask()
-
-	// Pass values using receivers as much as possible
-	newTask.
-		CPU(*t.resources[CPU].NumCpus).
-		RAM(*t.resources[RAM].RamMb).
-		Disk(*t.resources[DISK].DiskMb).
-		Environment(t.task.Job.Environment).
-		Role(t.task.Job.Role).
-		Name(t.task.Job.Name).
-		MaxFailure(t.task.MaxTaskFailures).
-		IsService(t.task.IsService)
-
-	if t.task.Tier != nil {
-		newTask.Tier(*t.task.Tier)
-	}
-
-	if t.task.ExecutorConfig != nil {
-		newTask.
-			ExecutorName(t.task.ExecutorConfig.Name).
-			ExecutorData(t.task.ExecutorConfig.Data)
-	}
-
-	// Make a deep copy of the task's container
-	if t.task.Container != nil {
-		if t.task.Container.Mesos != nil {
-			mesosContainer := NewMesosContainer()
-
-			if t.task.Container.Mesos.Image != nil {
-				if t.task.Container.Mesos.Image.Appc != nil {
-					mesosContainer.AppcImage(t.task.Container.Mesos.Image.Appc.Name, t.task.Container.Mesos.Image.Appc.ImageId)
-				} else if t.task.Container.Mesos.Image.Docker != nil {
-					mesosContainer.DockerImage(t.task.Container.Mesos.Image.Docker.Name, t.task.Container.Mesos.Image.Docker.Tag)
-				}
-			}
-
-			for _, vol := range t.task.Container.Mesos.Volumes {
-				mesosContainer.AddVolume(vol.ContainerPath, vol.HostPath, vol.Mode)
-			}
-
-			newTask.Container(mesosContainer)
-		} else if t.task.Container.Docker != nil {
-			dockerContainer := NewDockerContainer()
-			dockerContainer.Image(t.task.Container.Docker.Image)
-
-			for _, param := range t.task.Container.Docker.Parameters {
-				dockerContainer.AddParameter(param.Name, param.Value)
-			}
-
-			newTask.Container(dockerContainer)
-		}
-	}
-
-	// Copy all ports
-	for _, resource := range t.task.Resources {
-		// Copy only ports, skip CPU, RAM, and DISK
-		if resource != nil && resource.NamedPort != nil {
-			newTask.task.Resources = append(newTask.task.Resources, &aurora.Resource{NamedPort: thrift.StringPtr(*resource.NamedPort)})
-			newTask.portCount++
-		}
-	}
-
-	// Copy constraints
-	for _, constraint := range t.task.Constraints {
-		if constraint != nil && constraint.Constraint != nil {
-
-			newConstraint := aurora.Constraint{Name: constraint.Name}
-
-			taskConstraint := constraint.Constraint
-			if taskConstraint.Limit != nil {
-				newConstraint.Constraint = &aurora.TaskConstraint{Limit: &aurora.LimitConstraint{Limit: taskConstraint.Limit.Limit}}
-				newTask.task.Constraints = append(newTask.task.Constraints, &newConstraint)
-
-			} else if taskConstraint.Value != nil {
-
-				values := make([]string, 0)
-				for _, val := range taskConstraint.Value.Values {
-					values = append(values, val)
-				}
-
-				newConstraint.Constraint = &aurora.TaskConstraint{
-					Value: &aurora.ValueConstraint{Negated: taskConstraint.Value.Negated, Values: values}}
-
-				newTask.task.Constraints = append(newTask.task.Constraints, &newConstraint)
-			}
-		}
-	}
-
-	// Copy labels
-	for _, label := range t.task.Metadata {
-		newTask.task.Metadata = append(newTask.task.Metadata, &aurora.Metadata{Key: label.Key, Value: label.Value})
-	}
-
-	// Copy Mesos fetcher URIs
-	for _, uri := range t.task.MesosFetcherUris {
-		newTask.task.MesosFetcherUris = append(
-			newTask.task.MesosFetcherUris,
-			&aurora.MesosFetcherURI{Value: uri.Value, Extract: thrift.BoolPtr(*uri.Extract), Cache: thrift.BoolPtr(*uri.Cache)})
-	}
-
+	newTask := TaskFromThrift(t.task)
 	return newTask
 }
