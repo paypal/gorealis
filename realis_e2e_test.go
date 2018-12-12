@@ -284,7 +284,7 @@ func TestRealisClient_CreateService_WithPulse_Thermos(t *testing.T) {
 
 	fmt.Println("Creating service")
 	role := "vagrant"
-	job := realis.NewJob().
+	job := realis.NewJobUpdate().
 		Environment("prod").
 		Role(role).
 		Name("create_thermos_job_test").
@@ -294,18 +294,15 @@ func TestRealisClient_CreateService_WithPulse_Thermos(t *testing.T) {
 		RAM(64).
 		Disk(100).
 		IsService(true).
-		InstanceCount(1).
+		InstanceCount(2).
 		AddPorts(1).
-		AddLabel("currentTime", time.Now().String())
+		AddLabel("currentTime", time.Now().String()).
+		PulseIntervalTimeout(30 * time.Millisecond).
+		BatchSize(1).WaitForBatchCompletion(true)
 
 	pulse := int32(30)
 	timeout := 300
-	settings := realis.NewUpdateSettings()
-	settings.BlockIfNoPulsesAfterMs = &pulse
-	settings.UpdateGroupSize = 1
-	settings.WaitForBatchCompletion = true
-	job.InstanceCount(2)
-	result, err := r.CreateService(job, settings)
+	result, err := r.CreateService(job)
 	fmt.Println(result.String())
 
 	assert.NoError(t, err)
@@ -360,7 +357,7 @@ func TestRealisClient_CreateService_WithPulse_Thermos(t *testing.T) {
 func TestRealisClient_CreateService(t *testing.T) {
 
 	// Create a single job
-	job := realis.NewJob().
+	job := realis.NewJobUpdate().
 		Environment("prod").
 		Role("vagrant").
 		Name("create_service_test").
@@ -370,12 +367,11 @@ func TestRealisClient_CreateService(t *testing.T) {
 		RAM(4).
 		Disk(10).
 		InstanceCount(3).
-		IsService(true)
+		WatchTime(20 * time.Second).
+		IsService(true).
+		BatchSize(2)
 
-	settings := realis.NewUpdateSettings()
-	settings.UpdateGroupSize = 2
-	job.InstanceCount(3)
-	result, err := r.CreateService(job, settings)
+	result, err := r.CreateService(job)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
@@ -383,7 +379,7 @@ func TestRealisClient_CreateService(t *testing.T) {
 	var ok bool
 	var mErr error
 
-	if ok, mErr = r.JobUpdateMonitor(*result.GetKey(), 5*time.Second, 180*time.Second); !ok || mErr != nil {
+	if ok, mErr = r.JobUpdateMonitor(*result.GetKey(), 5*time.Second, 4*time.Minute); !ok || mErr != nil {
 		// Update may already be in a terminal state so don't check for error
 		err := r.AbortJobUpdate(*result.GetKey(), "Monitor timed out.")
 
@@ -405,7 +401,7 @@ func TestRealisClient_CreateService(t *testing.T) {
 func TestRealisClient_CreateService_ExecutorDoesNotExist(t *testing.T) {
 
 	// Create a single job
-	job := realis.NewJob().
+	jobUpdate := realis.NewJobUpdate().
 		Environment("prod").
 		Role("vagrant").
 		Name("executordoesntexist").
@@ -414,11 +410,9 @@ func TestRealisClient_CreateService_ExecutorDoesNotExist(t *testing.T) {
 		CPU(.25).
 		RAM(4).
 		Disk(10).
-		InstanceCount(1)
+		InstanceCount(3)
 
-	settings := realis.NewUpdateSettings()
-	job.InstanceCount(3)
-	result, err := r.CreateService(job, settings)
+	result, err := r.CreateService(jobUpdate)
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
