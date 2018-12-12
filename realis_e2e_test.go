@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/paypal/gorealis"
+	realis "github.com/paypal/gorealis"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
