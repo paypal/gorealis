@@ -22,28 +22,24 @@ type Container interface {
 	Build() *aurora.Container
 }
 
-type MesosContainer struct {
-	container *aurora.MesosContainer
-}
-
 type DockerContainer struct {
 	container *aurora.DockerContainer
 }
 
-func NewDockerContainer() DockerContainer {
-	return DockerContainer{container: aurora.NewDockerContainer()}
+func NewDockerContainer() *DockerContainer {
+	return &DockerContainer{container: aurora.NewDockerContainer()}
 }
 
-func (c DockerContainer) Build() *aurora.Container {
+func (c *DockerContainer) Build() *aurora.Container {
 	return &aurora.Container{Docker: c.container}
 }
 
-func (c DockerContainer) Image(image string) DockerContainer {
+func (c *DockerContainer) Image(image string) *DockerContainer {
 	c.container.Image = image
 	return c
 }
 
-func (c DockerContainer) AddParameter(name, value string) DockerContainer {
+func (c *DockerContainer) AddParameter(name, value string) *DockerContainer {
 	c.container.Parameters = append(c.container.Parameters, &aurora.DockerParameter{
 		Name:  name,
 		Value: value,
@@ -51,15 +47,19 @@ func (c DockerContainer) AddParameter(name, value string) DockerContainer {
 	return c
 }
 
-func NewMesosContainer() MesosContainer {
-	return MesosContainer{container: aurora.NewMesosContainer()}
+type MesosContainer struct {
+	container *aurora.MesosContainer
 }
 
-func (c MesosContainer) Build() *aurora.Container {
+func NewMesosContainer() *MesosContainer {
+	return &MesosContainer{container: aurora.NewMesosContainer()}
+}
+
+func (c *MesosContainer) Build() *aurora.Container {
 	return &aurora.Container{Mesos: c.container}
 }
 
-func (c MesosContainer) DockerImage(name, tag string) MesosContainer {
+func (c *MesosContainer) DockerImage(name, tag string) *MesosContainer {
 	if c.container.Image == nil {
 		c.container.Image = aurora.NewImage()
 	}
@@ -68,11 +68,20 @@ func (c MesosContainer) DockerImage(name, tag string) MesosContainer {
 	return c
 }
 
-func (c MesosContainer) AppcImage(name, imageId string) MesosContainer {
+func (c *MesosContainer) AppcImage(name, imageId string) *MesosContainer {
 	if c.container.Image == nil {
 		c.container.Image = aurora.NewImage()
 	}
 
 	c.container.Image.Appc = &aurora.AppcImage{Name: name, ImageId: imageId}
+	return c
+}
+
+func (c *MesosContainer) AddVolume(hostPath, containerPath string, mode aurora.Mode) *MesosContainer {
+	c.container.Volumes = append(c.container.Volumes, &aurora.Volume{
+		HostPath:      hostPath,
+		ContainerPath: containerPath,
+		Mode:          mode})
+
 	return c
 }
