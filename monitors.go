@@ -88,14 +88,14 @@ func (c *Client) JobUpdateMonitor(updateKey aurora.JobUpdateKey, interval, timeo
 }
 
 // Monitor a AuroraJob until all instances enter one of the LiveStates
-func (c *Client) InstancesMonitor(key *aurora.JobKey, instances int32, interval, timeout time.Duration) (bool, error) {
+func (c *Client) InstancesMonitor(key aurora.JobKey, instances int32, interval, timeout time.Duration) (bool, error) {
 	return c.ScheduleStatusMonitor(key, instances, aurora.LIVE_STATES, interval, timeout)
 }
 
 // Monitor a AuroraJob until all instances enter a desired status.
 // Defaults sets of desired statuses provided by the thrift API include:
 // ActiveStates, SlaveAssignedStates, LiveStates, and TerminalStates
-func (c *Client) ScheduleStatusMonitor(key *aurora.JobKey, instanceCount int32, desiredStatuses []aurora.ScheduleStatus, interval, timeout time.Duration) (bool, error) {
+func (c *Client) ScheduleStatusMonitor(key aurora.JobKey, instanceCount int32, desiredStatuses []aurora.ScheduleStatus, interval, timeout time.Duration) (bool, error) {
 	if interval < 1*time.Second {
 		interval = interval * time.Second
 	}
