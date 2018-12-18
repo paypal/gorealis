@@ -85,6 +85,29 @@ func TestNonExistentEndpoint(t *testing.T) {
 
 }
 
+func TestBadCredentials(t *testing.T) {
+	r, err := realis.NewClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
+		realis.BasicAuth("incorrect", "password"))
+	defer r.Close()
+
+	assert.NoError(t, err)
+
+	job := realis.NewJob().
+		Environment("prod").
+		Role("vagrant").
+		Name("create_thermos_job_test").
+		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
+		ExecutorData(string(thermosPayload)).
+		CPU(.5).
+		RAM(64).
+		Disk(100).
+		IsService(true).
+		InstanceCount(2).
+		AddPorts(1)
+
+	assert.Error(t, r.CreateJob(job))
+}
+
 func TestThriftBinary(t *testing.T) {
 	r, err := realis.NewClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
 		realis.BasicAuth("aurora", "secret"),
@@ -92,6 +115,7 @@ func TestThriftBinary(t *testing.T) {
 		realis.ThriftBinary())
 
 	assert.NoError(t, err)
+	defer r.Close()
 
 	role := "all"
 	taskQ := &aurora.TaskQuery{
@@ -102,8 +126,6 @@ func TestThriftBinary(t *testing.T) {
 	_, err = r.GetTasksWithoutConfigs(taskQ)
 
 	assert.NoError(t, err)
-
-	r.Close()
 
 }
 
