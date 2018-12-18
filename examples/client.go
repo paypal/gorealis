@@ -30,7 +30,7 @@ var cmd, executor, url, clustersConfig, clusterName, updateId, username, passwor
 var caCertsPath string
 var clientKey, clientCert string
 
-var CONNECTION_TIMEOUT = 20 * time.Second
+var ConnectionTimeout = 20 * time.Second
 
 func init() {
 	flag.StringVar(&cmd, "cmd", "", "Aurora Job request type to send to Aurora Scheduler")
@@ -80,7 +80,7 @@ func main() {
 	clientOptions := []realis.ClientOption{
 		realis.BasicAuth(username, password),
 		realis.ThriftJSON(),
-		realis.Timeout(CONNECTION_TIMEOUT),
+		realis.Timeout(ConnectionTimeout),
 		realis.BackOff(realis.Backoff{
 			Steps:    2,
 			Duration: 10 * time.Second,
