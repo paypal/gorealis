@@ -180,47 +180,31 @@ func TestLeaderFromZK(t *testing.T) {
 
 }
 func TestInvalidAuroraURL(t *testing.T) {
-	r, err := realis.NewClient(realis.SchedulerUrl("http://doesntexist.com:8081/apitest"))
-	assert.Error(t, err)
-	assert.Nil(t, r)
-
-	r, err = realis.NewClient(realis.SchedulerUrl("test://doesntexist.com:8081"))
-	assert.Error(t, err)
-	assert.Nil(t, r)
-
-	r, err = realis.NewClient(realis.SchedulerUrl("https://doesntexist.com:8081/testing/api"))
-	assert.Error(t, err)
-	assert.Nil(t, r)
+	for _, url := range []string{
+		"http://doesntexist.com:8081/apitest",
+		"test://doesntexist.com:8081",
+		"https://doesntexist.com:8081/testing/api",
+	} {
+		r, err := realis.NewClient(realis.SchedulerUrl(url))
+		assert.Error(t, err)
+		assert.Nil(t, r)
+	}
 }
 
 func TestValidAuroraURL(t *testing.T) {
-	r, err := realis.NewClient(realis.SchedulerUrl("http://domain.com:8081/api"))
-	assert.NoError(t, err)
-	assert.NotNil(t, r)
-
-	r, err = realis.NewClient(realis.SchedulerUrl("https://domain.com:8081/api"))
-	assert.NoError(t, err)
-	assert.NotNil(t, r)
-
-	r, err = realis.NewClient(realis.SchedulerUrl("domain.com:8081"))
-	assert.NoError(t, err)
-	assert.NotNil(t, r)
-
-	r, err = realis.NewClient(realis.SchedulerUrl("domain.com"))
-	assert.NoError(t, err)
-	assert.NotNil(t, r)
-
-	r, err = realis.NewClient(realis.SchedulerUrl("192.168.33.7"))
-	assert.NoError(t, err)
-	assert.NotNil(t, r)
-
-	r, err = realis.NewClient(realis.SchedulerUrl("192.168.33.7:8081"))
-	assert.NoError(t, err)
-	assert.NotNil(t, r)
-
-	r, err = realis.NewClient(realis.SchedulerUrl("192.168.33.7:8081/api"))
-	assert.NoError(t, err)
-	assert.NotNil(t, r)
+	for _, url := range []string{
+		"http://domain.com:8081/api",
+		"https://domain.com:8081/api",
+		"domain.com:8081",
+		"domain.com",
+		"192.168.33.7",
+		"192.168.33.7:8081",
+		"192.168.33.7:8081/api",
+	} {
+		r, err := realis.NewClient(realis.SchedulerUrl(url))
+		assert.NoError(t, err)
+		assert.NotNil(t, r)
+	}
 }
 
 func TestRealisClient_ReestablishConn(t *testing.T) {
