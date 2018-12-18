@@ -43,7 +43,7 @@ func init() {
 func validateAndPopulateAuroraURL(urlStr string) (string, error) {
 
 	// If no protocol defined, assume http
-	if !(strings.HasPrefix(urlStr, "http") || strings.HasPrefix(urlStr, "https")) {
+	if !strings.Contains(urlStr, "://") {
 		urlStr = "http://" + urlStr
 	}
 
