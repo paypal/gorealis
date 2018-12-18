@@ -267,6 +267,11 @@ func NewClient(options ...ClientOption) (*Client, error) {
 		return nil, errors.New("Incomplete Options -- url, cluster.json, or Zookeeper address required")
 	}
 
+	url, err = validateAndPopulateAuroraURL(url)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create realis object, invalid url")
+	}
+
 	if config.jsonTransport {
 		trans, err := newTJSONTransport(url, config.timeout, config)
 		if err != nil {
@@ -359,7 +364,7 @@ func defaultTTransport(url string, timeout time.Duration, config *clientConfig) 
 		transport.TLSClientConfig = tlsConfig
 	}
 
-	trans, err := thrift.NewTHttpClientWithOptions(url+"/api",
+	trans, err := thrift.NewTHttpClientWithOptions(url,
 		thrift.THttpClientOptions{Client: &http.Client{Timeout: timeout, Transport: &transport, Jar: jar}})
 
 	if err != nil {
