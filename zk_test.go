@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/paypal/gorealis"
+	realis "github.com/paypal/gorealis"
 	"github.com/stretchr/testify/assert"
 )
 
