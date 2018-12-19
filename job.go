@@ -56,6 +56,8 @@ type Job interface {
 	MaxFailure(maxFail int32) Job
 	Container(container Container) Job
 	PartitionPolicy(policy *aurora.PartitionPolicy) Job
+	Tier(tier *string) Job
+	SlaPolicy(policy *aurora.SlaPolicy) Job
 }
 
 // Structure to collect all information pertaining to an Aurora job.
@@ -320,6 +322,19 @@ func (j *AuroraJob) Container(container Container) Job {
 // Set a partition policy for the job configuration to implement.
 func (j *AuroraJob) PartitionPolicy(policy *aurora.PartitionPolicy) Job {
 	j.jobConfig.TaskConfig.PartitionPolicy = policy
+	return j
+}
+
+// Set the Tier for the Job.
+func (j *AuroraJob) Tier(tier *string) Job {
+	j.jobConfig.TaskConfig.Tier = tier
+
+	return j
+}
+
+// Set an SlaPolicy for the Job.
+func (j *AuroraJob) SlaPolicy(policy *aurora.SlaPolicy) Job {
+	j.jobConfig.TaskConfig.SlaPolicy = policy
 
 	return j
 }

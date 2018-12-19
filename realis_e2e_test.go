@@ -727,6 +727,92 @@ func TestRealisClient_PartitionPolicy(t *testing.T) {
 		_, err = r.KillJob(job.JobKey())
 
 		assert.NoError(t, err)
+
+	}
+
+}
+
+func TestAuroraJob_SlaPolicy(t *testing.T) {
+
+	tests := []struct {
+		name string
+		args aurora.SlaPolicy
+	}{
+		{
+			"create_service_with_sla_count_policy_test",
+			aurora.SlaPolicy{CountSlaPolicy: &aurora.CountSlaPolicy{Count: 1, DurationSecs: 30}},
+		},
+		{
+			"create_service_with_sla_percentage_policy_test",
+			aurora.SlaPolicy{PercentageSlaPolicy: &aurora.PercentageSlaPolicy{Percentage: 0.25, DurationSecs: 30}},
+		},
+		{
+			"create_service_with_sla_coordinator_policy_test",
+			aurora.SlaPolicy{CoordinatorSlaPolicy: &aurora.CoordinatorSlaPolicy{
+				CoordinatorUrl: "http://localhost/endpoint", StatusKey: "aurora_test"}},
+		},
+	}
+	role := "vagrant"
+	tier := "preferred"
+
+	var cpu float64 = 6.0
+	var disk int64 = 256
+	var ram int64 = 256
+
+	resp, err := r.SetQuota(role, &cpu, &ram, &disk)
+
+	assert.NoError(t, err)
+	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			// Create a single job
+			job := realis.NewJob().
+				Environment("prod").
+				Role("vagrant").
+				Name(tt.name).
+				ExecutorName(aurora.AURORA_EXECUTOR_NAME).
+				ExecutorData(string(thermosPayload)).
+				CPU(.1).
+				RAM(4).
+				Disk(10).
+				InstanceCount(3).
+				IsService(true).
+				SlaPolicy(&tt.args).
+				Tier(&tier)
+
+			settings := realis.NewUpdateSettings()
+			settings.UpdateGroupSize = 1
+			resp, result, err := r.CreateService(job, settings)
+
+			assert.NoError(t, err)
+			assert.NotNil(t, result)
+			assert.Equal(t, aurora.ResponseCode_OK, resp.GetResponseCode())
+
+			var ok bool
+			var mErr error
+
+			if ok, mErr = monitor.JobUpdate(*result.GetKey(), 5, 240); !ok || mErr != nil {
+				// Update may already be in a terminal state so don't check for error
+				_, err := r.AbortJobUpdate(*result.GetKey(), "Monitor timed out.")
+
+				_, err = r.KillJob(job.JobKey())
+
+				assert.NoError(t, err)
+			}
+			assert.True(t, ok)
+			assert.NoError(t, mErr)
+
+			// Kill task test task after confirming it came up fine
+			_, err = r.KillJob(job.JobKey())
+
+			assert.NoError(t, err)
+
+			cpu = 0
+			ram = 0
+			disk = 0
+			r.SetQuota(role, &cpu, &ram, &disk)
+		})
 	}
 
 }
