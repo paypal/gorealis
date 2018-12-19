@@ -17,7 +17,10 @@ package realis
 import (
 	"io"
 	"math/rand"
+	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
@@ -162,6 +165,12 @@ func (c *Client) thriftCallWithRetries(thriftCall auroraThriftCall) (*aurora.Res
 			e, ok := clientErr.(thrift.TTransportException)
 			if ok {
 				c.logger.DebugPrint("Encountered a transport exception")
+
+				// TODO(rdelvalle): Figure out a better way to obtain the error code as this is a very brittle solution
+				// 401 Unauthorized means the wrong username and password were provided
+				if strings.Contains(e.Error(), strconv.Itoa(http.StatusUnauthorized)) {
+					return nil, errors.Wrap(clientErr, "wrong username or password provided")
+				}
 
 				e, ok := e.Err().(*url.Error)
 				if ok {

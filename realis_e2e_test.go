@@ -87,7 +87,8 @@ func TestNonExistentEndpoint(t *testing.T) {
 
 func TestBadCredentials(t *testing.T) {
 	r, err := realis.NewClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
-		realis.BasicAuth("incorrect", "password"))
+		realis.BasicAuth("incorrect", "password"),
+		realis.Debug())
 	defer r.Close()
 
 	assert.NoError(t, err)
@@ -246,13 +247,13 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 	assert.True(t, success)
 	assert.NoError(t, err)
 
-	//Fetch all Jobs
+	// Fetch all Jobs
 	result, err := r.GetJobs(role)
 	fmt.Printf("GetJobs length: %+v \n", len(result.Configs))
 	assert.Len(t, result.Configs, 1)
 	assert.NoError(t, err)
 
-	// Test asking the scheduler to perform a Snpshot
+	// Test asking the scheduler to perform a Snapshot
 	t.Run("TestRealisClient_Snapshot", func(t *testing.T) {
 		err := r.Snapshot()
 		assert.NoError(t, err)
