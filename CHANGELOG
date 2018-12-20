@@ -1,0 +1,2 @@
+* Changing compose environment to Aurora snapshot in order to support staggered update.
+* Adding staggered updates API.

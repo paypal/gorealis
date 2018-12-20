@@ -421,6 +421,74 @@ func TestRealisClient_CreateService(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestRealisClient_UpdateStrategies(t *testing.T) {
+
+	// Create a single job
+	job := realis.NewJob().
+		Environment("prod").
+		Role("vagrant").
+		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
+		ExecutorData(string(thermosPayload)).
+		CPU(.01).
+		RAM(4).
+		Disk(10).
+		InstanceCount(6).
+		IsService(true)
+
+	strategies := []struct {
+		UpdateJob *realis.UpdateJob
+		Name      string
+	}{
+		{
+			UpdateJob: realis.NewDefaultUpdateJob(job.TaskConfig()).
+				UpdateStrategy(&aurora.JobUpdateStrategy{QueueStrategy: &aurora.QueueJobUpdateStrategy{GroupSize: 2}}).
+				InstanceCount(6).
+				WatchTime(1000),
+			Name: "Queue",
+		},
+		{
+			UpdateJob: realis.NewDefaultUpdateJob(job.TaskConfig()).
+				UpdateStrategy(&aurora.JobUpdateStrategy{BatchStrategy: &aurora.BatchJobUpdateStrategy{GroupSize: 2}}).
+				InstanceCount(6).
+				WatchTime(1000),
+			Name: "Batch",
+		},
+		{
+			UpdateJob: realis.NewDefaultUpdateJob(job.TaskConfig()).
+				UpdateStrategy(&aurora.JobUpdateStrategy{
+					VarBatchStrategy: &aurora.VariableBatchJobUpdateStrategy{GroupSizes: []int32{1, 2, 3}}}).
+				InstanceCount(6).
+				WatchTime(1000),
+			Name: "VarBatch",
+		},
+	}
+
+	for _, strategy := range strategies {
+		t.Run("TestRealisClient_UpdateStrategies_"+strategy.Name, func(t *testing.T) {
+			job.Name("update_strategies_" + strategy.Name)
+			resp, err := r.StartJobUpdate(strategy.UpdateJob, "")
+
+			assert.NoError(t, err)
+			assert.NotNil(t, resp)
+			assert.NotNil(t, resp.GetResult_())
+			assert.NotNil(t, resp.GetResult_().GetStartJobUpdateResult_())
+			assert.NotNil(t, resp.GetResult_().GetStartJobUpdateResult_().GetKey())
+
+			var ok bool
+			var mErr error
+			key := *resp.GetResult_().GetStartJobUpdateResult_().GetKey()
+
+			if ok, mErr = monitor.JobUpdate(key, 5, 240); !ok || mErr != nil {
+				// Update may already be in a terminal state so don't check for error
+				_, err := r.AbortJobUpdate(key, "Monitor timed out.")
+				assert.NoError(t, err)
+			}
+			_, err = r.KillJob(job.JobKey())
+			assert.NoError(t, err)
+		})
+	}
+}
+
 // Test configuring an executor that doesn't exist for CreateJob API
 func TestRealisClient_CreateService_ExecutorDoesNotExist(t *testing.T) {
 

@@ -138,6 +138,12 @@ func (u *UpdateJob) RollbackOnFail(rollback bool) *UpdateJob {
 	return u
 }
 
+// When False, prevents auto rollback of a failed update.
+func (u *UpdateJob) UpdateStrategy(updateStrategy *aurora.JobUpdateStrategy) *UpdateJob {
+	u.req.Settings.UpdateStrategy = updateStrategy
+	return u
+}
+
 func NewUpdateSettings() *aurora.JobUpdateSettings {
 
 	us := new(aurora.JobUpdateSettings)

@@ -14,7 +14,7 @@ services:
         ipv4_address: 192.168.33.2
 
   master:
-    image: rdelvalle/mesos-master:1.5.1
+    image: rdelvalle/mesos-master:1.6.1
     restart: on-failure
     ports:
     - "5050:5050"
@@ -32,7 +32,7 @@ services:
     - zk
 
   agent-one:
-    image: rdelvalle/mesos-agent:1.5.1
+    image: rdelvalle/mesos-agent:1.6.1
     pid: host
     restart: on-failure
     ports:
@@ -56,7 +56,7 @@ services:
     - zk
 
   aurora-one:
-    image: rdelvalle/aurora:0.21.0
+    image: rdelvalle/aurora:c17191
     pid: host
     ports:
     - "8081:8081"
