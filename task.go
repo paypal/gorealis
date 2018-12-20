@@ -90,6 +90,14 @@ func TaskFromThrift(config *aurora.TaskConfig) *AuroraTask {
 			ExecutorData(config.ExecutorConfig.Data)
 	}
 
+	if config.PartitionPolicy != nil {
+		newTask.PartitionPolicy(
+			aurora.PartitionPolicy{
+				Reschedule: config.PartitionPolicy.Reschedule,
+				DelaySecs:  thrift.Int64Ptr(*config.PartitionPolicy.DelaySecs),
+			})
+	}
+
 	// Make a deep copy of the task's container
 	if config.Container != nil {
 		if config.Container.Mesos != nil {
@@ -125,7 +133,10 @@ func TaskFromThrift(config *aurora.TaskConfig) *AuroraTask {
 		// Copy only ports. Set CPU, RAM, DISK, and GPU
 		if resource != nil {
 			if resource.NamedPort != nil {
-				newTask.task.Resources = append(newTask.task.Resources, &aurora.Resource{NamedPort: thrift.StringPtr(*resource.NamedPort)})
+				newTask.task.Resources = append(
+					newTask.task.Resources,
+					&aurora.Resource{NamedPort: thrift.StringPtr(*resource.NamedPort)},
+				)
 				newTask.portCount++
 			}
 
@@ -155,7 +166,9 @@ func TaskFromThrift(config *aurora.TaskConfig) *AuroraTask {
 
 			taskConstraint := constraint.Constraint
 			if taskConstraint.Limit != nil {
-				newConstraint.Constraint = &aurora.TaskConstraint{Limit: &aurora.LimitConstraint{Limit: taskConstraint.Limit.Limit}}
+				newConstraint.Constraint = &aurora.TaskConstraint{
+					Limit: &aurora.LimitConstraint{Limit: taskConstraint.Limit.Limit},
+				}
 				newTask.task.Constraints = append(newTask.task.Constraints, &newConstraint)
 
 			} else if taskConstraint.Value != nil {
@@ -182,7 +195,11 @@ func TaskFromThrift(config *aurora.TaskConfig) *AuroraTask {
 	for _, uri := range config.MesosFetcherUris {
 		newTask.task.MesosFetcherUris = append(
 			newTask.task.MesosFetcherUris,
-			&aurora.MesosFetcherURI{Value: uri.Value, Extract: thrift.BoolPtr(*uri.Extract), Cache: thrift.BoolPtr(*uri.Cache)})
+			&aurora.MesosFetcherURI{
+				Value:   uri.Value,
+				Extract: thrift.BoolPtr(*uri.Extract),
+				Cache:   thrift.BoolPtr(*uri.Cache),
+			})
 	}
 
 	return newTask
@@ -422,4 +439,11 @@ func (t *AuroraTask) BuildThermosPayload() error {
 		t.ExecutorData(string(payload))
 	}
 	return nil
+}
+
+// Set a partition policy for the job configuration to implement.
+func (t *AuroraTask) PartitionPolicy(policy aurora.PartitionPolicy) *AuroraTask {
+	t.task.PartitionPolicy = &policy
+
+	return t
 }

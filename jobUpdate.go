@@ -239,3 +239,11 @@ func (j *JobUpdate) ThermosExecutor(thermos ThermosExecutor) *JobUpdate {
 func (j *JobUpdate) BuildThermosPayload() error {
 	return j.task.BuildThermosPayload()
 }
+
+func (j *JobUpdate) PartitionPolicy(reschedule bool, delay int64) *JobUpdate {
+	j.task.PartitionPolicy(aurora.PartitionPolicy{
+		Reschedule: reschedule,
+		DelaySecs:  &delay,
+	})
+	return j
+}
