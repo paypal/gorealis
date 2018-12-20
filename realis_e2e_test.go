@@ -692,3 +692,41 @@ func TestRealisClient_ForceExplicitTaskReconciliation(t *testing.T) {
 	err = r.ForceExplicitTaskReconciliation(&batchSize)
 	assert.NoError(t, err)
 }
+
+func TestRealisClient_PartitionPolicy(t *testing.T) {
+
+	role := "vagrant"
+	var partitionDelay int64 = 30
+	job := realis.NewJob().
+		Environment("prod").
+		Role(role).
+		Name("create_thermos_job_partition_policy_test").
+		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
+		ExecutorData(string(thermosPayload)).
+		CPU(.5).
+		RAM(64).
+		Disk(100).
+		IsService(true).
+		InstanceCount(2).
+		PartitionPolicy(&aurora.PartitionPolicy{Reschedule: true, DelaySecs: &partitionDelay})
+
+	settings := realis.NewUpdateSettings()
+	settings.UpdateGroupSize = 2
+	resp, result, err := r.CreateService(job, settings)
+	assert.NoError(t, err)
+
+	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+
+	var ok bool
+	var mErr error
+
+	if ok, mErr = monitor.JobUpdate(*result.GetKey(), 5, 180); !ok || mErr != nil {
+		// Update may already be in a terminal state so don't check for error
+		_, err := r.AbortJobUpdate(*result.GetKey(), "Monitor timed out.")
+
+		_, err = r.KillJob(job.JobKey())
+
+		assert.NoError(t, err)
+	}
+
+}

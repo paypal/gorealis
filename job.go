@@ -55,6 +55,7 @@ type Job interface {
 	GetInstanceCount() int32
 	MaxFailure(maxFail int32) Job
 	Container(container Container) Job
+	PartitionPolicy(policy *aurora.PartitionPolicy) Job
 }
 
 // Structure to collect all information pertaining to an Aurora job.
@@ -312,6 +313,13 @@ func (j *AuroraJob) AddDedicatedConstraint(role, name string) Job {
 // Set a container to run for the job configuration to run.
 func (j *AuroraJob) Container(container Container) Job {
 	j.jobConfig.TaskConfig.Container = container.Build()
+
+	return j
+}
+
+// Set a partition policy for the job configuration to implement.
+func (j *AuroraJob) PartitionPolicy(policy *aurora.PartitionPolicy) Job {
+	j.jobConfig.TaskConfig.PartitionPolicy = policy
 
 	return j
 }
