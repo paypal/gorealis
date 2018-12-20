@@ -25,7 +25,7 @@ install:
   - docker-compose up -d
 
 script:
-  - go test -race -coverprofile=coverage.txt -covermode=atomic -v github.com/paypal/gorealis
+  - go test -race -coverprofile=coverage.txt -covermode=atomic -v github.com/paypal/gorealis -timeout 15m
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

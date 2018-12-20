@@ -56,7 +56,7 @@ type Job interface {
 	MaxFailure(maxFail int32) Job
 	Container(container Container) Job
 	PartitionPolicy(policy *aurora.PartitionPolicy) Job
-	Tier(tier *string) Job
+	Tier(tier string) Job
 	SlaPolicy(policy *aurora.SlaPolicy) Job
 }
 
@@ -326,8 +326,8 @@ func (j *AuroraJob) PartitionPolicy(policy *aurora.PartitionPolicy) Job {
 }
 
 // Set the Tier for the Job.
-func (j *AuroraJob) Tier(tier *string) Job {
-	j.jobConfig.TaskConfig.Tier = tier
+func (j *AuroraJob) Tier(tier string) Job {
+	j.jobConfig.TaskConfig.Tier = &tier
 
 	return j
 }

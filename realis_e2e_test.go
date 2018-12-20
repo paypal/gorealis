@@ -393,6 +393,7 @@ func TestRealisClient_CreateService(t *testing.T) {
 
 	settings := realis.NewUpdateSettings()
 	settings.UpdateGroupSize = 2
+	settings.MinWaitInInstanceRunningMs = 10 * 1000
 	job.InstanceCount(3)
 	resp, result, err := r.CreateService(job, settings)
 
@@ -403,7 +404,7 @@ func TestRealisClient_CreateService(t *testing.T) {
 	var ok bool
 	var mErr error
 
-	if ok, mErr = monitor.JobUpdate(*result.GetKey(), 5, 180); !ok || mErr != nil {
+	if ok, mErr = monitor.JobUpdate(*result.GetKey(), 5, 240); !ok || mErr != nil {
 		// Update may already be in a terminal state so don't check for error
 		_, err := r.AbortJobUpdate(*result.GetKey(), "Monitor timed out.")
 
@@ -753,7 +754,6 @@ func TestAuroraJob_SlaPolicy(t *testing.T) {
 		},
 	}
 	role := "vagrant"
-	tier := "preferred"
 
 	var cpu float64 = 6.0
 	var disk int64 = 256
@@ -774,15 +774,16 @@ func TestAuroraJob_SlaPolicy(t *testing.T) {
 				ExecutorName(aurora.AURORA_EXECUTOR_NAME).
 				ExecutorData(string(thermosPayload)).
 				CPU(.1).
-				RAM(4).
-				Disk(10).
-				InstanceCount(3).
+				RAM(2).
+				Disk(5).
+				InstanceCount(20).
 				IsService(true).
 				SlaPolicy(&tt.args).
-				Tier(&tier)
+				Tier("preferred")
 
 			settings := realis.NewUpdateSettings()
-			settings.UpdateGroupSize = 1
+			settings.UpdateGroupSize = 10
+			settings.MinWaitInInstanceRunningMs = 15 * 1000
 			resp, result, err := r.CreateService(job, settings)
 
 			assert.NoError(t, err)
@@ -807,12 +808,12 @@ func TestAuroraJob_SlaPolicy(t *testing.T) {
 			_, err = r.KillJob(job.JobKey())
 
 			assert.NoError(t, err)
-
-			cpu = 0
-			ram = 0
-			disk = 0
-			r.SetQuota(role, &cpu, &ram, &disk)
 		})
+
+		cpu = 0
+		ram = 0
+		disk = 0
+		r.SetQuota(role, &cpu, &ram, &disk)
 	}
 
 }
