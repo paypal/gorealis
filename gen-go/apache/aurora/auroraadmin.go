@@ -167,16 +167,16 @@ func (p *AuroraAdminClient) recvSetQuota() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error316 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error317 error
-		error317, err = error316.Read(iprot)
+		error317 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error318 error
+		error318, err = error317.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error317
+		err = error318
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -250,16 +250,16 @@ func (p *AuroraAdminClient) recvForceTaskState() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error318 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error319 error
-		error319, err = error318.Read(iprot)
+		error319 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error320 error
+		error320, err = error319.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error319
+		err = error320
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -324,16 +324,16 @@ func (p *AuroraAdminClient) recvPerformBackup() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error320 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error321 error
-		error321, err = error320.Read(iprot)
+		error321 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error322 error
+		error322, err = error321.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error321
+		err = error322
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -398,16 +398,16 @@ func (p *AuroraAdminClient) recvListBackups() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error322 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error323 error
-		error323, err = error322.Read(iprot)
+		error323 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error324 error
+		error324, err = error323.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error323
+		err = error324
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -477,16 +477,16 @@ func (p *AuroraAdminClient) recvStageRecovery() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error324 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error325 error
-		error325, err = error324.Read(iprot)
+		error325 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error326 error
+		error326, err = error325.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error325
+		err = error326
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -556,16 +556,16 @@ func (p *AuroraAdminClient) recvQueryRecovery() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error326 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error327 error
-		error327, err = error326.Read(iprot)
+		error327 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error328 error
+		error328, err = error327.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error327
+		err = error328
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -635,16 +635,16 @@ func (p *AuroraAdminClient) recvDeleteRecoveryTasks() (value *Response, err erro
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error328 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error329 error
-		error329, err = error328.Read(iprot)
+		error329 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error330 error
+		error330, err = error329.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error329
+		err = error330
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -709,16 +709,16 @@ func (p *AuroraAdminClient) recvCommitRecovery() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error330 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error331 error
-		error331, err = error330.Read(iprot)
+		error331 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error332 error
+		error332, err = error331.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error331
+		err = error332
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -783,16 +783,16 @@ func (p *AuroraAdminClient) recvUnloadRecovery() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error332 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error333 error
-		error333, err = error332.Read(iprot)
+		error333 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error334 error
+		error334, err = error333.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error333
+		err = error334
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -862,16 +862,16 @@ func (p *AuroraAdminClient) recvStartMaintenance() (value *Response, err error) 
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error334 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error335 error
-		error335, err = error334.Read(iprot)
+		error335 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error336 error
+		error336, err = error335.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error335
+		err = error336
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -941,16 +941,16 @@ func (p *AuroraAdminClient) recvDrainHosts() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error336 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error337 error
-		error337, err = error336.Read(iprot)
+		error337 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error338 error
+		error338, err = error337.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error337
+		err = error338
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1020,16 +1020,16 @@ func (p *AuroraAdminClient) recvMaintenanceStatus() (value *Response, err error)
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error338 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error339 error
-		error339, err = error338.Read(iprot)
+		error339 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error340 error
+		error340, err = error339.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error339
+		err = error340
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1099,16 +1099,16 @@ func (p *AuroraAdminClient) recvEndMaintenance() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error340 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error341 error
-		error341, err = error340.Read(iprot)
+		error341 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error342 error
+		error342, err = error341.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error341
+		err = error342
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1184,16 +1184,16 @@ func (p *AuroraAdminClient) recvSlaDrainHosts() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error342 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error343 error
-		error343, err = error342.Read(iprot)
+		error343 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error344 error
+		error344, err = error343.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error343
+		err = error344
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1258,16 +1258,16 @@ func (p *AuroraAdminClient) recvSnapshot() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error344 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error345 error
-		error345, err = error344.Read(iprot)
+		error345 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error346 error
+		error346, err = error345.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error345
+		err = error346
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1337,16 +1337,16 @@ func (p *AuroraAdminClient) recvTriggerExplicitTaskReconciliation() (value *Resp
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error346 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error347 error
-		error347, err = error346.Read(iprot)
+		error347 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error348 error
+		error348, err = error347.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error347
+		err = error348
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1411,16 +1411,16 @@ func (p *AuroraAdminClient) recvTriggerImplicitTaskReconciliation() (value *Resp
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error348 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error349 error
-		error349, err = error348.Read(iprot)
+		error349 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error350 error
+		error350, err = error349.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error349
+		err = error350
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1492,16 +1492,16 @@ func (p *AuroraAdminClient) recvPruneTasks() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error350 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error351 error
-		error351, err = error350.Read(iprot)
+		error351 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error352 error
+		error352, err = error351.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error351
+		err = error352
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1524,26 +1524,26 @@ type AuroraAdminProcessor struct {
 }
 
 func NewAuroraAdminProcessor(handler AuroraAdmin) *AuroraAdminProcessor {
-	self352 := &AuroraAdminProcessor{NewAuroraSchedulerManagerProcessor(handler)}
-	self352.AddToProcessorMap("setQuota", &auroraAdminProcessorSetQuota{handler: handler})
-	self352.AddToProcessorMap("forceTaskState", &auroraAdminProcessorForceTaskState{handler: handler})
-	self352.AddToProcessorMap("performBackup", &auroraAdminProcessorPerformBackup{handler: handler})
-	self352.AddToProcessorMap("listBackups", &auroraAdminProcessorListBackups{handler: handler})
-	self352.AddToProcessorMap("stageRecovery", &auroraAdminProcessorStageRecovery{handler: handler})
-	self352.AddToProcessorMap("queryRecovery", &auroraAdminProcessorQueryRecovery{handler: handler})
-	self352.AddToProcessorMap("deleteRecoveryTasks", &auroraAdminProcessorDeleteRecoveryTasks{handler: handler})
-	self352.AddToProcessorMap("commitRecovery", &auroraAdminProcessorCommitRecovery{handler: handler})
-	self352.AddToProcessorMap("unloadRecovery", &auroraAdminProcessorUnloadRecovery{handler: handler})
-	self352.AddToProcessorMap("startMaintenance", &auroraAdminProcessorStartMaintenance{handler: handler})
-	self352.AddToProcessorMap("drainHosts", &auroraAdminProcessorDrainHosts{handler: handler})
-	self352.AddToProcessorMap("maintenanceStatus", &auroraAdminProcessorMaintenanceStatus{handler: handler})
-	self352.AddToProcessorMap("endMaintenance", &auroraAdminProcessorEndMaintenance{handler: handler})
-	self352.AddToProcessorMap("slaDrainHosts", &auroraAdminProcessorSlaDrainHosts{handler: handler})
-	self352.AddToProcessorMap("snapshot", &auroraAdminProcessorSnapshot{handler: handler})
-	self352.AddToProcessorMap("triggerExplicitTaskReconciliation", &auroraAdminProcessorTriggerExplicitTaskReconciliation{handler: handler})
-	self352.AddToProcessorMap("triggerImplicitTaskReconciliation", &auroraAdminProcessorTriggerImplicitTaskReconciliation{handler: handler})
-	self352.AddToProcessorMap("pruneTasks", &auroraAdminProcessorPruneTasks{handler: handler})
-	return self352
+	self353 := &AuroraAdminProcessor{NewAuroraSchedulerManagerProcessor(handler)}
+	self353.AddToProcessorMap("setQuota", &auroraAdminProcessorSetQuota{handler: handler})
+	self353.AddToProcessorMap("forceTaskState", &auroraAdminProcessorForceTaskState{handler: handler})
+	self353.AddToProcessorMap("performBackup", &auroraAdminProcessorPerformBackup{handler: handler})
+	self353.AddToProcessorMap("listBackups", &auroraAdminProcessorListBackups{handler: handler})
+	self353.AddToProcessorMap("stageRecovery", &auroraAdminProcessorStageRecovery{handler: handler})
+	self353.AddToProcessorMap("queryRecovery", &auroraAdminProcessorQueryRecovery{handler: handler})
+	self353.AddToProcessorMap("deleteRecoveryTasks", &auroraAdminProcessorDeleteRecoveryTasks{handler: handler})
+	self353.AddToProcessorMap("commitRecovery", &auroraAdminProcessorCommitRecovery{handler: handler})
+	self353.AddToProcessorMap("unloadRecovery", &auroraAdminProcessorUnloadRecovery{handler: handler})
+	self353.AddToProcessorMap("startMaintenance", &auroraAdminProcessorStartMaintenance{handler: handler})
+	self353.AddToProcessorMap("drainHosts", &auroraAdminProcessorDrainHosts{handler: handler})
+	self353.AddToProcessorMap("maintenanceStatus", &auroraAdminProcessorMaintenanceStatus{handler: handler})
+	self353.AddToProcessorMap("endMaintenance", &auroraAdminProcessorEndMaintenance{handler: handler})
+	self353.AddToProcessorMap("slaDrainHosts", &auroraAdminProcessorSlaDrainHosts{handler: handler})
+	self353.AddToProcessorMap("snapshot", &auroraAdminProcessorSnapshot{handler: handler})
+	self353.AddToProcessorMap("triggerExplicitTaskReconciliation", &auroraAdminProcessorTriggerExplicitTaskReconciliation{handler: handler})
+	self353.AddToProcessorMap("triggerImplicitTaskReconciliation", &auroraAdminProcessorTriggerImplicitTaskReconciliation{handler: handler})
+	self353.AddToProcessorMap("pruneTasks", &auroraAdminProcessorPruneTasks{handler: handler})
+	return self353
 }
 
 type auroraAdminProcessorSetQuota struct {

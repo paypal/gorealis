@@ -716,6 +716,31 @@ struct JobUpdateKey {
   2: string id
 }
 
+/** Limits the amount of active changes being made to instances to groupSize. */
+struct QueueJobUpdateStrategy {
+  1: i32 groupSize
+}
+
+/** Similar to Queue strategy but will not start a new group until all instances in an active
+ * group have finished updating.
+ */
+struct BatchJobUpdateStrategy {
+  1: i32 groupSize
+}
+
+/** Same as Batch strategy but each time an active group completes, the size of the next active
+ * group may change.
+ */
+struct VariableBatchJobUpdateStrategy {
+  1: list<i32> groupSizes
+}
+
+union JobUpdateStrategy {
+ 1: QueueJobUpdateStrategy queueStrategy
+ 2: BatchJobUpdateStrategy batchStrategy
+ 3: VariableBatchJobUpdateStrategy varBatchStrategy
+}
+
 /** Job update thresholds and limits. */
 struct JobUpdateSettings {
   /** Max number of instances being updated at any given moment. */
@@ -755,6 +780,9 @@ struct JobUpdateSettings {
    * differs between the old and new task configurations, updates will use the newest configuration.
    */
   10: optional bool slaAware
+
+ /** Update strategy to be used for the update. See JobUpdateStrategy for choices. */
+  11: optional JobUpdateStrategy updateStrategy
 }
 
 /** Event marking a state transition in job update lifecycle. */

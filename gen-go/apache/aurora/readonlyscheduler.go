@@ -152,16 +152,16 @@ func (p *ReadOnlySchedulerClient) recvGetRoleSummary() (value *Response, err err
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error52 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error53 error
-		error53, err = error52.Read(iprot)
+		error53 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error54 error
+		error54, err = error53.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error53
+		err = error54
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -231,16 +231,16 @@ func (p *ReadOnlySchedulerClient) recvGetJobSummary() (value *Response, err erro
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error54 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error55 error
-		error55, err = error54.Read(iprot)
+		error55 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error56 error
+		error56, err = error55.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error55
+		err = error56
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -310,16 +310,16 @@ func (p *ReadOnlySchedulerClient) recvGetTasksStatus() (value *Response, err err
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error56 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error57 error
-		error57, err = error56.Read(iprot)
+		error57 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error58 error
+		error58, err = error57.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error57
+		err = error58
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -390,16 +390,16 @@ func (p *ReadOnlySchedulerClient) recvGetTasksWithoutConfigs() (value *Response,
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error58 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error59 error
-		error59, err = error58.Read(iprot)
+		error59 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error60 error
+		error60, err = error59.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error59
+		err = error60
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -469,16 +469,16 @@ func (p *ReadOnlySchedulerClient) recvGetPendingReason() (value *Response, err e
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error60 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error61 error
-		error61, err = error60.Read(iprot)
+		error61 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error62 error
+		error62, err = error61.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error61
+		err = error62
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -548,16 +548,16 @@ func (p *ReadOnlySchedulerClient) recvGetConfigSummary() (value *Response, err e
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error62 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error63 error
-		error63, err = error62.Read(iprot)
+		error63 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error64 error
+		error64, err = error63.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error63
+		err = error64
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -628,16 +628,16 @@ func (p *ReadOnlySchedulerClient) recvGetJobs() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error64 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error65 error
-		error65, err = error64.Read(iprot)
+		error65 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error66 error
+		error66, err = error65.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error65
+		err = error66
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -707,16 +707,16 @@ func (p *ReadOnlySchedulerClient) recvGetQuota() (value *Response, err error) {
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error66 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error67 error
-		error67, err = error66.Read(iprot)
+		error67 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error68 error
+		error68, err = error67.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error67
+		err = error68
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -787,16 +787,16 @@ func (p *ReadOnlySchedulerClient) recvPopulateJobConfig() (value *Response, err 
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error68 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error69 error
-		error69, err = error68.Read(iprot)
+		error69 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error70 error
+		error70, err = error69.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error69
+		err = error70
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -866,16 +866,16 @@ func (p *ReadOnlySchedulerClient) recvGetJobUpdateSummaries() (value *Response, 
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error70 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error71 error
-		error71, err = error70.Read(iprot)
+		error71 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error72 error
+		error72, err = error71.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error71
+		err = error72
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -945,16 +945,16 @@ func (p *ReadOnlySchedulerClient) recvGetJobUpdateDetails() (value *Response, er
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error72 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error73 error
-		error73, err = error72.Read(iprot)
+		error73 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error74 error
+		error74, err = error73.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error73
+		err = error74
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1024,16 +1024,16 @@ func (p *ReadOnlySchedulerClient) recvGetJobUpdateDiff() (value *Response, err e
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error74 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error75 error
-		error75, err = error74.Read(iprot)
+		error75 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error76 error
+		error76, err = error75.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error75
+		err = error76
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1098,16 +1098,16 @@ func (p *ReadOnlySchedulerClient) recvGetTierConfigs() (value *Response, err err
 		return
 	}
 	if mTypeId == thrift.EXCEPTION {
-		error76 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
-		var error77 error
-		error77, err = error76.Read(iprot)
+		error77 := thrift.NewTApplicationException(thrift.UNKNOWN_APPLICATION_EXCEPTION, "Unknown Exception")
+		var error78 error
+		error78, err = error77.Read(iprot)
 		if err != nil {
 			return
 		}
 		if err = iprot.ReadMessageEnd(); err != nil {
 			return
 		}
-		err = error77
+		err = error78
 		return
 	}
 	if mTypeId != thrift.REPLY {
@@ -1145,21 +1145,21 @@ func (p *ReadOnlySchedulerProcessor) ProcessorMap() map[string]thrift.TProcessor
 
 func NewReadOnlySchedulerProcessor(handler ReadOnlyScheduler) *ReadOnlySchedulerProcessor {
 
-	self78 := &ReadOnlySchedulerProcessor{handler: handler, processorMap: make(map[string]thrift.TProcessorFunction)}
-	self78.processorMap["getRoleSummary"] = &readOnlySchedulerProcessorGetRoleSummary{handler: handler}
-	self78.processorMap["getJobSummary"] = &readOnlySchedulerProcessorGetJobSummary{handler: handler}
-	self78.processorMap["getTasksStatus"] = &readOnlySchedulerProcessorGetTasksStatus{handler: handler}
-	self78.processorMap["getTasksWithoutConfigs"] = &readOnlySchedulerProcessorGetTasksWithoutConfigs{handler: handler}
-	self78.processorMap["getPendingReason"] = &readOnlySchedulerProcessorGetPendingReason{handler: handler}
-	self78.processorMap["getConfigSummary"] = &readOnlySchedulerProcessorGetConfigSummary{handler: handler}
-	self78.processorMap["getJobs"] = &readOnlySchedulerProcessorGetJobs{handler: handler}
-	self78.processorMap["getQuota"] = &readOnlySchedulerProcessorGetQuota{handler: handler}
-	self78.processorMap["populateJobConfig"] = &readOnlySchedulerProcessorPopulateJobConfig{handler: handler}
-	self78.processorMap["getJobUpdateSummaries"] = &readOnlySchedulerProcessorGetJobUpdateSummaries{handler: handler}
-	self78.processorMap["getJobUpdateDetails"] = &readOnlySchedulerProcessorGetJobUpdateDetails{handler: handler}
-	self78.processorMap["getJobUpdateDiff"] = &readOnlySchedulerProcessorGetJobUpdateDiff{handler: handler}
-	self78.processorMap["getTierConfigs"] = &readOnlySchedulerProcessorGetTierConfigs{handler: handler}
-	return self78
+	self79 := &ReadOnlySchedulerProcessor{handler: handler, processorMap: make(map[string]thrift.TProcessorFunction)}
+	self79.processorMap["getRoleSummary"] = &readOnlySchedulerProcessorGetRoleSummary{handler: handler}
+	self79.processorMap["getJobSummary"] = &readOnlySchedulerProcessorGetJobSummary{handler: handler}
+	self79.processorMap["getTasksStatus"] = &readOnlySchedulerProcessorGetTasksStatus{handler: handler}
+	self79.processorMap["getTasksWithoutConfigs"] = &readOnlySchedulerProcessorGetTasksWithoutConfigs{handler: handler}
+	self79.processorMap["getPendingReason"] = &readOnlySchedulerProcessorGetPendingReason{handler: handler}
+	self79.processorMap["getConfigSummary"] = &readOnlySchedulerProcessorGetConfigSummary{handler: handler}
+	self79.processorMap["getJobs"] = &readOnlySchedulerProcessorGetJobs{handler: handler}
+	self79.processorMap["getQuota"] = &readOnlySchedulerProcessorGetQuota{handler: handler}
+	self79.processorMap["populateJobConfig"] = &readOnlySchedulerProcessorPopulateJobConfig{handler: handler}
+	self79.processorMap["getJobUpdateSummaries"] = &readOnlySchedulerProcessorGetJobUpdateSummaries{handler: handler}
+	self79.processorMap["getJobUpdateDetails"] = &readOnlySchedulerProcessorGetJobUpdateDetails{handler: handler}
+	self79.processorMap["getJobUpdateDiff"] = &readOnlySchedulerProcessorGetJobUpdateDiff{handler: handler}
+	self79.processorMap["getTierConfigs"] = &readOnlySchedulerProcessorGetTierConfigs{handler: handler}
+	return self79
 }
 
 func (p *ReadOnlySchedulerProcessor) Process(iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
@@ -1172,12 +1172,12 @@ func (p *ReadOnlySchedulerProcessor) Process(iprot, oprot thrift.TProtocol) (suc
 	}
 	iprot.Skip(thrift.STRUCT)
 	iprot.ReadMessageEnd()
-	x79 := thrift.NewTApplicationException(thrift.UNKNOWN_METHOD, "Unknown function "+name)
+	x80 := thrift.NewTApplicationException(thrift.UNKNOWN_METHOD, "Unknown function "+name)
 	oprot.WriteMessageBegin(name, thrift.EXCEPTION, seqId)
-	x79.Write(oprot)
+	x80.Write(oprot)
 	oprot.WriteMessageEnd()
 	oprot.Flush()
-	return false, x79
+	return false, x80
 
 }
 
