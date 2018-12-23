@@ -1,4 +1,4 @@
-module github.com/paypal/gorealis
+module github.com/paypal/gorealis/v2
 
 require (
 	git.apache.org/thrift.git v0.0.0-20181016064013-5c1ecb67cde4
