@@ -21,6 +21,9 @@
 
 #include <algorithm>
 #include <iostream>
+#if __cplusplus >= 201703L
+#include <random>
+#endif
 
 #include <thrift/transport/TSocketPool.h>
 
@@ -188,7 +191,13 @@ void TSocketPool::open() {
   }
 
   if (randomize_ && numServers > 1) {
-    random_shuffle(servers_.begin(), servers_.end());
+#if __cplusplus >= 201703L
+    std::random_device rng;
+    std::mt19937 urng(rng());
+    std::shuffle(servers_.begin(), servers_.end(), urng);
+#else
+    std::random_shuffle(servers_.begin(), servers_.end());
+#endif
   }
 
   for (size_t i = 0; i < numServers; ++i) {

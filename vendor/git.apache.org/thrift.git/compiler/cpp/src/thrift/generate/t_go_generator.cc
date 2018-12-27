@@ -61,7 +61,7 @@ static const string endl = "\n"; // avoid ostream << std::endl flushes
  */
 bool format_go_output(const string& file_path);
 
-const string DEFAULT_THRIFT_IMPORT = "git.apache.org/thrift.git/lib/go/thrift";
+const string DEFAULT_THRIFT_IMPORT = "github.com/apache/thrift/lib/go/thrift";
 static std::string package_flag;
 
 /**
@@ -1323,7 +1323,7 @@ void t_go_generator::generate_go_struct_definition(ostream& out,
       if (tstruct->is_union())
         (*m_iter)->set_req(t_field::T_OPTIONAL);
       if (sorted_keys_pos != (*m_iter)->get_key()) {
-        int first_unused = std::max(1, sorted_keys_pos++);
+        int first_unused = (std::max)(1, sorted_keys_pos++);
         while (sorted_keys_pos != (*m_iter)->get_key()) {
           ++sorted_keys_pos;
         }
