@@ -18,7 +18,7 @@ package response
 import (
 	"bytes"
 
-	"github.com/paypal/gorealis/gen-go/apache/aurora"
+	"github.com/paypal/gorealis/v2/gen-go/apache/aurora"
 )
 
 // Get key from a response created by a StartJobUpdate call

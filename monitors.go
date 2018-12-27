@@ -18,7 +18,7 @@ package realis
 import (
 	"time"
 
-	"github.com/paypal/gorealis/gen-go/apache/aurora"
+	"github.com/paypal/gorealis/v2/gen-go/apache/aurora"
 	"github.com/pkg/errors"
 )
 

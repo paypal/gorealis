@@ -15,7 +15,7 @@
 package realis
 
 import (
-	"github.com/paypal/gorealis/gen-go/apache/aurora"
+	"github.com/paypal/gorealis/v2/gen-go/apache/aurora"
 )
 
 // Structure to collect all information pertaining to an Aurora job.

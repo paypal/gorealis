@@ -22,8 +22,8 @@ import (
 	"strings"
 	"time"
 
-	realis "github.com/paypal/gorealis"
-	"github.com/paypal/gorealis/gen-go/apache/aurora"
+	realis "github.com/paypal/gorealis/v2"
+	"github.com/paypal/gorealis/v2/gen-go/apache/aurora"
 )
 
 var cmd, executor, url, clustersConfig, clusterName, updateId, username, password, zkUrl, hostList, role string
