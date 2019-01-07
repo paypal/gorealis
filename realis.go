@@ -566,8 +566,14 @@ func (c *Client) KillJob(key aurora.JobKey) error {
 // as that API uses the update thrift call which has a few extra features available.
 // Use this API to create ad-hoc jobs.
 func (c *Client) CreateJob(auroraJob *AuroraJob) error {
+	// If no thermos configuration has been set this will result in a NOOP
+	err := auroraJob.BuildThermosPayload()
 
 	c.logger.DebugPrintf("CreateJob Thrift Payload: %+v\n", auroraJob.JobConfig())
+
+	if err != nil {
+		return errors.Wrap(err, "Unable to create Thermos payload")
+	}
 
 	_, retryErr := c.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return c.client.CreateJob(nil, auroraJob.JobConfig())
@@ -587,15 +593,18 @@ func (c *Client) CreateService(update *JobUpdate) (*aurora.StartJobUpdateResult_
 		return nil, errors.Wrap(err, "unable to create service")
 	}
 
-	if updateResult != nil {
-		return updateResult, nil
-	}
-
-	return nil, errors.New("results object is nil")
+	return updateResult, err
 }
 
 func (c *Client) ScheduleCronJob(auroraJob *AuroraJob) error {
+	// If no thermos configuration has been set this will result in a NOOP
+	err := auroraJob.BuildThermosPayload()
+
 	c.logger.DebugPrintf("ScheduleCronJob Thrift Payload: %+v\n", auroraJob.JobConfig())
+
+	if err != nil {
+		return errors.Wrap(err, "Unable to create Thermos payload")
+	}
 
 	_, retryErr := c.thriftCallWithRetries(func() (*aurora.Response, error) {
 		return c.client.ScheduleCronJob(nil, auroraJob.JobConfig())
@@ -680,6 +689,10 @@ func (c *Client) RestartJob(key aurora.JobKey) error {
 // Update all tasks under a job configuration. Currently gorealis doesn't support for canary deployments.
 func (c *Client) StartJobUpdate(updateJob *JobUpdate, message string) (*aurora.StartJobUpdateResult_, error) {
 
+	if err := updateJob.BuildThermosPayload(); err != nil {
+		return nil, errors.New("unable to generate the proper Thermos executor payload")
+	}
+
 	c.logger.DebugPrintf("StartJobUpdate Thrift Payload: %+v %v\n", updateJob, message)
 
 	resp, retryErr := c.thriftCallWithRetries(func() (*aurora.Response, error) {
@@ -689,7 +702,12 @@ func (c *Client) StartJobUpdate(updateJob *JobUpdate, message string) (*aurora.S
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "Error sending StartJobUpdate command to Aurora Scheduler")
 	}
-	return resp.GetResult_().GetStartJobUpdateResult_(), nil
+
+	if resp.GetResult_() != nil && resp.GetResult_().GetStartJobUpdateResult_() != nil {
+		return resp.GetResult_().GetStartJobUpdateResult_(), nil
+	}
+
+	return nil, errors.New("Thrift error: Field in response is nil unexpectedly.")
 }
 
 // Abort AuroraJob Update on Aurora. Requires the updateId which can be obtained on the Aurora web UI.

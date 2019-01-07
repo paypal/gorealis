@@ -60,6 +60,7 @@ func (j *AuroraJob) Role(role string) *AuroraJob {
 	identity := &aurora.Identity{User: role}
 	j.jobConfig.Owner = identity
 	j.jobConfig.TaskConfig.Owner = identity
+
 	return j
 }
 
@@ -98,6 +99,11 @@ func (j *AuroraJob) JobKey() aurora.JobKey {
 // Get the current job configurations key to use for some realis calls.
 func (j *AuroraJob) JobConfig() *aurora.JobConfiguration {
 	return j.jobConfig
+}
+
+// Get the current job configurations key to use for some realis calls.
+func (j *AuroraJob) AuroraTask() *AuroraTask {
+	return j.task
 }
 
 /*
@@ -186,4 +192,13 @@ func (j *AuroraJob) AddDedicatedConstraint(role, name string) *AuroraJob {
 func (j *AuroraJob) Container(container Container) *AuroraJob {
 	j.task.Container(container)
 	return j
+}
+
+func (j *AuroraJob) ThermosExecutor(thermos ThermosExecutor) *AuroraJob {
+	j.task.ThermosExecutor(thermos)
+	return j
+}
+
+func (j *AuroraJob) BuildThermosPayload() error {
+	return j.task.BuildThermosPayload()
 }

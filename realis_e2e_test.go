@@ -29,7 +29,7 @@ import (
 )
 
 var r *realis.Client
-var thermosPayload []byte
+var thermosExec realis.ThermosExecutor
 
 func TestMain(m *testing.M) {
 	var err error
@@ -46,11 +46,8 @@ func TestMain(m *testing.M) {
 
 	defer r.Close()
 
-	thermosPayload, err = ioutil.ReadFile("examples/thermos_payload.json")
-	if err != nil {
-		fmt.Println("Error reading thermos payload file: ", err)
-		os.Exit(1)
-	}
+	thermosExec.AddProcess(realis.NewThermosProcess("boostrap", "echo bootsrapping")).
+		AddProcess(realis.NewThermosProcess("hello_gorealis", "while true; do echo hello world from gorealis; sleep 10; done"))
 
 	os.Exit(m.Run())
 }
@@ -97,8 +94,7 @@ func TestBadCredentials(t *testing.T) {
 		Environment("prod").
 		Role("vagrant").
 		Name("create_thermos_job_test").
-		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
-		ExecutorData(string(thermosPayload)).
+		ThermosExecutor(thermosExec).
 		CPU(.5).
 		RAM(64).
 		Disk(100).
@@ -230,8 +226,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		Environment("prod").
 		Role(role).
 		Name("create_thermos_job_test").
-		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
-		ExecutorData(string(thermosPayload)).
+		ThermosExecutor(thermosExec).
 		CPU(.5).
 		RAM(64).
 		Disk(100).
@@ -270,7 +265,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		err := r.KillJob(job.JobKey())
 		assert.NoError(t, err)
 
-		success, err := r.InstancesMonitor(job.JobKey(), 0, 1*time.Second, 50*time.Second)
+		success, err := r.InstancesMonitor(job.JobKey(), 0, 1*time.Second, 60*time.Second)
 		assert.True(t, success)
 		assert.NoError(t, err)
 	})
@@ -307,8 +302,7 @@ func TestRealisClient_GetPendingReason(t *testing.T) {
 		Environment(env).
 		Role(role).
 		Name(name).
-		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
-		ExecutorData(string(thermosPayload)).
+		ThermosExecutor(thermosExec).
 		CPU(1000).
 		RAM(64).
 		Disk(100).
@@ -338,12 +332,11 @@ func TestRealisClient_CreateService_WithPulse_Thermos(t *testing.T) {
 	job := realis.NewJobUpdate().
 		Environment("prod").
 		Role(role).
-		Name("create_thermos_job_test").
-		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
-		ExecutorData(string(thermosPayload)).
+		Name("create_thermos_job_pulse_test").
 		CPU(.5).
 		RAM(64).
 		Disk(100).
+		ThermosExecutor(thermosExec).
 		IsService(true).
 		InstanceCount(2).
 		AddPorts(1).
@@ -351,8 +344,6 @@ func TestRealisClient_CreateService_WithPulse_Thermos(t *testing.T) {
 		PulseIntervalTimeout(30 * time.Millisecond).
 		BatchSize(1).WaitForBatchCompletion(true)
 
-	pulse := int32(30)
-	timeout := 300
 	result, err := r.CreateService(job)
 	fmt.Println(result.String())
 
@@ -365,43 +356,52 @@ func TestRealisClient_CreateService_WithPulse_Thermos(t *testing.T) {
 
 	var updateDetails []*aurora.JobUpdateDetails
 
-	for i := 0; i*int(pulse) <= timeout; i++ {
+	ticker := time.NewTicker(time.Second * 3)
+	timer := time.NewTimer(time.Minute * 6)
+	defer ticker.Stop()
+	defer timer.Stop()
 
-		pulseStatus, err := r.PulseJobUpdate(result.GetKey())
+pulseLoop:
+	for {
+		select {
+		case <-ticker.C:
+			pulseStatus, err := r.PulseJobUpdate(result.GetKey())
 
-		assert.Nil(t, err)
-		if pulseStatus != aurora.JobUpdatePulseStatus_OK && pulseStatus != aurora.JobUpdatePulseStatus_FINISHED {
-			assert.Fail(t, "Pulse update status received doesn't exist")
-		}
-
-		updateDetails, err = r.JobUpdateDetails(updateQ)
-		assert.Nil(t, err)
-
-		assert.Equal(t, len(updateDetails), 1, "No update matching query found")
-		status := updateDetails[0].Update.Summary.State.Status
-
-		if _, ok := realis.ActiveJobUpdateStates[status]; !ok {
-
-			// Rolled forward is the only state in which an update has been successfully updated
-			// if we encounter an inactive state and it is not at rolled forward, update failed
-			if status == aurora.JobUpdateStatus_ROLLED_FORWARD {
-				fmt.Println("Update succeeded")
-				break
-			} else {
-				fmt.Println("Update failed")
-				break
+			assert.Nil(t, err)
+			if pulseStatus != aurora.JobUpdatePulseStatus_OK && pulseStatus != aurora.JobUpdatePulseStatus_FINISHED {
+				assert.FailNow(t, "pulse update status received doesn't exist")
 			}
+
+			updateDetails, err = r.JobUpdateDetails(updateQ)
+			assert.Nil(t, err)
+
+			assert.Equal(t, len(updateDetails), 1, "no update matching query found")
+			status := updateDetails[0].Update.Summary.State.Status
+
+			if _, ok := realis.ActiveJobUpdateStates[status]; !ok {
+
+				// Rolled forward is the only state in which an update has been successfully updated
+				// if we encounter an inactive state and it is not at rolled forward, update failed
+				if status == aurora.JobUpdateStatus_ROLLED_FORWARD {
+					fmt.Println("Update succeeded")
+					break pulseLoop
+				} else {
+					fmt.Println("Update failed")
+					break pulseLoop
+				}
+			}
+
+		case <-timer.C:
+			err := r.AbortJobUpdate(*updateDetails[0].GetUpdate().GetSummary().GetKey(), "")
+			assert.NoError(t, err)
+			err = r.KillJob(job.JobKey())
+			assert.NoError(t, err)
+			assert.FailNow(t, "timed out during pulse update test")
 		}
-		fmt.Println("Polling, update still active...")
 	}
 
-	t.Run("TestRealisClient_KillJob_Thermos", func(t *testing.T) {
-		err := r.AbortJobUpdate(*updateDetails[0].GetUpdate().GetSummary().GetKey(), "")
-		assert.NoError(t, err)
-		err = r.KillJob(job.JobKey())
-		assert.NoError(t, err)
-	})
-
+	err = r.KillJob(job.JobKey())
+	assert.NoError(t, err)
 }
 
 // Test configuring an executor that doesn't exist for CreateJob API
@@ -412,8 +412,7 @@ func TestRealisClient_CreateService(t *testing.T) {
 		Environment("prod").
 		Role("vagrant").
 		Name("create_service_test").
-		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
-		ExecutorData(string(thermosPayload)).
+		ThermosExecutor(thermosExec).
 		CPU(.25).
 		RAM(4).
 		Disk(10).
@@ -609,8 +608,7 @@ func TestRealisClient_SessionThreadSafety(t *testing.T) {
 		Environment("prod").
 		Role("vagrant").
 		Name("create_thermos_job_test_multi").
-		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
-		ExecutorData(string(thermosPayload)).
+		ThermosExecutor(thermosExec).
 		CPU(.25).
 		RAM(4).
 		Disk(10).

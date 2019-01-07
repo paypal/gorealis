@@ -17,7 +17,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"strings"
 	"time"
@@ -114,23 +113,21 @@ func main() {
 
 	switch executor {
 	case "thermos":
-		payload, err := ioutil.ReadFile("examples/thermos_payload.json")
-		if err != nil {
-			log.Fatalln("Error reading json config file: ", err)
-		}
+		thermosExec := realis.ThermosExecutor{}
+		thermosExec.AddProcess(realis.NewThermosProcess("boostrap", "echo bootsrapping")).
+			AddProcess(realis.NewThermosProcess("hello_gorealis", "while true; do echo hello world from gorealis; sleep 10; done"))
 
 		job = realis.NewJob().
 			Environment("prod").
 			Role("vagrant").
 			Name("hello_world_from_gorealis").
-			ExecutorName(aurora.AURORA_EXECUTOR_NAME).
-			ExecutorData(string(payload)).
 			CPU(1).
 			RAM(64).
 			Disk(100).
 			IsService(true).
 			InstanceCount(1).
-			AddPorts(1)
+			AddPorts(1).
+			ThermosExecutor(thermosExec)
 	case "compose":
 		job = realis.NewJob().
 			Environment("prod").
@@ -180,7 +177,8 @@ func main() {
 	case "createService":
 		// Create a service with three instances using the update API instead of the createJob API
 		fmt.Println("Creating service")
-		settings := realis.JobUpdateFromConfig(job.TaskConfig()).InstanceCount(3)
+		settings := realis.JobUpdateFromAuroraTask(job.AuroraTask()).InstanceCount(3)
+
 		result, err := r.CreateService(settings)
 		if err != nil {
 			log.Fatal("error: ", err)

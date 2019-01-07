@@ -15,6 +15,7 @@
 package realis
 
 import (
+	"encoding/json"
 	"strconv"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
@@ -27,6 +28,7 @@ const (
 	CPU ResourceType = iota
 	RAM
 	DISK
+	GPU
 )
 
 const (
@@ -38,12 +40,14 @@ type AuroraTask struct {
 	task      *aurora.TaskConfig
 	resources map[ResourceType]*aurora.Resource
 	portCount int
+	thermos   *ThermosExecutor
 }
 
 func NewTask() *AuroraTask {
 	numCpus := &aurora.Resource{}
 	ramMb := &aurora.Resource{}
 	diskMb := &aurora.Resource{}
+	numGpus := &aurora.Resource{}
 
 	numCpus.NumCpus = new(float64)
 	ramMb.RamMb = new(int64)
@@ -53,6 +57,7 @@ func NewTask() *AuroraTask {
 	resources[CPU] = numCpus
 	resources[RAM] = ramMb
 	resources[DISK] = diskMb
+	resources[GPU] = numGpus
 
 	return &AuroraTask{task: &aurora.TaskConfig{
 		Job:              &aurora.JobKey{},
@@ -122,7 +127,7 @@ func TaskFromThrift(config *aurora.TaskConfig) *AuroraTask {
 
 	// Copy all ports
 	for _, resource := range config.Resources {
-		// Copy only ports, skip CPU, RAM, and DISK
+		// Copy only ports. Set CPU, RAM, DISK, and GPU
 		if resource != nil {
 			if resource.NamedPort != nil {
 				newTask.task.Resources = append(newTask.task.Resources, &aurora.Resource{NamedPort: thrift.StringPtr(*resource.NamedPort)})
@@ -139,6 +144,10 @@ func TaskFromThrift(config *aurora.TaskConfig) *AuroraTask {
 
 			if resource.DiskMb != nil {
 				newTask.Disk(*resource.DiskMb)
+			}
+
+			if resource.NumGpus != nil {
+				newTask.GPU(*resource.NumGpus)
 			}
 		}
 	}
@@ -234,6 +243,11 @@ func (t *AuroraTask) RAM(ram int64) *AuroraTask {
 
 func (t *AuroraTask) Disk(disk int64) *AuroraTask {
 	*t.resources[DISK].DiskMb = disk
+	return t
+}
+
+func (t *AuroraTask) GPU(gpu int64) *AuroraTask {
+	*t.resources[GPU].NumGpus = gpu
 	return t
 }
 
@@ -363,5 +377,47 @@ func (t *AuroraTask) JobKey() aurora.JobKey {
 
 func (t *AuroraTask) Clone() *AuroraTask {
 	newTask := TaskFromThrift(t.task)
+
+	if t.thermos != nil {
+		newTask.ThermosExecutor(*t.thermos.Clone())
+	}
+
 	return newTask
+}
+
+func (t *AuroraTask) ThermosExecutor(thermos ThermosExecutor) *AuroraTask {
+	t.thermos = &thermos
+
+	return t
+}
+
+func (t *AuroraTask) BuildThermosPayload() error {
+	if t.thermos != nil {
+
+		// Set the correct resources
+		if t.resources[CPU].NumCpus != nil {
+			t.thermos.cpu(*t.resources[CPU].NumCpus)
+		}
+
+		if t.resources[RAM].RamMb != nil {
+			t.thermos.ram(*t.resources[RAM].RamMb)
+		}
+
+		if t.resources[DISK].DiskMb != nil {
+			t.thermos.disk(*t.resources[DISK].DiskMb)
+		}
+
+		if t.resources[GPU].NumGpus != nil {
+			t.thermos.gpu(*t.resources[GPU].NumGpus)
+		}
+
+		payload, err := json.Marshal(t.thermos)
+		if err != nil {
+			return err
+		}
+
+		t.ExecutorName(aurora.AURORA_EXECUTOR_NAME)
+		t.ExecutorData(string(payload))
+	}
+	return nil
 }

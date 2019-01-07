@@ -1,10 +1,10 @@
-package realis_test
+package realis
 
 import (
 	"encoding/json"
 	"testing"
 
-	"github.com/paypal/gorealis/v2"
+	"git.apache.org/thrift.git/lib/go/thrift"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,27 +40,32 @@ func TestThermosTask(t *testing.T) {
     ]
   }
 }`)
-	thermos := realis.ThermosExecutor{}
+	thermos := ThermosExecutor{}
 
 	err := json.Unmarshal(thermosJSON, &thermos)
 
 	assert.NoError(t, err)
 
-	thermosExpected := realis.ThermosExecutor{
-		Task: realis.ThermosTask{
-			Processes: []realis.ThermosProcess{
-				{
-					Daemon:      false,
-					Name:        "hello",
-					Ephemeral:   false,
-					MaxFailures: 1,
-					MinDuration: 5,
-					Cmdline:     "\n    while true; do\n      echo hello world from gorealis\n      sleep 10\n    done\n  ",
-					Final:       false,
-				},
-			},
-			Constraints: []realis.ThermosConstraint{{Order: []string{"hello"}}},
-			Resources:   realis.ThermosResources{CPU: 1.1, Disk: 134217728, RAM: 134217728, GPU: 0}}}
+	process := &ThermosProcess{
+		Daemon:      false,
+		Name:        "hello",
+		Ephemeral:   false,
+		MaxFailures: 1,
+		MinDuration: 5,
+		Cmdline:     "\n    while true; do\n      echo hello world from gorealis\n      sleep 10\n    done\n  ",
+		Final:       false,
+	}
 
-	assert.ObjectsAreEqual(thermosExpected, thermos)
+	constraint := &ThermosConstraint{Order: []string{process.Name}}
+
+	thermosExpected := ThermosExecutor{
+		Task: ThermosTask{
+			Processes:   map[string]*ThermosProcess{process.Name: process},
+			Constraints: []*ThermosConstraint{constraint},
+			Resources: thermosResources{CPU: thrift.Float64Ptr(1.1),
+				Disk: thrift.Int64Ptr(134217728),
+				RAM:  thrift.Int64Ptr(134217728),
+				GPU:  thrift.Int64Ptr(0)}}}
+
+	assert.ObjectsAreEqualValues(thermosExpected, thermos)
 }

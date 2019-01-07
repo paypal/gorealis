@@ -129,19 +129,19 @@ func newUpdateSettings() *aurora.JobUpdateSettings {
    See task.go for further documentation.
 */
 
-func (t *JobUpdate) Environment(env string) *JobUpdate {
-	t.task.Environment(env)
-	return t
+func (j *JobUpdate) Environment(env string) *JobUpdate {
+	j.task.Environment(env)
+	return j
 }
 
-func (t *JobUpdate) Role(role string) *JobUpdate {
-	t.task.Role(role)
-	return t
+func (j *JobUpdate) Role(role string) *JobUpdate {
+	j.task.Role(role)
+	return j
 }
 
-func (t *JobUpdate) Name(name string) *JobUpdate {
-	t.task.Name(name)
-	return t
+func (j *JobUpdate) Name(name string) *JobUpdate {
+	j.task.Name(name)
+	return j
 }
 
 func (j *JobUpdate) ExecutorName(name string) *JobUpdate {
@@ -229,4 +229,13 @@ func (j *JobUpdate) Container(container Container) *JobUpdate {
 
 func (j *JobUpdate) JobKey() aurora.JobKey {
 	return j.task.JobKey()
+}
+
+func (j *JobUpdate) ThermosExecutor(thermos ThermosExecutor) *JobUpdate {
+	j.task.ThermosExecutor(thermos)
+	return j
+}
+
+func (j *JobUpdate) BuildThermosPayload() error {
+	return j.task.BuildThermosPayload()
 }
