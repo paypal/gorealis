@@ -28,6 +28,7 @@ import (
 	"github.com/paypal/gorealis/response"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var r realis.Realis
@@ -338,10 +339,9 @@ pulseLoop:
 		select {
 		case <-ticker.C:
 
-
 			fmt.Println("sending PulseJobUpdate....")
 			resp, err = r.PulseJobUpdate(result.GetKey())
-			assert.NotNil(t, resp)
+			require.NotNil(t, resp, "received a nil response from Aurora")
 			assert.Nil(t, err)
 
 			respDetail, err := r.JobUpdateDetails(updateQ)
@@ -372,14 +372,13 @@ pulseLoop:
 			_, err := r.AbortJobUpdate(*updateDetails[0].GetUpdate().GetSummary().GetKey(), "")
 			assert.NoError(t, err)
 			_, err = r.KillJob(job.JobKey())
-			assert.NoError(t, err)
-			assert.FailNow(t, "timed out during pulse update test")
+			require.NoError(t, err, "timed out during pulse update test")
 		}
 	}
 
 	resp, err = r.KillJob(job.JobKey())
-    assert.NoError(t, err)
-    assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+	assert.NoError(t, err)
+	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 }
 
 // Test configuring an executor that doesn't exist for CreateJob API

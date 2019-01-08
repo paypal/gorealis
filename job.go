@@ -96,15 +96,8 @@ func NewJob() Job {
 	ramMb := aurora.NewResource()
 	diskMb := aurora.NewResource()
 
-	resources := make(map[ResourceType]*aurora.Resource)
-	resources[CPU] = numCpus
-	resources[RAM] = ramMb
-	resources[DISK] = diskMb
-
-	taskConfig.Resources = make(map[*aurora.Resource]bool)
-	taskConfig.Resources[numCpus] = true
-	taskConfig.Resources[ramMb] = true
-	taskConfig.Resources[diskMb] = true
+	resources := map[ResourceType]*aurora.Resource{CPU: numCpus, RAM: ramMb, DISK: diskMb}
+	taskConfig.Resources = map[*aurora.Resource]bool{numCpus: true, ramMb: true, diskMb: true}
 
 	numCpus.NumCpus = new(float64)
 	ramMb.RamMb = new(int64)
@@ -178,7 +171,7 @@ func (j *AuroraJob) Disk(disk int64) Job {
 }
 
 func (j *AuroraJob) GPU(gpus int64) Job {
-	if _,ok := j.resources[GPU]; !ok {
+	if _, ok := j.resources[GPU]; !ok {
 		numGPUs := &aurora.Resource{NumGpus: new(int64)}
 		j.resources[GPU] = numGPUs
 		j.TaskConfig().Resources[numGPUs] = true
