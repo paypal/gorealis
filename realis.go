@@ -37,7 +37,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const VERSION = "2.0.0"
+const VERSION = "2.0.1"
 
 type Client struct {
 	config         *clientConfig
