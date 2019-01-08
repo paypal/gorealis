@@ -22,11 +22,13 @@ import (
 	"testing"
 	"time"
 
+	"git.apache.org/thrift.git/lib/go/thrift"
 	realis "github.com/paypal/gorealis"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/paypal/gorealis/response"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var r realis.Realis
@@ -309,10 +311,8 @@ func TestRealisClient_CreateService_WithPulse_Thermos(t *testing.T) {
 		AddPorts(1).
 		AddLabel("currentTime", time.Now().String())
 
-	pulse := int32(30)
-	timeout := 300
 	settings := realis.NewUpdateSettings()
-	settings.BlockIfNoPulsesAfterMs = &pulse
+	settings.BlockIfNoPulsesAfterMs = thrift.Int32Ptr(30)
 	settings.UpdateGroupSize = 1
 	settings.WaitForBatchCompletion = true
 	job.InstanceCount(2)
@@ -327,52 +327,58 @@ func TestRealisClient_CreateService_WithPulse_Thermos(t *testing.T) {
 		Limit: 1,
 	}
 
-	start := time.Now()
-	for i := 0; i*int(pulse) <= timeout; i++ {
+	var updateDetails []*aurora.JobUpdateDetails
 
-		fmt.Println("sending PulseJobUpdate....")
-		resp, err = r.PulseJobUpdate(result.GetKey())
-		assert.NotNil(t, resp)
-		assert.Nil(t, err)
+	ticker := time.NewTicker(time.Second * 3)
+	timer := time.NewTimer(time.Minute * 6)
+	defer ticker.Stop()
+	defer timer.Stop()
 
-		respDetail, err := r.JobUpdateDetails(updateQ)
-		assert.Nil(t, err)
+pulseLoop:
+	for {
+		select {
+		case <-ticker.C:
 
-		updateDetail := response.JobUpdateDetails(respDetail)
-		if len(updateDetail) == 0 {
-			fmt.Println("No update found")
-			assert.NotEqual(t, len(updateDetail), 0)
-		}
-		status := updateDetail[0].Update.Summary.State.Status
+			fmt.Println("sending PulseJobUpdate....")
+			resp, err = r.PulseJobUpdate(result.GetKey())
+			require.NotNil(t, resp, "received a nil response from Aurora")
+			assert.Nil(t, err)
 
-		if _, ok := aurora.ACTIVE_JOB_UPDATE_STATES[status]; !ok {
+			respDetail, err := r.JobUpdateDetails(updateQ)
+			assert.Nil(t, err)
 
-			// Rolled forward is the only state in which an update has been successfully updated
-			// if we encounter an inactive state and it is not at rolled forward, update failed
-			if status == aurora.JobUpdateStatus_ROLLED_FORWARD {
-				fmt.Println("Update succeded")
-				break
-			} else {
-				fmt.Println("Update failed")
-				break
+			updateDetails = response.JobUpdateDetails(respDetail)
+			if len(updateDetails) == 0 {
+				fmt.Println("No update found")
+				assert.NotEqual(t, len(updateDetails), 0)
 			}
+			status := updateDetails[0].Update.Summary.State.Status
+
+			if _, ok := aurora.ACTIVE_JOB_UPDATE_STATES[status]; !ok {
+
+				// Rolled forward is the only state in which an update has been successfully updated
+				// if we encounter an inactive state and it is not at rolled forward, update failed
+				if status == aurora.JobUpdateStatus_ROLLED_FORWARD {
+					fmt.Println("Update succeded")
+					break pulseLoop
+				} else {
+					fmt.Println("Update failed")
+					break pulseLoop
+				}
+			}
+
+			fmt.Println("Polling, update still active...")
+		case <-timer.C:
+			_, err := r.AbortJobUpdate(*updateDetails[0].GetUpdate().GetSummary().GetKey(), "")
+			assert.NoError(t, err)
+			_, err = r.KillJob(job.JobKey())
+			require.NoError(t, err, "timed out during pulse update test")
 		}
-
-		fmt.Println("Polling, update still active...")
-		time.Sleep(time.Duration(pulse) * time.Second)
 	}
-	end := time.Now()
-	fmt.Printf("Update call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 
-	t.Run("TestRealisClient_KillJob_Thermos", func(t *testing.T) {
-		start := time.Now()
-		resp, err := r.KillJob(job.JobKey())
-		end := time.Now()
-		assert.NoError(t, err)
-		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-		fmt.Printf("Kill call took %d ns\n", (end.UnixNano() - start.UnixNano()))
-	})
-
+	resp, err = r.KillJob(job.JobKey())
+	assert.NoError(t, err)
+	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 }
 
 // Test configuring an executor that doesn't exist for CreateJob API
@@ -403,7 +409,7 @@ func TestRealisClient_CreateService(t *testing.T) {
 	var ok bool
 	var mErr error
 
-	if ok, mErr = monitor.JobUpdate(*result.GetKey(), 5, 180); !ok || mErr != nil {
+	if ok, mErr = monitor.JobUpdate(*result.GetKey(), 5, 240); !ok || mErr != nil {
 		// Update may already be in a terminal state so don't check for error
 		_, err := r.AbortJobUpdate(*result.GetKey(), "Monitor timed out.")
 

@@ -37,17 +37,17 @@ func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 	// Rebuild resource map from TaskConfig
 	for ptr := range config.Resources {
 		if ptr.NumCpus != nil {
-			job.resources["cpu"].NumCpus = ptr.NumCpus
+			job.resources[CPU].NumCpus = ptr.NumCpus
 			continue // Guard against Union violations that Go won't enforce
 		}
 
 		if ptr.RamMb != nil {
-			job.resources["ram"].RamMb = ptr.RamMb
+			job.resources[RAM].RamMb = ptr.RamMb
 			continue
 		}
 
 		if ptr.DiskMb != nil {
-			job.resources["disk"].DiskMb = ptr.DiskMb
+			job.resources[DISK].DiskMb = ptr.DiskMb
 			continue
 		}
 	}
@@ -77,18 +77,23 @@ func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings)
 	// Rebuild resource map from TaskConfig
 	for ptr := range config.Resources {
 		if ptr.NumCpus != nil {
-			job.resources["cpu"].NumCpus = ptr.NumCpus
+			job.resources[CPU].NumCpus = ptr.NumCpus
 			continue // Guard against Union violations that Go won't enforce
 		}
 
 		if ptr.RamMb != nil {
-			job.resources["ram"].RamMb = ptr.RamMb
+			job.resources[RAM].RamMb = ptr.RamMb
 			continue
 		}
 
 		if ptr.DiskMb != nil {
-			job.resources["disk"].DiskMb = ptr.DiskMb
+			job.resources[DISK].DiskMb = ptr.DiskMb
 			continue
+		}
+
+		if ptr.NumGpus != nil {
+			job.resources[GPU].NumGpus = ptr.NumGpus
+			continue // Guard against Union violations that Go won't enforce
 		}
 	}
 

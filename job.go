@@ -58,10 +58,19 @@ type Job interface {
 	PartitionPolicy(policy *aurora.PartitionPolicy) Job
 }
 
+type ResourceType int
+
+const (
+	CPU ResourceType = iota
+	RAM
+	DISK
+	GPU
+)
+
 // Structure to collect all information pertaining to an Aurora job.
 type AuroraJob struct {
 	jobConfig *aurora.JobConfiguration
-	resources map[string]*aurora.Resource
+	resources map[ResourceType]*aurora.Resource
 	portCount int
 }
 
@@ -88,15 +97,8 @@ func NewJob() Job {
 	ramMb := aurora.NewResource()
 	diskMb := aurora.NewResource()
 
-	resources := make(map[string]*aurora.Resource)
-	resources["cpu"] = numCpus
-	resources["ram"] = ramMb
-	resources["disk"] = diskMb
-
-	taskConfig.Resources = make(map[*aurora.Resource]bool)
-	taskConfig.Resources[numCpus] = true
-	taskConfig.Resources[ramMb] = true
-	taskConfig.Resources[diskMb] = true
+	resources := map[ResourceType]*aurora.Resource{CPU: numCpus, RAM: ramMb, DISK: diskMb}
+	taskConfig.Resources = map[*aurora.Resource]bool{numCpus: true, ramMb: true, diskMb: true}
 
 	numCpus.NumCpus = new(float64)
 	ramMb.RamMb = new(int64)
@@ -155,20 +157,28 @@ func (j *AuroraJob) ExecutorData(data string) Job {
 }
 
 func (j *AuroraJob) CPU(cpus float64) Job {
-	*j.resources["cpu"].NumCpus = cpus
-
+	*j.resources[CPU].NumCpus = cpus
 	return j
 }
 
 func (j *AuroraJob) RAM(ram int64) Job {
-	*j.resources["ram"].RamMb = ram
-
+	*j.resources[RAM].RamMb = ram
 	return j
 }
 
 func (j *AuroraJob) Disk(disk int64) Job {
-	*j.resources["disk"].DiskMb = disk
+	*j.resources[DISK].DiskMb = disk
+	return j
+}
 
+func (j *AuroraJob) GPU(gpus int64) Job {
+	if _, ok := j.resources[GPU]; !ok {
+		numGPUs := &aurora.Resource{NumGpus: new(int64)}
+		j.resources[GPU] = numGPUs
+		j.TaskConfig().Resources[numGPUs] = true
+	}
+
+	*j.resources[GPU].NumGpus = gpus
 	return j
 }
 
