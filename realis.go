@@ -112,6 +112,7 @@ type RealisConfig struct {
 	clientkey, clientcert       string
 	options                     []ClientOption
 	debug                       bool
+	trace                       bool
 	zkOptions                   []ZKOpt
 }
 
@@ -216,7 +217,7 @@ func ZookeeperOptions(opts ...ZKOpt) ClientOption {
 // Using the word set to avoid name collision with Interface.
 func SetLogger(l Logger) ClientOption {
 	return func(config *RealisConfig) {
-		config.logger = &LevelLogger{l, false}
+		config.logger = &LevelLogger{l, false, false}
 	}
 }
 
@@ -224,6 +225,13 @@ func SetLogger(l Logger) ClientOption {
 func Debug() ClientOption {
 	return func(config *RealisConfig) {
 		config.debug = true
+	}
+}
+
+// Enable debug statements.
+func Trace() ClientOption {
+	return func(config *RealisConfig) {
+		config.trace = true
 	}
 }
 
@@ -262,7 +270,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 	// Default configs
 	config.timeoutms = 10000
 	config.backoff = defaultBackoff
-	config.logger = &LevelLogger{log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC), false}
+	config.logger = &LevelLogger{log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC), false, false}
 
 	// Save options to recreate client if a connection error happens
 	config.options = options
@@ -276,13 +284,16 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 
 	// Turn off all logging (including debug)
 	if config.logger == nil {
-		config.logger = &LevelLogger{NoopLogger{}, false}
+		config.logger = &LevelLogger{NoopLogger{}, false, false}
 	}
 
 	// Set a logger if debug has been set to true but no logger has been set
 	if config.logger == nil && config.debug {
-		config.logger = &LevelLogger{log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC), true}
+		config.logger = &LevelLogger{log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC), true, false}
 	}
+
+	config.logger.debug = config.debug
+	config.logger.trace = config.trace
 
 	// Note, by this point, a LevelLogger should have been created.
 	config.logger.EnableDebug(config.debug)
@@ -350,7 +361,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		client:         aurora.NewAuroraSchedulerManagerClientFactory(config.transport, config.protoFactory),
 		readonlyClient: aurora.NewReadOnlySchedulerClientFactory(config.transport, config.protoFactory),
 		adminClient:    aurora.NewAuroraAdminClientFactory(config.transport, config.protoFactory),
-		logger:         LevelLogger{config.logger, config.debug},
+		logger:         LevelLogger{config.logger, config.debug, config.trace},
 		lock:           &sync.Mutex{}}, nil
 }
 
@@ -546,6 +557,7 @@ func (r *realisClient) GetInstanceIds(key *aurora.JobKey, states map[aurora.Sche
 }
 
 func (r *realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQuery) (*aurora.Response, error) {
+
 	r.logger.DebugPrintf("GetJobUpdateSummaries Thrift Payload: %+v\n", jobUpdateQuery)
 
 	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {

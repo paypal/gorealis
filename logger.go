@@ -31,6 +31,7 @@ func (NoopLogger) Println(a ...interface{}) {}
 type LevelLogger struct {
 	Logger
 	debug bool
+	trace bool
 }
 
 func (l *LevelLogger) EnableDebug(enable bool) {
@@ -40,6 +41,13 @@ func (l *LevelLogger) EnableDebug(enable bool) {
 func (l LevelLogger) DebugPrintf(format string, a ...interface{}) {
 	if l.debug {
 		l.Print("[DEBUG] ")
+		l.Printf(format, a...)
+	}
+}
+
+func (l LevelLogger) TracePrintf(format string, a ...interface{}) {
+	if l.debug {
+		l.Print("[TRACE] ")
 		l.Printf(format, a...)
 	}
 }
