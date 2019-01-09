@@ -47,17 +47,12 @@ func NewTask() *AuroraTask {
 	numCpus := &aurora.Resource{}
 	ramMb := &aurora.Resource{}
 	diskMb := &aurora.Resource{}
-	numGpus := &aurora.Resource{}
 
 	numCpus.NumCpus = new(float64)
 	ramMb.RamMb = new(int64)
 	diskMb.DiskMb = new(int64)
 
-	resources := make(map[ResourceType]*aurora.Resource)
-	resources[CPU] = numCpus
-	resources[RAM] = ramMb
-	resources[DISK] = diskMb
-	resources[GPU] = numGpus
+	resources := map[ResourceType]*aurora.Resource{CPU: numCpus, RAM: ramMb, DISK: diskMb}
 
 	return &AuroraTask{task: &aurora.TaskConfig{
 		Job:              &aurora.JobKey{},
@@ -247,7 +242,14 @@ func (t *AuroraTask) Disk(disk int64) *AuroraTask {
 }
 
 func (t *AuroraTask) GPU(gpu int64) *AuroraTask {
-	*t.resources[GPU].NumGpus = gpu
+	// GPU resource must be set explicitly since the scheduler by default
+	// rejects jobs with GPU resources attached to it.
+	if _, ok := t.resources[GPU]; !ok {
+		t.resources[GPU] = &aurora.Resource{}
+		t.task.Resources = append(t.task.Resources, t.resources[GPU])
+	}
+
+	t.resources[GPU].NumGpus = &gpu
 	return t
 }
 
