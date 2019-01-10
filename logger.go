@@ -44,36 +44,36 @@ func (l *LevelLogger) EnableTrace(enable bool) {
 
 func (l LevelLogger) DebugPrintf(format string, a ...interface{}) {
 	if l.debug {
-		l.Printf("[DEBUG] " + format, a...)
+		l.Printf("[DEBUG] "+format, a...)
 	}
 }
 
 func (l LevelLogger) DebugPrint(a ...interface{}) {
 	if l.debug {
-		l.Print(append([]interface{}{"[DEBUG] "}, a))
+		l.Print(append([]interface{}{"[DEBUG] "}, a)...)
 	}
 }
 
 func (l LevelLogger) DebugPrintln(a ...interface{}) {
 	if l.debug {
-		l.Println(append([]interface{}{"[DEBUG] "}, a))
+		l.Println(append([]interface{}{"[DEBUG] "}, a)...)
 	}
 }
 
 func (l LevelLogger) TracePrintf(format string, a ...interface{}) {
 	if l.trace {
-		l.Printf("[TRACE] " + format, a...)
+		l.Printf("[TRACE] "+format, a...)
 	}
 }
 
 func (l LevelLogger) TracePrint(a ...interface{}) {
 	if l.trace {
-		l.Print(append([]interface{}{"[TRACE] "}, a))
+		l.Print(append([]interface{}{"[TRACE] "}, a)...)
 	}
 }
 
 func (l LevelLogger) TracePrintln(a ...interface{}) {
 	if l.trace {
-		l.Println(append([]interface{}{"[TRACE] "}, a))
+		l.Println(append([]interface{}{"[TRACE] "}, a)...)
 	}
 }
