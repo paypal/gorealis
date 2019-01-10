@@ -217,7 +217,7 @@ func ZookeeperOptions(opts ...ZKOpt) ClientOption {
 // Using the word set to avoid name collision with Interface.
 func SetLogger(l Logger) ClientOption {
 	return func(config *RealisConfig) {
-		config.logger = &LevelLogger{l, false, false}
+		config.logger = &LevelLogger{Logger: l}
 	}
 }
 
@@ -270,11 +270,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 	// Default configs
 	config.timeoutms = 10000
 	config.backoff = defaultBackoff
-	config.logger = &LevelLogger{
-		Logger: log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC),
-		debug: false,
-		trace: false,
-	}
+	config.logger = &LevelLogger{Logger: log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC)}
 
 	// Save options to recreate client if a connection error happens
 	config.options = options
@@ -288,7 +284,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 
 	// Turn off all logging (including debug)
 	if config.logger == nil {
-		config.logger = &LevelLogger{Logger: NoopLogger{}, debug: false, trace: false}
+		config.logger = &LevelLogger{Logger: NoopLogger{}}
 	}
 
 	// Set a logger if debug has been set to true but no logger has been set
@@ -296,7 +292,6 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		config.logger = &LevelLogger{
 			Logger: log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC),
 			debug: true,
-			trace: false,
 		}
 	}
 
@@ -305,6 +300,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 
 	// Note, by this point, a LevelLogger should have been created.
 	config.logger.EnableDebug(config.debug)
+	config.logger.EnableTrace(config.trace)
 
 	config.logger.DebugPrintln("Number of options applied to config: ", len(options))
 
