@@ -291,7 +291,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 	if config.logger == nil && config.debug {
 		config.logger = &LevelLogger{
 			Logger: log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC),
-			debug: true,
+			debug:  true,
 		}
 	}
 
