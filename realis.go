@@ -270,7 +270,11 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 	// Default configs
 	config.timeoutms = 10000
 	config.backoff = defaultBackoff
-	config.logger = &LevelLogger{log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC), false, false}
+	config.logger = &LevelLogger{
+		Logger: log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC),
+		debug: false,
+		trace: false,
+	}
 
 	// Save options to recreate client if a connection error happens
 	config.options = options
@@ -284,12 +288,16 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 
 	// Turn off all logging (including debug)
 	if config.logger == nil {
-		config.logger = &LevelLogger{NoopLogger{}, false, false}
+		config.logger = &LevelLogger{Logger: NoopLogger{}, debug: false, trace: false}
 	}
 
 	// Set a logger if debug has been set to true but no logger has been set
 	if config.logger == nil && config.debug {
-		config.logger = &LevelLogger{log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC), true, false}
+		config.logger = &LevelLogger{
+			Logger: log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC),
+			debug: true,
+			trace: false,
+		}
 	}
 
 	config.logger.debug = config.debug
@@ -361,7 +369,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		client:         aurora.NewAuroraSchedulerManagerClientFactory(config.transport, config.protoFactory),
 		readonlyClient: aurora.NewReadOnlySchedulerClientFactory(config.transport, config.protoFactory),
 		adminClient:    aurora.NewAuroraAdminClientFactory(config.transport, config.protoFactory),
-		logger:         LevelLogger{config.logger, config.debug, config.trace},
+		logger:         LevelLogger{Logger: config.logger, debug: config.debug, trace: config.trace},
 		lock:           &sync.Mutex{}}, nil
 }
 
