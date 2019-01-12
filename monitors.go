@@ -24,9 +24,11 @@ import (
 )
 
 const (
-	UpdateFailed = "update failed"
-	RolledBack   = "update rolled back"
-	Timeout      = "timeout"
+	UpdateFailed  = "update failed"
+	RolledBack    = "update rolled back"
+	UpdateAborted = "update aborted"
+	Timeout       = "timeout"
+	UpdateError   = "update encountered an error"
 )
 
 type Monitor struct {
@@ -54,14 +56,20 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 	// if we encounter an inactive state and it is not at rolled forward, update failed
 	switch status {
 	case aurora.JobUpdateStatus_ROLLED_FORWARD:
-		m.Client.RealisConfig().logger.Println("Update succeeded")
+		m.Client.RealisConfig().logger.Println("update succeeded")
 		return true, nil
-	case aurora.JobUpdateStatus_FAILED:
-		m.Client.RealisConfig().logger.Println("Update failed")
-		return false, errors.New(UpdateFailed)
 	case aurora.JobUpdateStatus_ROLLED_BACK:
-		m.Client.RealisConfig().logger.Println("rolled back")
+		m.Client.RealisConfig().logger.Println(RolledBack)
 		return false, errors.New(RolledBack)
+	case aurora.JobUpdateStatus_ABORTED:
+		m.Client.RealisConfig().logger.Println(UpdateAborted)
+		return false, errors.New(UpdateAborted)
+	case aurora.JobUpdateStatus_ERROR:
+		m.Client.RealisConfig().logger.Println(UpdateError)
+		return false, errors.New(UpdateError)
+	case aurora.JobUpdateStatus_FAILED:
+		m.Client.RealisConfig().logger.Println(UpdateFailed)
+		return false, errors.New(UpdateFailed)
 	default:
 		return false, nil
 	}
