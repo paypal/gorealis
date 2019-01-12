@@ -38,13 +38,13 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 	status, err := m.JobUpdateStatus(updateKey,
 		map[aurora.JobUpdateStatus]bool{
 			aurora.JobUpdateStatus_ROLLED_FORWARD: true,
-			aurora.JobUpdateStatus_ROLLED_BACK: true,
-			aurora.JobUpdateStatus_ABORTED: true,
-			aurora.JobUpdateStatus_ERROR: true,
-			aurora.JobUpdateStatus_FAILED: true,
+			aurora.JobUpdateStatus_ROLLED_BACK:    true,
+			aurora.JobUpdateStatus_ABORTED:        true,
+			aurora.JobUpdateStatus_ERROR:          true,
+			aurora.JobUpdateStatus_FAILED:         true,
 		},
-		time.Duration(interval) * time.Second,
-		time.Duration(timeout) * time.Second)
+		time.Duration(interval)*time.Second,
+		time.Duration(timeout)*time.Second)
 
 	if err != nil {
 		return false, err

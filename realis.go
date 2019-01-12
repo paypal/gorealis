@@ -789,7 +789,7 @@ func (r *realisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message str
 
 	// Make this call synchronous by  blocking until it job has successfully transitioned to aborted
 	m := Monitor{Client: r}
-	_, err := m.JobUpdateStatus(updateKey, map[aurora.JobUpdateStatus]bool{aurora.JobUpdateStatus_ABORTED:true},time.Second * 5, time.Minute)
+	_, err := m.JobUpdateStatus(updateKey, map[aurora.JobUpdateStatus]bool{aurora.JobUpdateStatus_ABORTED: true}, time.Second*5, time.Minute)
 
 	if err != nil {
 		return resp, err
