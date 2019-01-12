@@ -786,7 +786,16 @@ func (r *realisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message str
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "Error sending AbortJobUpdate command to Aurora Scheduler")
 	}
-	return resp, nil
+
+	// Make this call synchronous by  blocking until it job has successfully transitioned to aborted
+	m := Monitor{Client: r}
+	_, err := m.JobUpdateStatus(updateKey, map[aurora.JobUpdateStatus]bool{aurora.JobUpdateStatus_ABORTED:true},time.Second * 5, time.Minute)
+
+	if err != nil {
+		return resp, err
+	} else {
+		return resp, nil
+	}
 }
 
 //Pause Job Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.
