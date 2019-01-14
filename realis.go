@@ -793,7 +793,7 @@ func (r *realisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message str
 	m := Monitor{Client: r}
 	_, err := m.JobUpdateStatus(updateKey, map[aurora.JobUpdateStatus]bool{aurora.JobUpdateStatus_ABORTED: true}, time.Second*5, time.Minute)
 
-    return resp, err
+	return resp, err
 }
 
 //Pause Job Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.
