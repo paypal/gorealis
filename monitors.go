@@ -23,20 +23,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	UpdateFailed  = "update failed"
-	RolledBack    = "update rolled back"
-	UpdateAborted = "update aborted"
-	Timeout       = "timeout"
-	UpdateError   = "update encountered an error"
-)
-
 type Monitor struct {
 	Client Realis
 }
 
 // Polls the scheduler every certain amount of time to see if the update has succeeded
 func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout int) (bool, error) {
+
 	status, err := m.JobUpdateStatus(updateKey,
 		map[aurora.JobUpdateStatus]bool{
 			aurora.JobUpdateStatus_ROLLED_FORWARD: true,
@@ -52,30 +45,24 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 		return false, err
 	}
 
+	m.Client.RealisConfig().logger.Printf("job update status: %v\n", status)
+
 	// Rolled forward is the only state in which an update has been successfully updated
 	// if we encounter an inactive state and it is not at rolled forward, update failed
 	switch status {
 	case aurora.JobUpdateStatus_ROLLED_FORWARD:
-		m.Client.RealisConfig().logger.Println("update succeeded")
 		return true, nil
-	case aurora.JobUpdateStatus_ROLLED_BACK:
-		m.Client.RealisConfig().logger.Println(RolledBack)
-		return false, errors.New(RolledBack)
-	case aurora.JobUpdateStatus_ABORTED:
-		m.Client.RealisConfig().logger.Println(UpdateAborted)
-		return false, errors.New(UpdateAborted)
-	case aurora.JobUpdateStatus_ERROR:
-		m.Client.RealisConfig().logger.Println(UpdateError)
-		return false, errors.New(UpdateError)
-	case aurora.JobUpdateStatus_FAILED:
-		m.Client.RealisConfig().logger.Println(UpdateFailed)
-		return false, errors.New(UpdateFailed)
+	case aurora.JobUpdateStatus_ROLLED_BACK, aurora.JobUpdateStatus_ABORTED, aurora.JobUpdateStatus_ERROR, aurora.JobUpdateStatus_FAILED:
+		return false, errors.Errorf("bad terminal state for update: %v", status)
 	default:
-		return false, nil
+		return false, errors.Errorf("unexpected update state: %v", status)
 	}
 }
 
-func (m *Monitor) JobUpdateStatus(updateKey aurora.JobUpdateKey, desiredStatuses map[aurora.JobUpdateStatus]bool, interval, timeout time.Duration) (aurora.JobUpdateStatus, error) {
+func (m *Monitor) JobUpdateStatus(updateKey aurora.JobUpdateKey,
+	desiredStatuses map[aurora.JobUpdateStatus]bool,
+	interval time.Duration,
+	timeout time.Duration) (aurora.JobUpdateStatus, error) {
 
 	updateQ := aurora.JobUpdateQuery{
 		Key:   &updateKey,
@@ -109,7 +96,7 @@ func (m *Monitor) JobUpdateStatus(updateKey aurora.JobUpdateKey, desiredStatuses
 			}
 
 		case <-timer.C:
-			return aurora.JobUpdateStatus(-1), errors.New(Timeout)
+			return aurora.JobUpdateStatus(-1), newTimedoutError(errors.New("job update monitor timed out"))
 		}
 	}
 }
@@ -144,7 +131,7 @@ func (m *Monitor) ScheduleStatus(key *aurora.JobKey, instanceCount int32, desire
 		case <-timer.C:
 
 			// If the timer runs out, return a timeout error to user
-			return false, errors.New(Timeout)
+			return false, newTimedoutError(errors.New("schedule status monitor timed out"))
 		}
 	}
 }
@@ -204,7 +191,7 @@ func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode
 				hostResult[host] = false
 			}
 
-			return hostResult, errors.New(Timeout)
+			return hostResult, newTimedoutError(errors.New("host maintenance monitor timed out"))
 		}
 	}
 }
