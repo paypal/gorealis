@@ -775,6 +775,8 @@ func (r *realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*au
 }
 
 // Abort Job Update on Aurora. Requires the updateId which can be obtained on the Aurora web UI.
+// This API is meant to be synchronous. It will attempt to wait until the update transitions to the aborted state.
+// However, if the job update does not transition to the ABORT state an error will be returned.
 func (r *realisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message string) (*aurora.Response, error) {
 
 	r.logger.DebugPrintf("AbortJobUpdate Thrift Payload: %+v %v\n", updateKey, message)
@@ -786,7 +788,12 @@ func (r *realisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message str
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "Error sending AbortJobUpdate command to Aurora Scheduler")
 	}
-	return resp, nil
+
+	// Make this call synchronous by  blocking until it job has successfully transitioned to aborted
+	m := Monitor{Client: r}
+	_, err := m.JobUpdateStatus(updateKey, map[aurora.JobUpdateStatus]bool{aurora.JobUpdateStatus_ABORTED: true}, time.Second*5, time.Minute)
+
+	return resp, err
 }
 
 //Pause Job Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.

@@ -23,12 +23,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	UpdateFailed = "update failed"
-	RolledBack   = "update rolled back"
-	Timeout      = "timeout"
-)
-
 type Monitor struct {
 	Client Realis
 }
@@ -36,53 +30,73 @@ type Monitor struct {
 // Polls the scheduler every certain amount of time to see if the update has succeeded
 func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout int) (bool, error) {
 
+	status, err := m.JobUpdateStatus(updateKey,
+		map[aurora.JobUpdateStatus]bool{
+			aurora.JobUpdateStatus_ROLLED_FORWARD: true,
+			aurora.JobUpdateStatus_ROLLED_BACK:    true,
+			aurora.JobUpdateStatus_ABORTED:        true,
+			aurora.JobUpdateStatus_ERROR:          true,
+			aurora.JobUpdateStatus_FAILED:         true,
+		},
+		time.Duration(interval)*time.Second,
+		time.Duration(timeout)*time.Second)
+
+	if err != nil {
+		return false, err
+	}
+
+	m.Client.RealisConfig().logger.Printf("job update status: %v\n", status)
+
+	// Rolled forward is the only state in which an update has been successfully updated
+	// if we encounter an inactive state and it is not at rolled forward, update failed
+	switch status {
+	case aurora.JobUpdateStatus_ROLLED_FORWARD:
+		return true, nil
+	case aurora.JobUpdateStatus_ROLLED_BACK, aurora.JobUpdateStatus_ABORTED, aurora.JobUpdateStatus_ERROR, aurora.JobUpdateStatus_FAILED:
+		return false, errors.Errorf("bad terminal state for update: %v", status)
+	default:
+		return false, errors.Errorf("unexpected update state: %v", status)
+	}
+}
+
+func (m *Monitor) JobUpdateStatus(updateKey aurora.JobUpdateKey,
+	desiredStatuses map[aurora.JobUpdateStatus]bool,
+	interval time.Duration,
+	timeout time.Duration) (aurora.JobUpdateStatus, error) {
+
 	updateQ := aurora.JobUpdateQuery{
 		Key:   &updateKey,
 		Limit: 1,
 	}
-	ticker := time.NewTicker(time.Second * time.Duration(interval))
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
-	timer := time.NewTimer(time.Second * time.Duration(timeout))
+	timer := time.NewTimer(timeout)
 	defer timer.Stop()
+
 	var cliErr error
 	var respDetail *aurora.Response
-
 	for {
 		select {
 		case <-ticker.C:
 			respDetail, cliErr = m.Client.JobUpdateDetails(updateQ)
 			if cliErr != nil {
-				return false, cliErr
+				return aurora.JobUpdateStatus(-1), cliErr
 			}
 
 			updateDetail := response.JobUpdateDetails(respDetail)
 
 			if len(updateDetail) == 0 {
 				m.Client.RealisConfig().logger.Println("No update found")
-				return false, errors.New("No update found for " + updateKey.String())
+				return aurora.JobUpdateStatus(-1), errors.New("No update found for " + updateKey.String())
 			}
 			status := updateDetail[0].Update.Summary.State.Status
 
-			if _, ok := aurora.ACTIVE_JOB_UPDATE_STATES[status]; !ok {
-
-				// Rolled forward is the only state in which an update has been successfully updated
-				// if we encounter an inactive state and it is not at rolled forward, update failed
-				switch status {
-				case aurora.JobUpdateStatus_ROLLED_FORWARD:
-					m.Client.RealisConfig().logger.Println("Update succeeded")
-					return true, nil
-				case aurora.JobUpdateStatus_FAILED:
-					m.Client.RealisConfig().logger.Println("Update failed")
-					return false, errors.New(UpdateFailed)
-				case aurora.JobUpdateStatus_ROLLED_BACK:
-					m.Client.RealisConfig().logger.Println("rolled back")
-					return false, errors.New(RolledBack)
-				default:
-					return false, nil
-				}
+			if _, ok := desiredStatuses[status]; ok {
+				return status, nil
 			}
+
 		case <-timer.C:
-			return false, errors.New(Timeout)
+			return aurora.JobUpdateStatus(-1), newTimedoutError(errors.New("job update monitor timed out"))
 		}
 	}
 }
@@ -117,7 +131,7 @@ func (m *Monitor) ScheduleStatus(key *aurora.JobKey, instanceCount int32, desire
 		case <-timer.C:
 
 			// If the timer runs out, return a timeout error to user
-			return false, errors.New(Timeout)
+			return false, newTimedoutError(errors.New("schedule status monitor timed out"))
 		}
 	}
 }
@@ -177,7 +191,7 @@ func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode
 				hostResult[host] = false
 			}
 
-			return hostResult, errors.New(Timeout)
+			return hostResult, newTimedoutError(errors.New("host maintenance monitor timed out"))
 		}
 	}
 }
