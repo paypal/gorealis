@@ -103,7 +103,7 @@ func (m *Monitor) JobUpdateStatus(updateKey aurora.JobUpdateKey,
 
 // Monitor a Job until all instances enter one of the LIVE_STATES
 func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval, timeout int) (bool, error) {
-	return m.ScheduleStatus(key, instances, aurora.LIVE_STATES, interval, timeout)
+	return m.ScheduleStatus(key, instances, LiveStates, interval, timeout)
 }
 
 // Monitor a Job until all instances enter a desired status.
@@ -116,12 +116,18 @@ func (m *Monitor) ScheduleStatus(key *aurora.JobKey, instanceCount int32, desire
 	timer := time.NewTimer(time.Second * time.Duration(timeout))
 	defer timer.Stop()
 
+	wantedStatuses := make([]aurora.ScheduleStatus, 0)
+
+	for status := range desiredStatuses {
+		wantedStatuses = append(wantedStatuses, status)
+	}
+
 	for {
 		select {
 		case <-ticker.C:
 
 			// Query Aurora for the state of the job key ever interval
-			instCount, cliErr := m.Client.GetInstanceIds(key, desiredStatuses)
+			instCount, cliErr := m.Client.GetInstanceIds(key, wantedStatuses)
 			if cliErr != nil {
 				return false, errors.Wrap(cliErr, "Unable to communicate with Aurora")
 			}
@@ -174,7 +180,7 @@ func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode
 				return hostResult, errors.Wrap(err, "client error in monitor")
 			}
 
-			for status := range result.GetStatuses() {
+			for _, status := range result.GetStatuses() {
 
 				if _, ok := desiredMode[status.GetMode()]; ok {
 					hostResult[status.GetHost()] = true
