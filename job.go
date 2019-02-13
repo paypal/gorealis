@@ -88,9 +88,9 @@ func NewJob() Job {
 	taskConfig.Job = jobKey
 	taskConfig.Container = aurora.NewContainer()
 	taskConfig.Container.Mesos = aurora.NewMesosContainer()
-	taskConfig.MesosFetcherUris = make([]*aurora.MesosFetcherURI,0)
-	taskConfig.Metadata = make([]*aurora.Metadata,0)
-	taskConfig.Constraints = make([]*aurora.Constraint,0)
+	taskConfig.MesosFetcherUris = make([]*aurora.MesosFetcherURI, 0)
+	taskConfig.Metadata = make([]*aurora.Metadata, 0)
+	taskConfig.Constraints = make([]*aurora.Constraint, 0)
 
 	// Resources
 	numCpus := aurora.NewResource()
@@ -235,7 +235,7 @@ func (j *AuroraJob) TaskConfig() *aurora.TaskConfig {
 func (j *AuroraJob) AddURIs(extract bool, cache bool, values ...string) Job {
 	for _, value := range values {
 		j.jobConfig.TaskConfig.MesosFetcherUris = append(j.jobConfig.TaskConfig.MesosFetcherUris,
-			&aurora.MesosFetcherURI{Value:   value, Extract: &extract, Cache:   &cache,})
+			&aurora.MesosFetcherURI{Value: value, Extract: &extract, Cache: &cache})
 	}
 	return j
 }
@@ -243,7 +243,7 @@ func (j *AuroraJob) AddURIs(extract bool, cache bool, values ...string) Job {
 // Adds a Mesos label to the job. Note that Aurora will add the
 // prefix "org.apache.aurora.metadata." to the beginning of each key.
 func (j *AuroraJob) AddLabel(key string, value string) Job {
-	j.jobConfig.TaskConfig.Metadata = append( j.jobConfig.TaskConfig.Metadata, &aurora.Metadata{Key: key, Value: value})
+	j.jobConfig.TaskConfig.Metadata = append(j.jobConfig.TaskConfig.Metadata, &aurora.Metadata{Key: key, Value: value})
 	return j
 }
 
@@ -267,7 +267,7 @@ func (j *AuroraJob) AddPorts(num int) Job {
 	j.portCount += num
 	for i := start; i < j.portCount; i++ {
 		portName := "org.apache.aurora.port." + strconv.Itoa(i)
-		j.jobConfig.TaskConfig.Resources = append(j.jobConfig.TaskConfig.Resources,&aurora.Resource{NamedPort: &portName})
+		j.jobConfig.TaskConfig.Resources = append(j.jobConfig.TaskConfig.Resources, &aurora.Resource{NamedPort: &portName})
 	}
 
 	return j
@@ -281,15 +281,15 @@ func (j *AuroraJob) AddPorts(num int) Job {
 func (j *AuroraJob) AddValueConstraint(name string, negated bool, values ...string) Job {
 	j.jobConfig.TaskConfig.Constraints = append(j.jobConfig.TaskConfig.Constraints,
 		&aurora.Constraint{
-		Name: name,
-		Constraint: &aurora.TaskConstraint{
-			Value: &aurora.ValueConstraint{
-				Negated: negated,
-				Values:  values,
+			Name: name,
+			Constraint: &aurora.TaskConstraint{
+				Value: &aurora.ValueConstraint{
+					Negated: negated,
+					Values:  values,
+				},
+				Limit: nil,
 			},
-			Limit: nil,
-		},
-	})
+		})
 
 	return j
 }
@@ -300,12 +300,12 @@ func (j *AuroraJob) AddValueConstraint(name string, negated bool, values ...stri
 func (j *AuroraJob) AddLimitConstraint(name string, limit int32) Job {
 	j.jobConfig.TaskConfig.Constraints = append(j.jobConfig.TaskConfig.Constraints,
 		&aurora.Constraint{
-		Name: name,
-		Constraint: &aurora.TaskConstraint{
-			Value: nil,
-			Limit: &aurora.LimitConstraint{Limit: limit},
-		},
-	})
+			Name: name,
+			Constraint: &aurora.TaskConstraint{
+				Value: nil,
+				Limit: &aurora.LimitConstraint{Limit: limit},
+			},
+		})
 
 	return j
 }

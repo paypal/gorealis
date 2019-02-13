@@ -26,8 +26,8 @@ import (
 	"net/http/cookiejar"
 	"os"
 	"path/filepath"
-    "sort"
-    "strings"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -369,7 +369,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		adminClient:    aurora.NewAuroraAdminClientFactory(config.transport, config.protoFactory),
 		logger:         LevelLogger{Logger: config.logger, debug: config.debug, trace: config.trace},
 		lock:           &sync.Mutex{},
-		transport: config.transport}, nil
+		transport:      config.transport}, nil
 }
 
 func GetDefaultClusterFromZKUrl(zkurl string) *Cluster {
@@ -858,7 +858,7 @@ func (r *realisClient) RemoveInstances(key *aurora.JobKey, count int32) (*aurora
 	}
 
 	if len(instanceIds) < int(count) {
-		return nil,  errors.Errorf("Insufficient active instances available for killing: "+
+		return nil, errors.Errorf("Insufficient active instances available for killing: "+
 			" Instances to be killed %d Active instances %d", count, len(instanceIds))
 	}
 
