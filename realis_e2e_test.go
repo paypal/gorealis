@@ -354,7 +354,7 @@ pulseLoop:
 			}
 			status := updateDetails[0].Update.Summary.State.Status
 
-			if _, ok := aurora.ACTIVE_JOB_UPDATE_STATES[status]; !ok {
+			if _, ok := realis.ActiveJobUpdateStates[status]; !ok {
 
 				// Rolled forward is the only state in which an update has been successfully updated
 				// if we encounter an inactive state and it is not at rolled forward, update failed
@@ -634,7 +634,7 @@ func TestRealisClient_SessionThreadSafety(t *testing.T) {
 			defer wg.Done()
 
 			// Test Schedule status monitor for terminal state and timing out after 30 seconds
-			success, err := monitor.ScheduleStatus(job.JobKey(), job.GetInstanceCount(), aurora.LIVE_STATES, 1, 30)
+			success, err := monitor.ScheduleStatus(job.JobKey(), job.GetInstanceCount(), realis.LiveStates, 1, 30)
 			assert.False(t, success)
 			assert.Error(t, err)
 
@@ -666,7 +666,7 @@ func TestRealisClient_SetQuota(t *testing.T) {
 		}
 		assert.NoError(t, err)
 		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-		for res := range result.Quota.GetResources() {
+		for _, res := range result.Quota.GetResources() {
 			switch true {
 			case res.DiskMb != nil:
 				assert.Equal(t, disk, *res.DiskMb)
