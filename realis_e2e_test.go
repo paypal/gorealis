@@ -737,10 +737,8 @@ func TestRealisClient_PartitionPolicy(t *testing.T) {
 	if ok, mErr = monitor.JobUpdate(*result.GetKey(), 5, 180); !ok || mErr != nil {
 		// Update may already be in a terminal state so don't check for error
 		_, err := r.AbortJobUpdate(*result.GetKey(), "Monitor timed out.")
-
-		_, err = r.KillJob(job.JobKey())
-
 		assert.NoError(t, err)
 	}
 
+	_, err = r.KillJob(job.JobKey())
 }
