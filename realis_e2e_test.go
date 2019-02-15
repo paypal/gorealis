@@ -223,6 +223,14 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("TestRealisClient_KillInstances_Thermos", func(t *testing.T) {
+		_, err := r.KillInstances(job.JobKey(), 1)
+		assert.NoError(t, err)
+		success, err := monitor.Instances(job.JobKey(), 1, 1, 50)
+		assert.True(t, success)
+		assert.NoError(t, err)
+	})
+
 	// Tasks must exist for it to, be killed
 	t.Run("TestRealisClient_KillJob_Thermos", func(t *testing.T) {
 		resp, err := r.KillJob(job.JobKey())
