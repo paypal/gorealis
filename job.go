@@ -88,9 +88,6 @@ func NewJob() Job {
 	taskConfig.Job = jobKey
 	taskConfig.Container = aurora.NewContainer()
 	taskConfig.Container.Mesos = aurora.NewMesosContainer()
-	taskConfig.MesosFetcherUris = make([]*aurora.MesosFetcherURI, 0)
-	taskConfig.Metadata = make([]*aurora.Metadata, 0)
-	taskConfig.Constraints = make([]*aurora.Constraint, 0)
 
 	// Resources
 	numCpus := aurora.NewResource()

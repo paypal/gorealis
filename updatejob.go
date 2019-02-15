@@ -58,7 +58,6 @@ func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 	}
 
 	// Mirrors defaults set by Pystachio
-	req.Settings.UpdateOnlyTheseInstances = make([]*aurora.Range, 0)
 	req.Settings.UpdateGroupSize = 1
 	req.Settings.WaitForBatchCompletion = false
 	req.Settings.MinWaitInInstanceRunningMs = 45000
@@ -152,7 +151,6 @@ func NewUpdateSettings() *aurora.JobUpdateSettings {
 
 	us := new(aurora.JobUpdateSettings)
 	// Mirrors defaults set by Pystachio
-	us.UpdateOnlyTheseInstances = make([]*aurora.Range, 0)
 	us.UpdateGroupSize = 1
 	us.WaitForBatchCompletion = false
 	us.MinWaitInInstanceRunningMs = 45000
