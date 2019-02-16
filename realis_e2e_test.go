@@ -188,9 +188,9 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		Name("create_thermos_job_test").
 		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
 		ExecutorData(string(thermosPayload)).
-		CPU(.5).
-		RAM(64).
-		Disk(100).
+		CPU(.1).
+		RAM(16).
+		Disk(50).
 		IsService(true).
 		InstanceCount(2).
 		AddPorts(1)
