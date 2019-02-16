@@ -437,11 +437,21 @@ func TestRealisClient_CreateService(t *testing.T) {
 	settings := realis.NewUpdateSettings()
 	settings.UpdateGroupSize = 2
 	job.InstanceCount(3)
-	resp, result, err := r.CreateService(job, settings)
 
+	_, result, err := r.CreateService(job, settings)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.Equal(t, aurora.ResponseCode_OK, resp.GetResponseCode())
+
+	// Test asking the scheduler to backup a Snapshot
+	t.Run("TestRealisClient_PauseJobUpdate", func(t *testing.T) {
+		_, err = r.PauseJobUpdate(result.GetKey(), "")
+		assert.NoError(t, err)
+	})
+
+	t.Run("TestRealisClient_ResumeJobUpdate", func(t *testing.T) {
+		_, err = r.ResumeJobUpdate(result.GetKey(), "")
+		assert.NoError(t, err)
+	})
 
 	var ok bool
 	var mErr error
