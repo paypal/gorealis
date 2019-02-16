@@ -195,19 +195,16 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		InstanceCount(2).
 		AddPorts(1)
 
-	resp, err := r.CreateJob(job)
+	_, err := r.CreateJob(job)
 	assert.NoError(t, err)
-
-	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 
 	// Test Instances Monitor
 	success, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 1, 50)
 	assert.True(t, success)
 	assert.NoError(t, err)
 
-	//Fetch all Jobs
+	// Fetch all Jobs
 	_, result, err := r.GetJobs(role)
-	fmt.Printf("GetJobs length: %+v \n", len(result.Configs))
 	assert.Len(t, result.Configs, 1)
 	assert.NoError(t, err)
 
@@ -223,21 +220,53 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("TestRealisClient_KillInstances_Thermos", func(t *testing.T) {
-		_, err := r.KillInstances(job.JobKey(), 1)
+	t.Run("TestRealisClient_GetTaskStatus_Thermos", func(t *testing.T) {
+		status, err := r.GetTaskStatus(&aurora.TaskQuery{
+			JobKeys:  []*aurora.JobKey{job.JobKey()},
+			Statuses: []aurora.ScheduleStatus{aurora.ScheduleStatus_RUNNING}})
 		assert.NoError(t, err)
-		success, err := monitor.Instances(job.JobKey(), 1, 1, 50)
+		assert.NotNil(t, status)
+		assert.Len(t, status, 2)
+
+		// TODO: Assert that assigned task matches the configuration of the task scheduled
+	})
+
+	t.Run("TestRealisClient_AddInstances_Thermos", func(t *testing.T) {
+		_, err := r.AddInstances(aurora.InstanceKey{JobKey: job.JobKey(), InstanceId: 0}, 2)
+		assert.NoError(t, err)
+		success, err := monitor.Instances(job.JobKey(), 4, 1, 50)
+		assert.True(t, success)
+		assert.NoError(t, err)
+	})
+
+	t.Run("TestRealisClient_KillInstances_Thermos", func(t *testing.T) {
+		_, err := r.KillInstances(job.JobKey(), 2, 3)
+		assert.NoError(t, err)
+		success, err := monitor.Instances(job.JobKey(), 2, 1, 50)
+		assert.True(t, success)
+		assert.NoError(t, err)
+	})
+
+	t.Run("TestRealisClient_RestartInstances_Thermos", func(t *testing.T) {
+		_, err := r.RestartInstances(job.JobKey(), 0)
+		assert.NoError(t, err)
+		success, err := monitor.Instances(job.JobKey(), 2, 1, 50)
+		assert.True(t, success)
+		assert.NoError(t, err)
+	})
+
+	t.Run("TestRealisClient_RestartJobs_Thermos", func(t *testing.T) {
+		_, err := r.RestartJob(job.JobKey())
+		assert.NoError(t, err)
+		success, err := monitor.Instances(job.JobKey(), 2, 1, 50)
 		assert.True(t, success)
 		assert.NoError(t, err)
 	})
 
 	// Tasks must exist for it to, be killed
 	t.Run("TestRealisClient_KillJob_Thermos", func(t *testing.T) {
-		resp, err := r.KillJob(job.JobKey())
+		_, err := r.KillJob(job.JobKey())
 		assert.NoError(t, err)
-
-		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-
 		success, err := monitor.Instances(job.JobKey(), 0, 1, 50)
 		assert.True(t, success)
 		assert.NoError(t, err)
