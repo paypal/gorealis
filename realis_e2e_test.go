@@ -427,6 +427,7 @@ func TestRealisClient_CreateService(t *testing.T) {
 
 	settings := realis.NewUpdateSettings()
 	settings.UpdateGroupSize = 2
+	settings.MinWaitInInstanceRunningMs = 5000
 	job.InstanceCount(3)
 
 	_, result, err := r.CreateService(job, settings)
