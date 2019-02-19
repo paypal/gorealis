@@ -4,7 +4,7 @@
 [[projects]]
   branch = "0.12.0"
   digest = "1:89696c38cec777120b8b1bb5e2d363d655cf2e1e7d8c851919aaa0fd576d9b86"
-  name = "git.apache.org/thrift.git"
+  name = "github.com/apache/thrift"
   packages = ["lib/go/thrift"]
   pruneopts = ""
   revision = "384647d290e2e4a55a14b1b7ef1b7e66293a2c33"
@@ -51,7 +51,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "git.apache.org/thrift.git/lib/go/thrift",
+    "github.com/apache/thrift/lib/go/thrift",
     "github.com/pkg/errors",
     "github.com/samuel/go-zookeeper/zk",
     "github.com/stretchr/testify/assert",
