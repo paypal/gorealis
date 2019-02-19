@@ -8,6 +8,17 @@ _obj
 _test
 .idea
 
+# Thrift library comes with a lot of other files we don't need.
+# Ignore everything but the files we do need
+vendor/github.com/apache/thrift/*
+!vendor/github.com/apache/thrift/lib/
+
+vendor/github.com/apache/thrift/lib/*
+!vendor/github.com/apache/thrift/lib/go/
+
+vendor/github.com/apache/thrift/lib/go/*
+!vendor/github.com/apache/thrift/lib/go/thrift/
+
 # Architecture specific extensions/prefixes
 *.[568vq]
 [568vq].out
