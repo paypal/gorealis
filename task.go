@@ -409,7 +409,7 @@ func (t *AuroraTask) BuildThermosPayload() error {
 			t.thermos.disk(*t.resources[DISK].DiskMb)
 		}
 
-		if t.resources[GPU]!= nil && t.resources[GPU].NumGpus != nil {
+		if t.resources[GPU] != nil && t.resources[GPU].NumGpus != nil {
 			t.thermos.gpu(*t.resources[GPU].NumGpus)
 		}
 
