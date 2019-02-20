@@ -55,6 +55,30 @@ services:
     depends_on:
     - zk
 
+  agent-two:
+    image: rdelvalle/mesos-agent:1.5.1
+    pid: host
+    restart: on-failure
+    ports:
+      - "5061:5061"
+    environment:
+      MESOS_MASTER: zk://192.168.33.2:2181/mesos
+      MESOS_CONTAINERIZERS: docker,mesos
+      MESOS_HOSTNAME: localhost
+      MESOS_PORT: 5061
+      MESOS_RESOURCES: ports(*):[11000-11999]
+      MESOS_SYSTEMD_ENABLE_SUPPORT: 'false'
+      MESOS_WORK_DIR: /tmp/mesos
+    networks:
+      aurora_cluster:
+        ipv4_address: 192.168.33.5
+
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - zk
+
   aurora-one:
     image: rdelvalle/aurora:0.21.0
     pid: host
@@ -65,6 +89,7 @@ services:
       CLUSTER_NAME: test-cluster
       ZK_ENDPOINTS: "192.168.33.2:2181"
       MESOS_MASTER: "zk://192.168.33.2:2181/mesos"
+      EXTRA_SCHEDULER_ARGS: "-min_required_instances_for_sla_check=1"
     networks:
       aurora_cluster:
         ipv4_address: 192.168.33.7
