@@ -316,13 +316,9 @@ func main() {
 		}
 		currInstances := int32(len(live))
 		fmt.Println("Current num of instances: ", currInstances)
-		var instId int32
-		for k := range live {
-			instId = k
-		}
 		resp, err := r.AddInstances(aurora.InstanceKey{
 			JobKey:     job.JobKey(),
-			InstanceId: instId,
+			InstanceId: live[0],
 		},
 			numOfInstances)
 
@@ -364,13 +360,9 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		var instId int32
-		for k := range live {
-			instId = k
-		}
 		taskConfig, err := r.FetchTaskConfig(aurora.InstanceKey{
 			JobKey:     job.JobKey(),
-			InstanceId: instId,
+			InstanceId: live[0],
 		})
 		if err != nil {
 			log.Fatal(err)
@@ -467,14 +459,9 @@ func main() {
 			log.Fatal(err)
 
 		}
-		var instId int32
-		for k := range live {
-			instId = k
-			break
-		}
 		config, err := r.FetchTaskConfig(aurora.InstanceKey{
 			JobKey:     job.JobKey(),
-			InstanceId: instId,
+			InstanceId: live[0],
 		})
 
 		if err != nil {

@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"git.apache.org/thrift.git/lib/go/thrift"
+	"github.com/apache/thrift/lib/go/thrift"
 	realis "github.com/paypal/gorealis"
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/paypal/gorealis/response"
@@ -188,48 +188,85 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		Name("create_thermos_job_test").
 		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
 		ExecutorData(string(thermosPayload)).
-		CPU(.5).
-		RAM(64).
-		Disk(100).
+		CPU(.1).
+		RAM(16).
+		Disk(50).
 		IsService(true).
 		InstanceCount(2).
 		AddPorts(1)
 
-	resp, err := r.CreateJob(job)
+	_, err := r.CreateJob(job)
 	assert.NoError(t, err)
-
-	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 
 	// Test Instances Monitor
 	success, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 1, 50)
 	assert.True(t, success)
 	assert.NoError(t, err)
 
-	//Fetch all Jobs
+	// Fetch all Jobs
 	_, result, err := r.GetJobs(role)
-	fmt.Printf("GetJobs length: %+v \n", len(result.Configs))
 	assert.Len(t, result.Configs, 1)
 	assert.NoError(t, err)
 
 	// Test asking the scheduler to perform a Snpshot
-	t.Run("TestRealisClient_Snapshot", func(t *testing.T) {
+	t.Run("Snapshot", func(t *testing.T) {
 		err := r.Snapshot()
 		assert.NoError(t, err)
 	})
 
 	// Test asking the scheduler to backup a Snapshot
-	t.Run("TestRealisClient_PerformBackup", func(t *testing.T) {
+	t.Run("PerformBackup", func(t *testing.T) {
 		err := r.PerformBackup()
 		assert.NoError(t, err)
 	})
 
-	// Tasks must exist for it to, be killed
-	t.Run("TestRealisClient_KillJob_Thermos", func(t *testing.T) {
-		resp, err := r.KillJob(job.JobKey())
+	t.Run("GetTaskStatus", func(t *testing.T) {
+		status, err := r.GetTaskStatus(&aurora.TaskQuery{
+			JobKeys:  []*aurora.JobKey{job.JobKey()},
+			Statuses: []aurora.ScheduleStatus{aurora.ScheduleStatus_RUNNING}})
 		assert.NoError(t, err)
+		assert.NotNil(t, status)
+		assert.Len(t, status, 2)
 
-		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+		// TODO: Assert that assigned task matches the configuration of the task scheduled
+	})
 
+	t.Run("AddInstances", func(t *testing.T) {
+		_, err := r.AddInstances(aurora.InstanceKey{JobKey: job.JobKey(), InstanceId: 0}, 2)
+		assert.NoError(t, err)
+		success, err := monitor.Instances(job.JobKey(), 4, 1, 50)
+		assert.True(t, success)
+		assert.NoError(t, err)
+	})
+
+	t.Run("KillInstances", func(t *testing.T) {
+		_, err := r.KillInstances(job.JobKey(), 2, 3)
+		assert.NoError(t, err)
+		success, err := monitor.Instances(job.JobKey(), 2, 1, 50)
+		assert.True(t, success)
+		assert.NoError(t, err)
+	})
+
+	t.Run("RestartInstances", func(t *testing.T) {
+		_, err := r.RestartInstances(job.JobKey(), 0)
+		assert.NoError(t, err)
+		success, err := monitor.Instances(job.JobKey(), 2, 1, 50)
+		assert.True(t, success)
+		assert.NoError(t, err)
+	})
+
+	t.Run("RestartJobs", func(t *testing.T) {
+		_, err := r.RestartJob(job.JobKey())
+		assert.NoError(t, err)
+		success, err := monitor.Instances(job.JobKey(), 2, 1, 50)
+		assert.True(t, success)
+		assert.NoError(t, err)
+	})
+
+	// Tasks must exist for it to, be killed
+	t.Run("KillJob", func(t *testing.T) {
+		_, err := r.KillJob(job.JobKey())
+		assert.NoError(t, err)
 		success, err := monitor.Instances(job.JobKey(), 0, 1, 50)
 		assert.True(t, success)
 		assert.NoError(t, err)
@@ -312,15 +349,14 @@ func TestRealisClient_CreateService_WithPulse_Thermos(t *testing.T) {
 		AddLabel("currentTime", time.Now().String())
 
 	settings := realis.NewUpdateSettings()
-	settings.BlockIfNoPulsesAfterMs = thrift.Int32Ptr(30)
+	settings.BlockIfNoPulsesAfterMs = thrift.Int32Ptr(500)
 	settings.UpdateGroupSize = 1
+	settings.MinWaitInInstanceRunningMs = 5000
 	settings.WaitForBatchCompletion = true
 	job.InstanceCount(2)
-	resp, result, err := r.CreateService(job, settings)
-	fmt.Println(result.String())
 
+	_, result, err := r.CreateService(job, settings)
 	assert.NoError(t, err)
-	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 
 	updateQ := aurora.JobUpdateQuery{
 		Key:   result.GetKey(),
@@ -329,7 +365,7 @@ func TestRealisClient_CreateService_WithPulse_Thermos(t *testing.T) {
 
 	var updateDetails []*aurora.JobUpdateDetails
 
-	ticker := time.NewTicker(time.Second * 3)
+	ticker := time.NewTicker(time.Second * 1)
 	timer := time.NewTimer(time.Minute * 6)
 	defer ticker.Stop()
 	defer timer.Stop()
@@ -339,35 +375,28 @@ pulseLoop:
 		select {
 		case <-ticker.C:
 
-			fmt.Println("sending PulseJobUpdate....")
-			resp, err = r.PulseJobUpdate(result.GetKey())
-			require.NotNil(t, resp, "received a nil response from Aurora")
-			assert.Nil(t, err)
+			_, err = r.PulseJobUpdate(result.GetKey())
+			assert.Nil(t, err, "unable to pulse job update")
 
 			respDetail, err := r.JobUpdateDetails(updateQ)
 			assert.Nil(t, err)
 
 			updateDetails = response.JobUpdateDetails(respDetail)
-			if len(updateDetails) == 0 {
-				fmt.Println("No update found")
-				assert.NotEqual(t, len(updateDetails), 0)
-			}
-			status := updateDetails[0].Update.Summary.State.Status
+			assert.Len(t, updateDetails, 1, "No update found")
 
-			if _, ok := aurora.ACTIVE_JOB_UPDATE_STATES[status]; !ok {
+			status := updateDetails[0].Update.Summary.State.Status
+			if _, ok := realis.ActiveJobUpdateStates[status]; !ok {
 
 				// Rolled forward is the only state in which an update has been successfully updated
 				// if we encounter an inactive state and it is not at rolled forward, update failed
 				if status == aurora.JobUpdateStatus_ROLLED_FORWARD {
-					fmt.Println("Update succeded")
+					fmt.Println("update succeed")
 					break pulseLoop
 				} else {
-					fmt.Println("Update failed")
+					fmt.Println("update failed")
 					break pulseLoop
 				}
 			}
-
-			fmt.Println("Polling, update still active...")
 		case <-timer.C:
 			_, err := r.AbortJobUpdate(*updateDetails[0].GetUpdate().GetSummary().GetKey(), "")
 			assert.NoError(t, err)
@@ -376,9 +405,8 @@ pulseLoop:
 		}
 	}
 
-	resp, err = r.KillJob(job.JobKey())
+	_, err = r.KillJob(job.JobKey())
 	assert.NoError(t, err)
-	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 }
 
 // Test configuring an executor that doesn't exist for CreateJob API
@@ -399,12 +427,23 @@ func TestRealisClient_CreateService(t *testing.T) {
 
 	settings := realis.NewUpdateSettings()
 	settings.UpdateGroupSize = 2
+	settings.MinWaitInInstanceRunningMs = 5000
 	job.InstanceCount(3)
-	resp, result, err := r.CreateService(job, settings)
 
+	_, result, err := r.CreateService(job, settings)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.Equal(t, aurora.ResponseCode_OK, resp.GetResponseCode())
+
+	// Test asking the scheduler to backup a Snapshot
+	t.Run("PauseJobUpdate", func(t *testing.T) {
+		_, err = r.PauseJobUpdate(result.GetKey(), "")
+		assert.NoError(t, err)
+	})
+
+	t.Run("ResumeJobUpdate", func(t *testing.T) {
+		_, err = r.ResumeJobUpdate(result.GetKey(), "")
+		assert.NoError(t, err)
+	})
 
 	var ok bool
 	var mErr error
@@ -412,9 +451,7 @@ func TestRealisClient_CreateService(t *testing.T) {
 	if ok, mErr = monitor.JobUpdate(*result.GetKey(), 5, 240); !ok || mErr != nil {
 		// Update may already be in a terminal state so don't check for error
 		_, err := r.AbortJobUpdate(*result.GetKey(), "Monitor timed out.")
-
 		_, err = r.KillJob(job.JobKey())
-
 		assert.NoError(t, err)
 	}
 
@@ -423,7 +460,6 @@ func TestRealisClient_CreateService(t *testing.T) {
 
 	// Kill task test task after confirming it came up fine
 	_, err = r.KillJob(job.JobKey())
-
 	assert.NoError(t, err)
 }
 
@@ -444,8 +480,8 @@ func TestRealisClient_CreateService_ExecutorDoesNotExist(t *testing.T) {
 
 	settings := realis.NewUpdateSettings()
 	job.InstanceCount(3)
-	resp, result, err := r.CreateService(job, settings)
 
+	resp, result, err := r.CreateService(job, settings)
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, aurora.ResponseCode_INVALID_REQUEST, resp.GetResponseCode())
@@ -471,41 +507,24 @@ func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
 		CronSchedule("* * * * *").
 		IsService(false)
 
-	resp, err := r.ScheduleCronJob(job)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	_, err = r.ScheduleCronJob(job)
+	assert.NoError(t, err)
 
-	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-
-	t.Run("TestRealisClient_StartCronJob_Thermos", func(t *testing.T) {
-		start := time.Now()
-		resp, err := r.StartCronJob(job.JobKey())
-		end := time.Now()
-
+	t.Run("Start", func(t *testing.T) {
+		_, err := r.StartCronJob(job.JobKey())
 		assert.NoError(t, err)
-		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-		fmt.Printf("Schedule cron call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 	})
 
-	t.Run("TestRealisClient_DeschedulerCronJob_Thermos", func(t *testing.T) {
-		start := time.Now()
-		resp, err := r.DescheduleCronJob(job.JobKey())
-		end := time.Now()
-
+	t.Run("Deschedule", func(t *testing.T) {
+		_, err := r.DescheduleCronJob(job.JobKey())
 		assert.NoError(t, err)
-		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-		fmt.Printf("Deschedule cron call took %d ns\n", (end.UnixNano() - start.UnixNano()))
 	})
 }
 func TestRealisClient_StartMaintenance(t *testing.T) {
 	hosts := []string{"localhost"}
+
 	_, _, err := r.StartMaintenance(hosts...)
-	if err != nil {
-		fmt.Printf("error: %+v\n", err.Error())
-		os.Exit(1)
-	}
+	assert.NoError(t, err, "unable to start maintenance")
 
 	// Monitor change to DRAINING and DRAINED mode
 	hostResults, err := monitor.HostMaintenance(
@@ -530,22 +549,24 @@ func TestRealisClient_StartMaintenance(t *testing.T) {
 
 func TestRealisClient_DrainHosts(t *testing.T) {
 	hosts := []string{"localhost"}
-	_, _, err := r.DrainHosts(hosts...)
-	if err != nil {
-		fmt.Printf("error: %+v\n", err.Error())
-		os.Exit(1)
-	}
 
-	// Monitor change to DRAINING and DRAINED mode
-	hostResults, err := monitor.HostMaintenance(
-		hosts,
-		[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
-		1,
-		50)
-	assert.Equal(t, map[string]bool{"localhost": true}, hostResults)
-	assert.NoError(t, err)
+	t.Run("DrainHosts", func(t *testing.T) {
+		_, _, err := r.DrainHosts(hosts...)
+		assert.NoError(t, err, "unable to drain host")
+	})
 
-	t.Run("TestRealisClient_MonitorNontransitioned", func(t *testing.T) {
+	t.Run("MonitorTransitionToDrained", func(t *testing.T) {
+		// Monitor change to DRAINING and DRAINED mode
+		hostResults, err := monitor.HostMaintenance(
+			hosts,
+			[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
+			1,
+			50)
+		assert.Equal(t, map[string]bool{"localhost": true}, hostResults)
+		assert.NoError(t, err)
+	})
+
+	t.Run("MonitorNonExistentHost", func(t *testing.T) {
 		// Monitor change to DRAINING and DRAINED mode
 		hostResults, err := monitor.HostMaintenance(
 			append(hosts, "IMAGINARY_HOST"),
@@ -558,7 +579,7 @@ func TestRealisClient_DrainHosts(t *testing.T) {
 		assert.Equal(t, map[string]bool{"localhost": true, "IMAGINARY_HOST": false}, hostResults)
 	})
 
-	t.Run("TestRealisClient_EndMaintenance", func(t *testing.T) {
+	t.Run("EndMaintenance", func(t *testing.T) {
 		_, _, err := r.EndMaintenance(hosts...)
 		assert.NoError(t, err)
 
@@ -578,10 +599,7 @@ func TestRealisClient_SLADrainHosts(t *testing.T) {
 	policy := aurora.SlaPolicy{PercentageSlaPolicy: &aurora.PercentageSlaPolicy{Percentage: 50.0}}
 
 	_, err := r.SLADrainHosts(&policy, 30, hosts...)
-	if err != nil {
-		fmt.Printf("error: %+v\n", err.Error())
-		os.Exit(1)
-	}
+	assert.NoError(t, err, "unable to drain host with SLA policy")
 
 	// Monitor change to DRAINING and DRAINED mode
 	hostResults, err := monitor.HostMaintenance(
@@ -619,30 +637,25 @@ func TestRealisClient_SessionThreadSafety(t *testing.T) {
 		Disk(10).
 		InstanceCount(1000) // Impossible amount to go live in any sane machine
 
-	resp, err := r.CreateJob(job)
+	_, err := r.CreateJob(job)
 	assert.NoError(t, err)
 
-	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-
 	wg := sync.WaitGroup{}
-	for i := 0; i < 20; i++ {
-
-		wg.Add(1)
+	threadCount := 20
+	wg.Add(threadCount)
+	for i := 0; i < threadCount; i++ {
 
 		// Launch multiple monitors that will poll every second
 		go func() {
 			defer wg.Done()
 
 			// Test Schedule status monitor for terminal state and timing out after 30 seconds
-			success, err := monitor.ScheduleStatus(job.JobKey(), job.GetInstanceCount(), aurora.LIVE_STATES, 1, 30)
+			success, err := monitor.ScheduleStatus(job.JobKey(), job.GetInstanceCount(), realis.LiveStates, 1, 30)
 			assert.False(t, success)
 			assert.Error(t, err)
 
-			resp, err := r.KillJob(job.JobKey())
+			_, err = r.KillJob(job.JobKey())
 			assert.NoError(t, err)
-
-			assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-
 		}()
 	}
 
@@ -650,14 +663,20 @@ func TestRealisClient_SessionThreadSafety(t *testing.T) {
 }
 
 // Test setting and getting the quota
-func TestRealisClient_SetQuota(t *testing.T) {
-	var cpu = 3.5
-	var ram int64 = 20480
-	var disk int64 = 10240
-	resp, err := r.SetQuota("vagrant", &cpu, &ram, &disk)
-	assert.NoError(t, err)
-	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-	t.Run("TestRealisClient_GetQuota", func(t *testing.T) {
+func TestRealisClient_Quota(t *testing.T) {
+	var resp *aurora.Response
+	var err error
+
+	cpu := 3.5
+	ram := int64(20480)
+	disk := int64(10240)
+
+	t.Run("Set", func(t *testing.T) {
+		resp, err = r.SetQuota("vagrant", &cpu, &ram, &disk)
+		assert.NoError(t, err)
+	})
+
+	t.Run("Get", func(t *testing.T) {
 		// Test GetQuota based on previously set values
 		var result *aurora.GetQuotaResult_
 		resp, err = r.GetQuota("vagrant")
@@ -665,8 +684,8 @@ func TestRealisClient_SetQuota(t *testing.T) {
 			result = resp.GetResult_().GetQuotaResult_
 		}
 		assert.NoError(t, err)
-		assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
-		for res := range result.Quota.GetResources() {
+
+		for _, res := range result.Quota.GetResources() {
 			switch true {
 			case res.DiskMb != nil:
 				assert.Equal(t, disk, *res.DiskMb)
@@ -679,7 +698,6 @@ func TestRealisClient_SetQuota(t *testing.T) {
 				break
 			}
 		}
-		fmt.Print("GetQuota Result", result.String())
 	})
 }
 
@@ -694,15 +712,13 @@ func TestRealisClient_ForceExplicitTaskReconciliation(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Custom batch value
-	var batchSize int32 = 32
-	err = r.ForceExplicitTaskReconciliation(&batchSize)
+	err = r.ForceExplicitTaskReconciliation(thrift.Int32Ptr(32))
 	assert.NoError(t, err)
 }
 
 func TestRealisClient_PartitionPolicy(t *testing.T) {
 
 	role := "vagrant"
-	var partitionDelay int64 = 30
 	job := realis.NewJob().
 		Environment("prod").
 		Role(role).
@@ -714,14 +730,13 @@ func TestRealisClient_PartitionPolicy(t *testing.T) {
 		Disk(100).
 		IsService(true).
 		InstanceCount(2).
-		PartitionPolicy(&aurora.PartitionPolicy{Reschedule: true, DelaySecs: &partitionDelay})
+		PartitionPolicy(&aurora.PartitionPolicy{Reschedule: true, DelaySecs: thrift.Int64Ptr(30)})
 
 	settings := realis.NewUpdateSettings()
 	settings.UpdateGroupSize = 2
-	resp, result, err := r.CreateService(job, settings)
-	assert.NoError(t, err)
 
-	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
+	_, result, err := r.CreateService(job, settings)
+	assert.NoError(t, err)
 
 	var ok bool
 	var mErr error
@@ -729,10 +744,9 @@ func TestRealisClient_PartitionPolicy(t *testing.T) {
 	if ok, mErr = monitor.JobUpdate(*result.GetKey(), 5, 180); !ok || mErr != nil {
 		// Update may already be in a terminal state so don't check for error
 		_, err := r.AbortJobUpdate(*result.GetKey(), "Monitor timed out.")
-
-		_, err = r.KillJob(job.JobKey())
-
 		assert.NoError(t, err)
 	}
 
+	// Clean up after finishing test
+	_, err = r.KillJob(job.JobKey())
 }
