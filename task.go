@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"git.apache.org/thrift.git/lib/go/thrift"
+	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/paypal/gorealis/v2/gen-go/apache/aurora"
 )
 
@@ -409,7 +409,7 @@ func (t *AuroraTask) BuildThermosPayload() error {
 			t.thermos.disk(*t.resources[DISK].DiskMb)
 		}
 
-		if t.resources[GPU].NumGpus != nil {
+		if t.resources[GPU] != nil && t.resources[GPU].NumGpus != nil {
 			t.thermos.gpu(*t.resources[GPU].NumGpus)
 		}
 

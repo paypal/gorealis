@@ -1,5 +1,5 @@
 [[constraint]]
-    name = "git.apache.org/thrift.git"
+    name = "github.com/apache/thrift"
     branch = "0.12.0"
 
 [[constraint]]
