@@ -759,11 +759,11 @@ func TestAuroraJob_UpdateSlaPolicy(t *testing.T) {
 	}{
 		{
 			"create_service_with_sla_count_policy_test",
-			aurora.SlaPolicy{CountSlaPolicy: &aurora.CountSlaPolicy{Count: 1, DurationSecs: 30}},
+			aurora.SlaPolicy{CountSlaPolicy: &aurora.CountSlaPolicy{Count: 1, DurationSecs: 15}},
 		},
 		{
 			"create_service_with_sla_percentage_policy_test",
-			aurora.SlaPolicy{PercentageSlaPolicy: &aurora.PercentageSlaPolicy{Percentage: 0.25, DurationSecs: 30}},
+			aurora.SlaPolicy{PercentageSlaPolicy: &aurora.PercentageSlaPolicy{Percentage: 0.25, DurationSecs: 15}},
 		},
 		{
 			"create_service_with_sla_coordinator_policy_test",
@@ -789,13 +789,13 @@ func TestAuroraJob_UpdateSlaPolicy(t *testing.T) {
 				CPU(.01).
 				RAM(2).
 				Disk(5).
-				InstanceCount(8).
+				InstanceCount(4).
 				IsService(true).
 				SlaPolicy(&tt.args).
 				Tier("preferred")
 
 			settings := realis.NewUpdateSettings()
-			settings.UpdateGroupSize = 4
+			settings.UpdateGroupSize = 2
 			settings.MinWaitInInstanceRunningMs = 5 * 1000
 
 			_, result, err := r.CreateService(job, settings)
