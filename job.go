@@ -25,11 +25,12 @@ type Job interface {
 	Environment(env string) Job
 	Role(role string) Job
 	Name(name string) Job
-	CPU(cpus float64) Job
 	CronSchedule(cron string) Job
 	CronCollisionPolicy(policy aurora.CronCollisionPolicy) Job
+	CPU(cpus float64) Job
 	Disk(disk int64) Job
 	RAM(ram int64) Job
+	GPU(gpu int64) Job
 	ExecutorName(name string) Job
 	ExecutorData(data string) Job
 	AddPorts(num int) Job
