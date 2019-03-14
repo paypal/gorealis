@@ -10137,8 +10137,10 @@ func (p *QueueJobUpdateStrategy) String() string {
 // 
 // Attributes:
 //  - GroupSize
+//  - AutopauseAfterBatch
 type BatchJobUpdateStrategy struct {
   GroupSize int32 `thrift:"groupSize,1" db:"groupSize" json:"groupSize"`
+  AutopauseAfterBatch bool `thrift:"autopauseAfterBatch,2" db:"autopauseAfterBatch" json:"autopauseAfterBatch"`
 }
 
 func NewBatchJobUpdateStrategy() *BatchJobUpdateStrategy {
@@ -10148,6 +10150,10 @@ func NewBatchJobUpdateStrategy() *BatchJobUpdateStrategy {
 
 func (p *BatchJobUpdateStrategy) GetGroupSize() int32 {
   return p.GroupSize
+}
+
+func (p *BatchJobUpdateStrategy) GetAutopauseAfterBatch() bool {
+  return p.AutopauseAfterBatch
 }
 func (p *BatchJobUpdateStrategy) Read(iprot thrift.TProtocol) error {
   if _, err := iprot.ReadStructBegin(); err != nil {
@@ -10165,6 +10171,16 @@ func (p *BatchJobUpdateStrategy) Read(iprot thrift.TProtocol) error {
     case 1:
       if fieldTypeId == thrift.I32 {
         if err := p.ReadField1(iprot); err != nil {
+          return err
+        }
+      } else {
+        if err := iprot.Skip(fieldTypeId); err != nil {
+          return err
+        }
+      }
+    case 2:
+      if fieldTypeId == thrift.BOOL {
+        if err := p.ReadField2(iprot); err != nil {
           return err
         }
       } else {
@@ -10196,11 +10212,21 @@ func (p *BatchJobUpdateStrategy)  ReadField1(iprot thrift.TProtocol) error {
   return nil
 }
 
+func (p *BatchJobUpdateStrategy)  ReadField2(iprot thrift.TProtocol) error {
+  if v, err := iprot.ReadBool(); err != nil {
+  return thrift.PrependError("error reading field 2: ", err)
+} else {
+  p.AutopauseAfterBatch = v
+}
+  return nil
+}
+
 func (p *BatchJobUpdateStrategy) Write(oprot thrift.TProtocol) error {
   if err := oprot.WriteStructBegin("BatchJobUpdateStrategy"); err != nil {
     return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err) }
   if p != nil {
     if err := p.writeField1(oprot); err != nil { return err }
+    if err := p.writeField2(oprot); err != nil { return err }
   }
   if err := oprot.WriteFieldStop(); err != nil {
     return thrift.PrependError("write field stop error: ", err) }
@@ -10219,6 +10245,16 @@ func (p *BatchJobUpdateStrategy) writeField1(oprot thrift.TProtocol) (err error)
   return err
 }
 
+func (p *BatchJobUpdateStrategy) writeField2(oprot thrift.TProtocol) (err error) {
+  if err := oprot.WriteFieldBegin("autopauseAfterBatch", thrift.BOOL, 2); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:autopauseAfterBatch: ", p), err) }
+  if err := oprot.WriteBool(bool(p.AutopauseAfterBatch)); err != nil {
+  return thrift.PrependError(fmt.Sprintf("%T.autopauseAfterBatch (2) field write error: ", p), err) }
+  if err := oprot.WriteFieldEnd(); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T write field end error 2:autopauseAfterBatch: ", p), err) }
+  return err
+}
+
 func (p *BatchJobUpdateStrategy) String() string {
   if p == nil {
     return "<nil>"
@@ -10231,8 +10267,10 @@ func (p *BatchJobUpdateStrategy) String() string {
 // 
 // Attributes:
 //  - GroupSizes
+//  - AutopauseAfterBatch
 type VariableBatchJobUpdateStrategy struct {
   GroupSizes []int32 `thrift:"groupSizes,1" db:"groupSizes" json:"groupSizes"`
+  AutopauseAfterBatch bool `thrift:"autopauseAfterBatch,2" db:"autopauseAfterBatch" json:"autopauseAfterBatch"`
 }
 
 func NewVariableBatchJobUpdateStrategy() *VariableBatchJobUpdateStrategy {
@@ -10242,6 +10280,10 @@ func NewVariableBatchJobUpdateStrategy() *VariableBatchJobUpdateStrategy {
 
 func (p *VariableBatchJobUpdateStrategy) GetGroupSizes() []int32 {
   return p.GroupSizes
+}
+
+func (p *VariableBatchJobUpdateStrategy) GetAutopauseAfterBatch() bool {
+  return p.AutopauseAfterBatch
 }
 func (p *VariableBatchJobUpdateStrategy) Read(iprot thrift.TProtocol) error {
   if _, err := iprot.ReadStructBegin(); err != nil {
@@ -10259,6 +10301,16 @@ func (p *VariableBatchJobUpdateStrategy) Read(iprot thrift.TProtocol) error {
     case 1:
       if fieldTypeId == thrift.LIST {
         if err := p.ReadField1(iprot); err != nil {
+          return err
+        }
+      } else {
+        if err := iprot.Skip(fieldTypeId); err != nil {
+          return err
+        }
+      }
+    case 2:
+      if fieldTypeId == thrift.BOOL {
+        if err := p.ReadField2(iprot); err != nil {
           return err
         }
       } else {
@@ -10303,11 +10355,21 @@ var _elem25 int32
   return nil
 }
 
+func (p *VariableBatchJobUpdateStrategy)  ReadField2(iprot thrift.TProtocol) error {
+  if v, err := iprot.ReadBool(); err != nil {
+  return thrift.PrependError("error reading field 2: ", err)
+} else {
+  p.AutopauseAfterBatch = v
+}
+  return nil
+}
+
 func (p *VariableBatchJobUpdateStrategy) Write(oprot thrift.TProtocol) error {
   if err := oprot.WriteStructBegin("VariableBatchJobUpdateStrategy"); err != nil {
     return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err) }
   if p != nil {
     if err := p.writeField1(oprot); err != nil { return err }
+    if err := p.writeField2(oprot); err != nil { return err }
   }
   if err := oprot.WriteFieldStop(); err != nil {
     return thrift.PrependError("write field stop error: ", err) }
@@ -10331,6 +10393,16 @@ func (p *VariableBatchJobUpdateStrategy) writeField1(oprot thrift.TProtocol) (er
   }
   if err := oprot.WriteFieldEnd(); err != nil {
     return thrift.PrependError(fmt.Sprintf("%T write field end error 1:groupSizes: ", p), err) }
+  return err
+}
+
+func (p *VariableBatchJobUpdateStrategy) writeField2(oprot thrift.TProtocol) (err error) {
+  if err := oprot.WriteFieldBegin("autopauseAfterBatch", thrift.BOOL, 2); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:autopauseAfterBatch: ", p), err) }
+  if err := oprot.WriteBool(bool(p.AutopauseAfterBatch)); err != nil {
+  return thrift.PrependError(fmt.Sprintf("%T.autopauseAfterBatch (2) field write error: ", p), err) }
+  if err := oprot.WriteFieldEnd(); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T write field end error 2:autopauseAfterBatch: ", p), err) }
   return err
 }
 

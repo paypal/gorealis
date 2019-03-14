@@ -890,3 +890,66 @@ func TestRealisClient_UpdateStrategies(t *testing.T) {
 		})
 	}
 }
+
+func TestRealisClient_Update_Autopause_After_Batch(t *testing.T) {
+
+	// Create a single job
+	job := realis.NewJob().
+		Environment("prod").
+		Role("vagrant").
+		Name("autopause_test").
+		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
+		ExecutorData(string(thermosPayload)).
+		CPU(.01).
+		RAM(4).
+		Disk(10).
+		InstanceCount(6).
+		IsService(true)
+
+	UpdateJob := realis.NewDefaultUpdateJob(job.TaskConfig()).
+		VariableBatchStrategy(
+			aurora.VariableBatchJobUpdateStrategy{GroupSizes: []int32{1, 2, 3}, AutopauseAfterBatch: true}).
+		InstanceCount(6).
+		WatchTime(1000)
+
+	resp, err := r.StartJobUpdate(UpdateJob, "")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.NotNil(t, resp.GetResult_())
+	assert.NotNil(t, resp.GetResult_().GetStartJobUpdateResult_())
+	assert.NotNil(t, resp.GetResult_().GetStartJobUpdateResult_().GetKey())
+
+	key := *resp.GetResult_().GetStartJobUpdateResult_().GetKey()
+
+updateLoop:
+	for {
+		status, mErr := monitor.JobUpdateStatus(
+			key,
+			map[aurora.JobUpdateStatus]bool{
+				aurora.JobUpdateStatus_ROLL_FORWARD_PAUSED: true,
+				aurora.JobUpdateStatus_ROLLED_FORWARD:      true},
+			time.Second*5,
+			time.Second*240)
+
+		if mErr != nil {
+			// Update did not enter the state we needed it to before the monitor timed out
+			_, err := r.AbortJobUpdate(key, "Monitor timed out.")
+			assert.NoError(t, err)
+		}
+
+		switch status {
+		case aurora.JobUpdateStatus_ROLLED_FORWARD:
+			break updateLoop
+		case aurora.JobUpdateStatus_ROLL_FORWARD_PAUSED:
+			// Update may already be in a terminal state so don't check for error
+			_, err := r.ResumeJobUpdate(&key, "Monitor timed out.")
+			assert.NoError(t, err)
+		default:
+			// This should never occur as an error will be returned instead
+		}
+	}
+
+	_, err = r.KillJob(job.JobKey())
+	assert.NoError(t, err)
+}
