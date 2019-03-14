@@ -10039,16 +10039,528 @@ func (p *JobUpdateKey) String() string {
   return fmt.Sprintf("JobUpdateKey(%+v)", *p)
 }
 
+// Limits the amount of active changes being made to instances to groupSize.
+// 
+// Attributes:
+//  - GroupSize
+type QueueJobUpdateStrategy struct {
+  GroupSize int32 `thrift:"groupSize,1" db:"groupSize" json:"groupSize"`
+}
+
+func NewQueueJobUpdateStrategy() *QueueJobUpdateStrategy {
+  return &QueueJobUpdateStrategy{}
+}
+
+
+func (p *QueueJobUpdateStrategy) GetGroupSize() int32 {
+  return p.GroupSize
+}
+func (p *QueueJobUpdateStrategy) Read(iprot thrift.TProtocol) error {
+  if _, err := iprot.ReadStructBegin(); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
+  }
+
+
+  for {
+    _, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+    if err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T field %d read error: ", p, fieldId), err)
+    }
+    if fieldTypeId == thrift.STOP { break; }
+    switch fieldId {
+    case 1:
+      if fieldTypeId == thrift.I32 {
+        if err := p.ReadField1(iprot); err != nil {
+          return err
+        }
+      } else {
+        if err := iprot.Skip(fieldTypeId); err != nil {
+          return err
+        }
+      }
+    default:
+      if err := iprot.Skip(fieldTypeId); err != nil {
+        return err
+      }
+    }
+    if err := iprot.ReadFieldEnd(); err != nil {
+      return err
+    }
+  }
+  if err := iprot.ReadStructEnd(); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+  }
+  return nil
+}
+
+func (p *QueueJobUpdateStrategy)  ReadField1(iprot thrift.TProtocol) error {
+  if v, err := iprot.ReadI32(); err != nil {
+  return thrift.PrependError("error reading field 1: ", err)
+} else {
+  p.GroupSize = v
+}
+  return nil
+}
+
+func (p *QueueJobUpdateStrategy) Write(oprot thrift.TProtocol) error {
+  if err := oprot.WriteStructBegin("QueueJobUpdateStrategy"); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err) }
+  if p != nil {
+    if err := p.writeField1(oprot); err != nil { return err }
+  }
+  if err := oprot.WriteFieldStop(); err != nil {
+    return thrift.PrependError("write field stop error: ", err) }
+  if err := oprot.WriteStructEnd(); err != nil {
+    return thrift.PrependError("write struct stop error: ", err) }
+  return nil
+}
+
+func (p *QueueJobUpdateStrategy) writeField1(oprot thrift.TProtocol) (err error) {
+  if err := oprot.WriteFieldBegin("groupSize", thrift.I32, 1); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:groupSize: ", p), err) }
+  if err := oprot.WriteI32(int32(p.GroupSize)); err != nil {
+  return thrift.PrependError(fmt.Sprintf("%T.groupSize (1) field write error: ", p), err) }
+  if err := oprot.WriteFieldEnd(); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T write field end error 1:groupSize: ", p), err) }
+  return err
+}
+
+func (p *QueueJobUpdateStrategy) String() string {
+  if p == nil {
+    return "<nil>"
+  }
+  return fmt.Sprintf("QueueJobUpdateStrategy(%+v)", *p)
+}
+
+// Similar to Queue strategy but will not start a new group until all instances in an active
+// group have finished updating.
+// 
+// Attributes:
+//  - GroupSize
+type BatchJobUpdateStrategy struct {
+  GroupSize int32 `thrift:"groupSize,1" db:"groupSize" json:"groupSize"`
+}
+
+func NewBatchJobUpdateStrategy() *BatchJobUpdateStrategy {
+  return &BatchJobUpdateStrategy{}
+}
+
+
+func (p *BatchJobUpdateStrategy) GetGroupSize() int32 {
+  return p.GroupSize
+}
+func (p *BatchJobUpdateStrategy) Read(iprot thrift.TProtocol) error {
+  if _, err := iprot.ReadStructBegin(); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
+  }
+
+
+  for {
+    _, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+    if err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T field %d read error: ", p, fieldId), err)
+    }
+    if fieldTypeId == thrift.STOP { break; }
+    switch fieldId {
+    case 1:
+      if fieldTypeId == thrift.I32 {
+        if err := p.ReadField1(iprot); err != nil {
+          return err
+        }
+      } else {
+        if err := iprot.Skip(fieldTypeId); err != nil {
+          return err
+        }
+      }
+    default:
+      if err := iprot.Skip(fieldTypeId); err != nil {
+        return err
+      }
+    }
+    if err := iprot.ReadFieldEnd(); err != nil {
+      return err
+    }
+  }
+  if err := iprot.ReadStructEnd(); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+  }
+  return nil
+}
+
+func (p *BatchJobUpdateStrategy)  ReadField1(iprot thrift.TProtocol) error {
+  if v, err := iprot.ReadI32(); err != nil {
+  return thrift.PrependError("error reading field 1: ", err)
+} else {
+  p.GroupSize = v
+}
+  return nil
+}
+
+func (p *BatchJobUpdateStrategy) Write(oprot thrift.TProtocol) error {
+  if err := oprot.WriteStructBegin("BatchJobUpdateStrategy"); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err) }
+  if p != nil {
+    if err := p.writeField1(oprot); err != nil { return err }
+  }
+  if err := oprot.WriteFieldStop(); err != nil {
+    return thrift.PrependError("write field stop error: ", err) }
+  if err := oprot.WriteStructEnd(); err != nil {
+    return thrift.PrependError("write struct stop error: ", err) }
+  return nil
+}
+
+func (p *BatchJobUpdateStrategy) writeField1(oprot thrift.TProtocol) (err error) {
+  if err := oprot.WriteFieldBegin("groupSize", thrift.I32, 1); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:groupSize: ", p), err) }
+  if err := oprot.WriteI32(int32(p.GroupSize)); err != nil {
+  return thrift.PrependError(fmt.Sprintf("%T.groupSize (1) field write error: ", p), err) }
+  if err := oprot.WriteFieldEnd(); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T write field end error 1:groupSize: ", p), err) }
+  return err
+}
+
+func (p *BatchJobUpdateStrategy) String() string {
+  if p == nil {
+    return "<nil>"
+  }
+  return fmt.Sprintf("BatchJobUpdateStrategy(%+v)", *p)
+}
+
+// Same as Batch strategy but each time an active group completes, the size of the next active
+// group may change.
+// 
+// Attributes:
+//  - GroupSizes
+type VariableBatchJobUpdateStrategy struct {
+  GroupSizes []int32 `thrift:"groupSizes,1" db:"groupSizes" json:"groupSizes"`
+}
+
+func NewVariableBatchJobUpdateStrategy() *VariableBatchJobUpdateStrategy {
+  return &VariableBatchJobUpdateStrategy{}
+}
+
+
+func (p *VariableBatchJobUpdateStrategy) GetGroupSizes() []int32 {
+  return p.GroupSizes
+}
+func (p *VariableBatchJobUpdateStrategy) Read(iprot thrift.TProtocol) error {
+  if _, err := iprot.ReadStructBegin(); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
+  }
+
+
+  for {
+    _, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+    if err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T field %d read error: ", p, fieldId), err)
+    }
+    if fieldTypeId == thrift.STOP { break; }
+    switch fieldId {
+    case 1:
+      if fieldTypeId == thrift.LIST {
+        if err := p.ReadField1(iprot); err != nil {
+          return err
+        }
+      } else {
+        if err := iprot.Skip(fieldTypeId); err != nil {
+          return err
+        }
+      }
+    default:
+      if err := iprot.Skip(fieldTypeId); err != nil {
+        return err
+      }
+    }
+    if err := iprot.ReadFieldEnd(); err != nil {
+      return err
+    }
+  }
+  if err := iprot.ReadStructEnd(); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+  }
+  return nil
+}
+
+func (p *VariableBatchJobUpdateStrategy)  ReadField1(iprot thrift.TProtocol) error {
+  _, size, err := iprot.ReadListBegin()
+  if err != nil {
+    return thrift.PrependError("error reading list begin: ", err)
+  }
+  tSlice := make([]int32, 0, size)
+  p.GroupSizes =  tSlice
+  for i := 0; i < size; i ++ {
+var _elem25 int32
+    if v, err := iprot.ReadI32(); err != nil {
+    return thrift.PrependError("error reading field 0: ", err)
+} else {
+    _elem25 = v
+}
+    p.GroupSizes = append(p.GroupSizes, _elem25)
+  }
+  if err := iprot.ReadListEnd(); err != nil {
+    return thrift.PrependError("error reading list end: ", err)
+  }
+  return nil
+}
+
+func (p *VariableBatchJobUpdateStrategy) Write(oprot thrift.TProtocol) error {
+  if err := oprot.WriteStructBegin("VariableBatchJobUpdateStrategy"); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err) }
+  if p != nil {
+    if err := p.writeField1(oprot); err != nil { return err }
+  }
+  if err := oprot.WriteFieldStop(); err != nil {
+    return thrift.PrependError("write field stop error: ", err) }
+  if err := oprot.WriteStructEnd(); err != nil {
+    return thrift.PrependError("write struct stop error: ", err) }
+  return nil
+}
+
+func (p *VariableBatchJobUpdateStrategy) writeField1(oprot thrift.TProtocol) (err error) {
+  if err := oprot.WriteFieldBegin("groupSizes", thrift.LIST, 1); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:groupSizes: ", p), err) }
+  if err := oprot.WriteListBegin(thrift.I32, len(p.GroupSizes)); err != nil {
+    return thrift.PrependError("error writing list begin: ", err)
+  }
+  for _, v := range p.GroupSizes {
+    if err := oprot.WriteI32(int32(v)); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T. (0) field write error: ", p), err) }
+  }
+  if err := oprot.WriteListEnd(); err != nil {
+    return thrift.PrependError("error writing list end: ", err)
+  }
+  if err := oprot.WriteFieldEnd(); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T write field end error 1:groupSizes: ", p), err) }
+  return err
+}
+
+func (p *VariableBatchJobUpdateStrategy) String() string {
+  if p == nil {
+    return "<nil>"
+  }
+  return fmt.Sprintf("VariableBatchJobUpdateStrategy(%+v)", *p)
+}
+
+// Attributes:
+//  - QueueStrategy
+//  - BatchStrategy
+//  - VarBatchStrategy
+type JobUpdateStrategy struct {
+  QueueStrategy *QueueJobUpdateStrategy `thrift:"queueStrategy,1" db:"queueStrategy" json:"queueStrategy,omitempty"`
+  BatchStrategy *BatchJobUpdateStrategy `thrift:"batchStrategy,2" db:"batchStrategy" json:"batchStrategy,omitempty"`
+  VarBatchStrategy *VariableBatchJobUpdateStrategy `thrift:"varBatchStrategy,3" db:"varBatchStrategy" json:"varBatchStrategy,omitempty"`
+}
+
+func NewJobUpdateStrategy() *JobUpdateStrategy {
+  return &JobUpdateStrategy{}
+}
+
+var JobUpdateStrategy_QueueStrategy_DEFAULT *QueueJobUpdateStrategy
+func (p *JobUpdateStrategy) GetQueueStrategy() *QueueJobUpdateStrategy {
+  if !p.IsSetQueueStrategy() {
+    return JobUpdateStrategy_QueueStrategy_DEFAULT
+  }
+return p.QueueStrategy
+}
+var JobUpdateStrategy_BatchStrategy_DEFAULT *BatchJobUpdateStrategy
+func (p *JobUpdateStrategy) GetBatchStrategy() *BatchJobUpdateStrategy {
+  if !p.IsSetBatchStrategy() {
+    return JobUpdateStrategy_BatchStrategy_DEFAULT
+  }
+return p.BatchStrategy
+}
+var JobUpdateStrategy_VarBatchStrategy_DEFAULT *VariableBatchJobUpdateStrategy
+func (p *JobUpdateStrategy) GetVarBatchStrategy() *VariableBatchJobUpdateStrategy {
+  if !p.IsSetVarBatchStrategy() {
+    return JobUpdateStrategy_VarBatchStrategy_DEFAULT
+  }
+return p.VarBatchStrategy
+}
+func (p *JobUpdateStrategy) CountSetFieldsJobUpdateStrategy() int {
+  count := 0
+  if (p.IsSetQueueStrategy()) {
+    count++
+  }
+  if (p.IsSetBatchStrategy()) {
+    count++
+  }
+  if (p.IsSetVarBatchStrategy()) {
+    count++
+  }
+  return count
+
+}
+
+func (p *JobUpdateStrategy) IsSetQueueStrategy() bool {
+  return p.QueueStrategy != nil
+}
+
+func (p *JobUpdateStrategy) IsSetBatchStrategy() bool {
+  return p.BatchStrategy != nil
+}
+
+func (p *JobUpdateStrategy) IsSetVarBatchStrategy() bool {
+  return p.VarBatchStrategy != nil
+}
+
+func (p *JobUpdateStrategy) Read(iprot thrift.TProtocol) error {
+  if _, err := iprot.ReadStructBegin(); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T read error: ", p), err)
+  }
+
+
+  for {
+    _, fieldTypeId, fieldId, err := iprot.ReadFieldBegin()
+    if err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T field %d read error: ", p, fieldId), err)
+    }
+    if fieldTypeId == thrift.STOP { break; }
+    switch fieldId {
+    case 1:
+      if fieldTypeId == thrift.STRUCT {
+        if err := p.ReadField1(iprot); err != nil {
+          return err
+        }
+      } else {
+        if err := iprot.Skip(fieldTypeId); err != nil {
+          return err
+        }
+      }
+    case 2:
+      if fieldTypeId == thrift.STRUCT {
+        if err := p.ReadField2(iprot); err != nil {
+          return err
+        }
+      } else {
+        if err := iprot.Skip(fieldTypeId); err != nil {
+          return err
+        }
+      }
+    case 3:
+      if fieldTypeId == thrift.STRUCT {
+        if err := p.ReadField3(iprot); err != nil {
+          return err
+        }
+      } else {
+        if err := iprot.Skip(fieldTypeId); err != nil {
+          return err
+        }
+      }
+    default:
+      if err := iprot.Skip(fieldTypeId); err != nil {
+        return err
+      }
+    }
+    if err := iprot.ReadFieldEnd(); err != nil {
+      return err
+    }
+  }
+  if err := iprot.ReadStructEnd(); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
+  }
+  return nil
+}
+
+func (p *JobUpdateStrategy)  ReadField1(iprot thrift.TProtocol) error {
+  p.QueueStrategy = &QueueJobUpdateStrategy{}
+  if err := p.QueueStrategy.Read(iprot); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", p.QueueStrategy), err)
+  }
+  return nil
+}
+
+func (p *JobUpdateStrategy)  ReadField2(iprot thrift.TProtocol) error {
+  p.BatchStrategy = &BatchJobUpdateStrategy{}
+  if err := p.BatchStrategy.Read(iprot); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", p.BatchStrategy), err)
+  }
+  return nil
+}
+
+func (p *JobUpdateStrategy)  ReadField3(iprot thrift.TProtocol) error {
+  p.VarBatchStrategy = &VariableBatchJobUpdateStrategy{}
+  if err := p.VarBatchStrategy.Read(iprot); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", p.VarBatchStrategy), err)
+  }
+  return nil
+}
+
+func (p *JobUpdateStrategy) Write(oprot thrift.TProtocol) error {
+  if c := p.CountSetFieldsJobUpdateStrategy(); c != 1 {
+    return fmt.Errorf("%T write union: exactly one field must be set (%d set).", p, c)
+  }
+  if err := oprot.WriteStructBegin("JobUpdateStrategy"); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err) }
+  if p != nil {
+    if err := p.writeField1(oprot); err != nil { return err }
+    if err := p.writeField2(oprot); err != nil { return err }
+    if err := p.writeField3(oprot); err != nil { return err }
+  }
+  if err := oprot.WriteFieldStop(); err != nil {
+    return thrift.PrependError("write field stop error: ", err) }
+  if err := oprot.WriteStructEnd(); err != nil {
+    return thrift.PrependError("write struct stop error: ", err) }
+  return nil
+}
+
+func (p *JobUpdateStrategy) writeField1(oprot thrift.TProtocol) (err error) {
+  if p.IsSetQueueStrategy() {
+    if err := oprot.WriteFieldBegin("queueStrategy", thrift.STRUCT, 1); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field begin error 1:queueStrategy: ", p), err) }
+    if err := p.QueueStrategy.Write(oprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.QueueStrategy), err)
+    }
+    if err := oprot.WriteFieldEnd(); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field end error 1:queueStrategy: ", p), err) }
+  }
+  return err
+}
+
+func (p *JobUpdateStrategy) writeField2(oprot thrift.TProtocol) (err error) {
+  if p.IsSetBatchStrategy() {
+    if err := oprot.WriteFieldBegin("batchStrategy", thrift.STRUCT, 2); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field begin error 2:batchStrategy: ", p), err) }
+    if err := p.BatchStrategy.Write(oprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.BatchStrategy), err)
+    }
+    if err := oprot.WriteFieldEnd(); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field end error 2:batchStrategy: ", p), err) }
+  }
+  return err
+}
+
+func (p *JobUpdateStrategy) writeField3(oprot thrift.TProtocol) (err error) {
+  if p.IsSetVarBatchStrategy() {
+    if err := oprot.WriteFieldBegin("varBatchStrategy", thrift.STRUCT, 3); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field begin error 3:varBatchStrategy: ", p), err) }
+    if err := p.VarBatchStrategy.Write(oprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.VarBatchStrategy), err)
+    }
+    if err := oprot.WriteFieldEnd(); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field end error 3:varBatchStrategy: ", p), err) }
+  }
+  return err
+}
+
+func (p *JobUpdateStrategy) String() string {
+  if p == nil {
+    return "<nil>"
+  }
+  return fmt.Sprintf("JobUpdateStrategy(%+v)", *p)
+}
+
 // Job update thresholds and limits.
 // 
 // Attributes:
-//  - UpdateGroupSize: Max number of instances being updated at any given moment.
+//  - UpdateGroupSize: Deprecated, please set value inside of desired update strategy instead.
+// Max number of instances being updated at any given moment.
 //  - MaxPerInstanceFailures: Max number of instance failures to tolerate before marking instance as FAILED.
 //  - MaxFailedInstances: Max number of FAILED instances to tolerate before terminating the update.
 //  - MinWaitInInstanceRunningMs: Min time to watch a RUNNING instance.
 //  - RollbackOnFailure: If true, enables failed update rollback.
 //  - UpdateOnlyTheseInstances: Instance IDs to act on. All instances will be affected if this is not set.
-//  - WaitForBatchCompletion: If true, use updateGroupSize as strict batching boundaries, and avoid proceeding to another
+//  - WaitForBatchCompletion: Deprecated, please set updateStrategy to the Batch strategy instead.
+// If true, use updateGroupSize as strict batching boundaries, and avoid proceeding to another
 // batch until the preceding batch finishes updating.
 //  - BlockIfNoPulsesAfterMs: If set, requires external calls to pulseJobUpdate RPC within the specified rate for the
 // update to make progress. If no pulses received within specified interval the update will
@@ -10056,6 +10568,7 @@ func (p *JobUpdateKey) String() string {
 // unblocked by a fresh pulseJobUpdate call.
 //  - SlaAware: If true, updates will obey the SLA requirements of the tasks being updated. If the SLA policy
 // differs between the old and new task configurations, updates will use the newest configuration.
+//  - UpdateStrategy: Update strategy to be used for the update. See JobUpdateStrategy for choices.
 type JobUpdateSettings struct {
   UpdateGroupSize int32 `thrift:"updateGroupSize,1" db:"updateGroupSize" json:"updateGroupSize"`
   MaxPerInstanceFailures int32 `thrift:"maxPerInstanceFailures,2" db:"maxPerInstanceFailures" json:"maxPerInstanceFailures"`
@@ -10067,6 +10580,7 @@ type JobUpdateSettings struct {
   WaitForBatchCompletion bool `thrift:"waitForBatchCompletion,8" db:"waitForBatchCompletion" json:"waitForBatchCompletion"`
   BlockIfNoPulsesAfterMs *int32 `thrift:"blockIfNoPulsesAfterMs,9" db:"blockIfNoPulsesAfterMs" json:"blockIfNoPulsesAfterMs,omitempty"`
   SlaAware *bool `thrift:"slaAware,10" db:"slaAware" json:"slaAware,omitempty"`
+  UpdateStrategy *JobUpdateStrategy `thrift:"updateStrategy,11" db:"updateStrategy" json:"updateStrategy,omitempty"`
 }
 
 func NewJobUpdateSettings() *JobUpdateSettings {
@@ -10115,12 +10629,23 @@ func (p *JobUpdateSettings) GetSlaAware() bool {
   }
 return *p.SlaAware
 }
+var JobUpdateSettings_UpdateStrategy_DEFAULT *JobUpdateStrategy
+func (p *JobUpdateSettings) GetUpdateStrategy() *JobUpdateStrategy {
+  if !p.IsSetUpdateStrategy() {
+    return JobUpdateSettings_UpdateStrategy_DEFAULT
+  }
+return p.UpdateStrategy
+}
 func (p *JobUpdateSettings) IsSetBlockIfNoPulsesAfterMs() bool {
   return p.BlockIfNoPulsesAfterMs != nil
 }
 
 func (p *JobUpdateSettings) IsSetSlaAware() bool {
   return p.SlaAware != nil
+}
+
+func (p *JobUpdateSettings) IsSetUpdateStrategy() bool {
+  return p.UpdateStrategy != nil
 }
 
 func (p *JobUpdateSettings) Read(iprot thrift.TProtocol) error {
@@ -10226,6 +10751,16 @@ func (p *JobUpdateSettings) Read(iprot thrift.TProtocol) error {
           return err
         }
       }
+    case 11:
+      if fieldTypeId == thrift.STRUCT {
+        if err := p.ReadField11(iprot); err != nil {
+          return err
+        }
+      } else {
+        if err := iprot.Skip(fieldTypeId); err != nil {
+          return err
+        }
+      }
     default:
       if err := iprot.Skip(fieldTypeId); err != nil {
         return err
@@ -10294,11 +10829,11 @@ func (p *JobUpdateSettings)  ReadField7(iprot thrift.TProtocol) error {
   tSet := make([]*Range, 0, size)
   p.UpdateOnlyTheseInstances =  tSet
   for i := 0; i < size; i ++ {
-    _elem25 := &Range{}
-    if err := _elem25.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem25), err)
+    _elem26 := &Range{}
+    if err := _elem26.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem26), err)
     }
-    p.UpdateOnlyTheseInstances = append(p.UpdateOnlyTheseInstances, _elem25)
+    p.UpdateOnlyTheseInstances = append(p.UpdateOnlyTheseInstances, _elem26)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -10333,6 +10868,14 @@ func (p *JobUpdateSettings)  ReadField10(iprot thrift.TProtocol) error {
   return nil
 }
 
+func (p *JobUpdateSettings)  ReadField11(iprot thrift.TProtocol) error {
+  p.UpdateStrategy = &JobUpdateStrategy{}
+  if err := p.UpdateStrategy.Read(iprot); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", p.UpdateStrategy), err)
+  }
+  return nil
+}
+
 func (p *JobUpdateSettings) Write(oprot thrift.TProtocol) error {
   if err := oprot.WriteStructBegin("JobUpdateSettings"); err != nil {
     return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err) }
@@ -10346,6 +10889,7 @@ func (p *JobUpdateSettings) Write(oprot thrift.TProtocol) error {
     if err := p.writeField8(oprot); err != nil { return err }
     if err := p.writeField9(oprot); err != nil { return err }
     if err := p.writeField10(oprot); err != nil { return err }
+    if err := p.writeField11(oprot); err != nil { return err }
   }
   if err := oprot.WriteFieldStop(); err != nil {
     return thrift.PrependError("write field stop error: ", err) }
@@ -10460,6 +11004,19 @@ func (p *JobUpdateSettings) writeField10(oprot thrift.TProtocol) (err error) {
     return thrift.PrependError(fmt.Sprintf("%T.slaAware (10) field write error: ", p), err) }
     if err := oprot.WriteFieldEnd(); err != nil {
       return thrift.PrependError(fmt.Sprintf("%T write field end error 10:slaAware: ", p), err) }
+  }
+  return err
+}
+
+func (p *JobUpdateSettings) writeField11(oprot thrift.TProtocol) (err error) {
+  if p.IsSetUpdateStrategy() {
+    if err := oprot.WriteFieldBegin("updateStrategy", thrift.STRUCT, 11); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field begin error 11:updateStrategy: ", p), err) }
+    if err := p.UpdateStrategy.Write(oprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error writing struct: ", p.UpdateStrategy), err)
+    }
+    if err := oprot.WriteFieldEnd(); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field end error 11:updateStrategy: ", p), err) }
   }
   return err
 }
@@ -10996,11 +11553,11 @@ func (p *InstanceTaskConfig)  ReadField2(iprot thrift.TProtocol) error {
   tSet := make([]*Range, 0, size)
   p.Instances =  tSet
   for i := 0; i < size; i ++ {
-    _elem26 := &Range{}
-    if err := _elem26.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem26), err)
+    _elem27 := &Range{}
+    if err := _elem27.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem27), err)
     }
-    p.Instances = append(p.Instances, _elem26)
+    p.Instances = append(p.Instances, _elem27)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -11387,11 +11944,11 @@ func (p *JobUpdateSummary)  ReadField6(iprot thrift.TProtocol) error {
   tSet := make([]*Metadata, 0, size)
   p.Metadata =  tSet
   for i := 0; i < size; i ++ {
-    _elem27 := &Metadata{}
-    if err := _elem27.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem27), err)
+    _elem28 := &Metadata{}
+    if err := _elem28.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem28), err)
     }
-    p.Metadata = append(p.Metadata, _elem27)
+    p.Metadata = append(p.Metadata, _elem28)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -11590,11 +12147,11 @@ func (p *JobUpdateInstructions)  ReadField1(iprot thrift.TProtocol) error {
   tSet := make([]*InstanceTaskConfig, 0, size)
   p.InitialState =  tSet
   for i := 0; i < size; i ++ {
-    _elem28 := &InstanceTaskConfig{}
-    if err := _elem28.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem28), err)
+    _elem29 := &InstanceTaskConfig{}
+    if err := _elem29.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem29), err)
     }
-    p.InitialState = append(p.InitialState, _elem28)
+    p.InitialState = append(p.InitialState, _elem29)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -11938,11 +12495,11 @@ func (p *JobUpdateDetails)  ReadField2(iprot thrift.TProtocol) error {
   tSlice := make([]*JobUpdateEvent, 0, size)
   p.UpdateEvents =  tSlice
   for i := 0; i < size; i ++ {
-    _elem29 := &JobUpdateEvent{}
-    if err := _elem29.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem29), err)
+    _elem30 := &JobUpdateEvent{}
+    if err := _elem30.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem30), err)
     }
-    p.UpdateEvents = append(p.UpdateEvents, _elem29)
+    p.UpdateEvents = append(p.UpdateEvents, _elem30)
   }
   if err := iprot.ReadListEnd(); err != nil {
     return thrift.PrependError("error reading list end: ", err)
@@ -11958,11 +12515,11 @@ func (p *JobUpdateDetails)  ReadField3(iprot thrift.TProtocol) error {
   tSlice := make([]*JobInstanceUpdateEvent, 0, size)
   p.InstanceEvents =  tSlice
   for i := 0; i < size; i ++ {
-    _elem30 := &JobInstanceUpdateEvent{}
-    if err := _elem30.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem30), err)
+    _elem31 := &JobInstanceUpdateEvent{}
+    if err := _elem31.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem31), err)
     }
-    p.InstanceEvents = append(p.InstanceEvents, _elem30)
+    p.InstanceEvents = append(p.InstanceEvents, _elem31)
   }
   if err := iprot.ReadListEnd(); err != nil {
     return thrift.PrependError("error reading list end: ", err)
@@ -12195,11 +12752,11 @@ func (p *JobUpdateRequest)  ReadField4(iprot thrift.TProtocol) error {
   tSet := make([]*Metadata, 0, size)
   p.Metadata =  tSet
   for i := 0; i < size; i ++ {
-    _elem31 := &Metadata{}
-    if err := _elem31.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem31), err)
+    _elem32 := &Metadata{}
+    if err := _elem32.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem32), err)
     }
-    p.Metadata = append(p.Metadata, _elem31)
+    p.Metadata = append(p.Metadata, _elem32)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -12517,14 +13074,14 @@ func (p *JobUpdateQuery)  ReadField5(iprot thrift.TProtocol) error {
   tSet := make([]JobUpdateStatus, 0, size)
   p.UpdateStatuses =  tSet
   for i := 0; i < size; i ++ {
-var _elem32 JobUpdateStatus
+var _elem33 JobUpdateStatus
     if v, err := iprot.ReadI32(); err != nil {
     return thrift.PrependError("error reading field 0: ", err)
 } else {
     temp := JobUpdateStatus(v)
-    _elem32 = temp
+    _elem33 = temp
 }
-    p.UpdateStatuses = append(p.UpdateStatuses, _elem32)
+    p.UpdateStatuses = append(p.UpdateStatuses, _elem33)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -12939,13 +13496,13 @@ func (p *ListBackupsResult_)  ReadField1(iprot thrift.TProtocol) error {
   tSet := make([]string, 0, size)
   p.Backups =  tSet
   for i := 0; i < size; i ++ {
-var _elem33 string
+var _elem34 string
     if v, err := iprot.ReadString(); err != nil {
     return thrift.PrependError("error reading field 0: ", err)
 } else {
-    _elem33 = v
+    _elem34 = v
 }
-    p.Backups = append(p.Backups, _elem33)
+    p.Backups = append(p.Backups, _elem34)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -13058,11 +13615,11 @@ func (p *StartMaintenanceResult_)  ReadField1(iprot thrift.TProtocol) error {
   tSet := make([]*HostStatus, 0, size)
   p.Statuses =  tSet
   for i := 0; i < size; i ++ {
-    _elem34 := &HostStatus{}
-    if err := _elem34.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem34), err)
+    _elem35 := &HostStatus{}
+    if err := _elem35.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem35), err)
     }
-    p.Statuses = append(p.Statuses, _elem34)
+    p.Statuses = append(p.Statuses, _elem35)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -13176,11 +13733,11 @@ func (p *DrainHostsResult_)  ReadField1(iprot thrift.TProtocol) error {
   tSet := make([]*HostStatus, 0, size)
   p.Statuses =  tSet
   for i := 0; i < size; i ++ {
-    _elem35 := &HostStatus{}
-    if err := _elem35.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem35), err)
+    _elem36 := &HostStatus{}
+    if err := _elem36.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem36), err)
     }
-    p.Statuses = append(p.Statuses, _elem35)
+    p.Statuses = append(p.Statuses, _elem36)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -13294,11 +13851,11 @@ func (p *QueryRecoveryResult_)  ReadField1(iprot thrift.TProtocol) error {
   tSet := make([]*ScheduledTask, 0, size)
   p.Tasks =  tSet
   for i := 0; i < size; i ++ {
-    _elem36 := &ScheduledTask{}
-    if err := _elem36.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem36), err)
+    _elem37 := &ScheduledTask{}
+    if err := _elem37.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem37), err)
     }
-    p.Tasks = append(p.Tasks, _elem36)
+    p.Tasks = append(p.Tasks, _elem37)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -13412,11 +13969,11 @@ func (p *MaintenanceStatusResult_)  ReadField1(iprot thrift.TProtocol) error {
   tSet := make([]*HostStatus, 0, size)
   p.Statuses =  tSet
   for i := 0; i < size; i ++ {
-    _elem37 := &HostStatus{}
-    if err := _elem37.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem37), err)
+    _elem38 := &HostStatus{}
+    if err := _elem38.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem38), err)
     }
-    p.Statuses = append(p.Statuses, _elem37)
+    p.Statuses = append(p.Statuses, _elem38)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -13530,11 +14087,11 @@ func (p *EndMaintenanceResult_)  ReadField1(iprot thrift.TProtocol) error {
   tSet := make([]*HostStatus, 0, size)
   p.Statuses =  tSet
   for i := 0; i < size; i ++ {
-    _elem38 := &HostStatus{}
-    if err := _elem38.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem38), err)
+    _elem39 := &HostStatus{}
+    if err := _elem39.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem39), err)
     }
-    p.Statuses = append(p.Statuses, _elem38)
+    p.Statuses = append(p.Statuses, _elem39)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -13648,11 +14205,11 @@ func (p *RoleSummaryResult_)  ReadField1(iprot thrift.TProtocol) error {
   tSet := make([]*RoleSummary, 0, size)
   p.Summaries =  tSet
   for i := 0; i < size; i ++ {
-    _elem39 := &RoleSummary{}
-    if err := _elem39.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem39), err)
+    _elem40 := &RoleSummary{}
+    if err := _elem40.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem40), err)
     }
-    p.Summaries = append(p.Summaries, _elem39)
+    p.Summaries = append(p.Summaries, _elem40)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -13766,11 +14323,11 @@ func (p *JobSummaryResult_)  ReadField1(iprot thrift.TProtocol) error {
   tSet := make([]*JobSummary, 0, size)
   p.Summaries =  tSet
   for i := 0; i < size; i ++ {
-    _elem40 := &JobSummary{}
-    if err := _elem40.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem40), err)
+    _elem41 := &JobSummary{}
+    if err := _elem41.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem41), err)
     }
-    p.Summaries = append(p.Summaries, _elem40)
+    p.Summaries = append(p.Summaries, _elem41)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -13982,11 +14539,11 @@ func (p *GetPendingReasonResult_)  ReadField1(iprot thrift.TProtocol) error {
   tSet := make([]*PendingReason, 0, size)
   p.Reasons =  tSet
   for i := 0; i < size; i ++ {
-    _elem41 := &PendingReason{}
-    if err := _elem41.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem41), err)
+    _elem42 := &PendingReason{}
+    if err := _elem42.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem42), err)
     }
-    p.Reasons = append(p.Reasons, _elem41)
+    p.Reasons = append(p.Reasons, _elem42)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -14247,11 +14804,11 @@ func (p *GetJobUpdateSummariesResult_)  ReadField1(iprot thrift.TProtocol) error
   tSlice := make([]*JobUpdateSummary, 0, size)
   p.UpdateSummaries =  tSlice
   for i := 0; i < size; i ++ {
-    _elem42 := &JobUpdateSummary{}
-    if err := _elem42.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem42), err)
+    _elem43 := &JobUpdateSummary{}
+    if err := _elem43.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem43), err)
     }
-    p.UpdateSummaries = append(p.UpdateSummaries, _elem42)
+    p.UpdateSummaries = append(p.UpdateSummaries, _elem43)
   }
   if err := iprot.ReadListEnd(); err != nil {
     return thrift.PrependError("error reading list end: ", err)
@@ -14391,11 +14948,11 @@ func (p *GetJobUpdateDetailsResult_)  ReadField2(iprot thrift.TProtocol) error {
   tSlice := make([]*JobUpdateDetails, 0, size)
   p.DetailsList =  tSlice
   for i := 0; i < size; i ++ {
-    _elem43 := &JobUpdateDetails{}
-    if err := _elem43.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem43), err)
+    _elem44 := &JobUpdateDetails{}
+    if err := _elem44.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem44), err)
     }
-    p.DetailsList = append(p.DetailsList, _elem43)
+    p.DetailsList = append(p.DetailsList, _elem44)
   }
   if err := iprot.ReadListEnd(); err != nil {
     return thrift.PrependError("error reading list end: ", err)
@@ -14656,11 +15213,11 @@ func (p *GetJobUpdateDiffResult_)  ReadField1(iprot thrift.TProtocol) error {
   tSet := make([]*ConfigGroup, 0, size)
   p.Add =  tSet
   for i := 0; i < size; i ++ {
-    _elem44 := &ConfigGroup{}
-    if err := _elem44.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem44), err)
+    _elem45 := &ConfigGroup{}
+    if err := _elem45.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem45), err)
     }
-    p.Add = append(p.Add, _elem44)
+    p.Add = append(p.Add, _elem45)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -14676,11 +15233,11 @@ func (p *GetJobUpdateDiffResult_)  ReadField2(iprot thrift.TProtocol) error {
   tSet := make([]*ConfigGroup, 0, size)
   p.Remove =  tSet
   for i := 0; i < size; i ++ {
-    _elem45 := &ConfigGroup{}
-    if err := _elem45.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem45), err)
+    _elem46 := &ConfigGroup{}
+    if err := _elem46.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem46), err)
     }
-    p.Remove = append(p.Remove, _elem45)
+    p.Remove = append(p.Remove, _elem46)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -14696,11 +15253,11 @@ func (p *GetJobUpdateDiffResult_)  ReadField3(iprot thrift.TProtocol) error {
   tSet := make([]*ConfigGroup, 0, size)
   p.Update =  tSet
   for i := 0; i < size; i ++ {
-    _elem46 := &ConfigGroup{}
-    if err := _elem46.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem46), err)
+    _elem47 := &ConfigGroup{}
+    if err := _elem47.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem47), err)
     }
-    p.Update = append(p.Update, _elem46)
+    p.Update = append(p.Update, _elem47)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -14716,11 +15273,11 @@ func (p *GetJobUpdateDiffResult_)  ReadField4(iprot thrift.TProtocol) error {
   tSet := make([]*ConfigGroup, 0, size)
   p.Unchanged =  tSet
   for i := 0; i < size; i ++ {
-    _elem47 := &ConfigGroup{}
-    if err := _elem47.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem47), err)
+    _elem48 := &ConfigGroup{}
+    if err := _elem48.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem48), err)
     }
-    p.Unchanged = append(p.Unchanged, _elem47)
+    p.Unchanged = append(p.Unchanged, _elem48)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -14942,19 +15499,19 @@ func (p *TierConfig)  ReadField2(iprot thrift.TProtocol) error {
   tMap := make(map[string]string, size)
   p.Settings =  tMap
   for i := 0; i < size; i ++ {
-var _key48 string
+var _key49 string
     if v, err := iprot.ReadString(); err != nil {
     return thrift.PrependError("error reading field 0: ", err)
 } else {
-    _key48 = v
+    _key49 = v
 }
-var _val49 string
+var _val50 string
     if v, err := iprot.ReadString(); err != nil {
     return thrift.PrependError("error reading field 0: ", err)
 } else {
-    _val49 = v
+    _val50 = v
 }
-    p.Settings[_key48] = _val49
+    p.Settings[_key49] = _val50
   }
   if err := iprot.ReadMapEnd(); err != nil {
     return thrift.PrependError("error reading map end: ", err)
@@ -15100,11 +15657,11 @@ func (p *GetTierConfigResult_)  ReadField2(iprot thrift.TProtocol) error {
   tSet := make([]*TierConfig, 0, size)
   p.Tiers =  tSet
   for i := 0; i < size; i ++ {
-    _elem50 := &TierConfig{}
-    if err := _elem50.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem50), err)
+    _elem51 := &TierConfig{}
+    if err := _elem51.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem51), err)
     }
-    p.Tiers = append(p.Tiers, _elem50)
+    p.Tiers = append(p.Tiers, _elem51)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -16568,11 +17125,11 @@ func (p *Response)  ReadField6(iprot thrift.TProtocol) error {
   tSlice := make([]*ResponseDetail, 0, size)
   p.Details =  tSlice
   for i := 0; i < size; i ++ {
-    _elem51 := &ResponseDetail{}
-    if err := _elem51.Read(iprot); err != nil {
-      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem51), err)
+    _elem52 := &ResponseDetail{}
+    if err := _elem52.Read(iprot); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T error reading struct: ", _elem52), err)
     }
-    p.Details = append(p.Details, _elem51)
+    p.Details = append(p.Details, _elem52)
   }
   if err := iprot.ReadListEnd(); err != nil {
     return thrift.PrependError("error reading list end: ", err)
@@ -16848,12 +17405,12 @@ func (p *ReadOnlySchedulerClient) Client_() thrift.TClient {
 }
 // Returns a summary of the jobs grouped by role.
 func (p *ReadOnlySchedulerClient) GetRoleSummary(ctx context.Context) (r *Response, err error) {
-  var _args52 ReadOnlySchedulerGetRoleSummaryArgs
-  var _result53 ReadOnlySchedulerGetRoleSummaryResult
-  if err = p.Client_().Call(ctx, "getRoleSummary", &_args52, &_result53); err != nil {
+  var _args53 ReadOnlySchedulerGetRoleSummaryArgs
+  var _result54 ReadOnlySchedulerGetRoleSummaryResult
+  if err = p.Client_().Call(ctx, "getRoleSummary", &_args53, &_result54); err != nil {
     return
   }
-  return _result53.GetSuccess(), nil
+  return _result54.GetSuccess(), nil
 }
 
 // Returns a summary of jobs, optionally only those owned by a specific role.
@@ -16861,13 +17418,13 @@ func (p *ReadOnlySchedulerClient) GetRoleSummary(ctx context.Context) (r *Respon
 // Parameters:
 //  - Role
 func (p *ReadOnlySchedulerClient) GetJobSummary(ctx context.Context, role string) (r *Response, err error) {
-  var _args54 ReadOnlySchedulerGetJobSummaryArgs
-  _args54.Role = role
-  var _result55 ReadOnlySchedulerGetJobSummaryResult
-  if err = p.Client_().Call(ctx, "getJobSummary", &_args54, &_result55); err != nil {
+  var _args55 ReadOnlySchedulerGetJobSummaryArgs
+  _args55.Role = role
+  var _result56 ReadOnlySchedulerGetJobSummaryResult
+  if err = p.Client_().Call(ctx, "getJobSummary", &_args55, &_result56); err != nil {
     return
   }
-  return _result55.GetSuccess(), nil
+  return _result56.GetSuccess(), nil
 }
 
 // Fetches the status of tasks.
@@ -16875,13 +17432,13 @@ func (p *ReadOnlySchedulerClient) GetJobSummary(ctx context.Context, role string
 // Parameters:
 //  - Query
 func (p *ReadOnlySchedulerClient) GetTasksStatus(ctx context.Context, query *TaskQuery) (r *Response, err error) {
-  var _args56 ReadOnlySchedulerGetTasksStatusArgs
-  _args56.Query = query
-  var _result57 ReadOnlySchedulerGetTasksStatusResult
-  if err = p.Client_().Call(ctx, "getTasksStatus", &_args56, &_result57); err != nil {
+  var _args57 ReadOnlySchedulerGetTasksStatusArgs
+  _args57.Query = query
+  var _result58 ReadOnlySchedulerGetTasksStatusResult
+  if err = p.Client_().Call(ctx, "getTasksStatus", &_args57, &_result58); err != nil {
     return
   }
-  return _result57.GetSuccess(), nil
+  return _result58.GetSuccess(), nil
 }
 
 // Same as getTaskStatus but without the TaskConfig.ExecutorConfig data set.
@@ -16890,13 +17447,13 @@ func (p *ReadOnlySchedulerClient) GetTasksStatus(ctx context.Context, query *Tas
 // Parameters:
 //  - Query
 func (p *ReadOnlySchedulerClient) GetTasksWithoutConfigs(ctx context.Context, query *TaskQuery) (r *Response, err error) {
-  var _args58 ReadOnlySchedulerGetTasksWithoutConfigsArgs
-  _args58.Query = query
-  var _result59 ReadOnlySchedulerGetTasksWithoutConfigsResult
-  if err = p.Client_().Call(ctx, "getTasksWithoutConfigs", &_args58, &_result59); err != nil {
+  var _args59 ReadOnlySchedulerGetTasksWithoutConfigsArgs
+  _args59.Query = query
+  var _result60 ReadOnlySchedulerGetTasksWithoutConfigsResult
+  if err = p.Client_().Call(ctx, "getTasksWithoutConfigs", &_args59, &_result60); err != nil {
     return
   }
-  return _result59.GetSuccess(), nil
+  return _result60.GetSuccess(), nil
 }
 
 // Returns user-friendly reasons (if available) for tasks retained in PENDING state.
@@ -16904,13 +17461,13 @@ func (p *ReadOnlySchedulerClient) GetTasksWithoutConfigs(ctx context.Context, qu
 // Parameters:
 //  - Query
 func (p *ReadOnlySchedulerClient) GetPendingReason(ctx context.Context, query *TaskQuery) (r *Response, err error) {
-  var _args60 ReadOnlySchedulerGetPendingReasonArgs
-  _args60.Query = query
-  var _result61 ReadOnlySchedulerGetPendingReasonResult
-  if err = p.Client_().Call(ctx, "getPendingReason", &_args60, &_result61); err != nil {
+  var _args61 ReadOnlySchedulerGetPendingReasonArgs
+  _args61.Query = query
+  var _result62 ReadOnlySchedulerGetPendingReasonResult
+  if err = p.Client_().Call(ctx, "getPendingReason", &_args61, &_result62); err != nil {
     return
   }
-  return _result61.GetSuccess(), nil
+  return _result62.GetSuccess(), nil
 }
 
 // Fetches the configuration summary of active tasks for the specified job.
@@ -16918,13 +17475,13 @@ func (p *ReadOnlySchedulerClient) GetPendingReason(ctx context.Context, query *T
 // Parameters:
 //  - Job
 func (p *ReadOnlySchedulerClient) GetConfigSummary(ctx context.Context, job *JobKey) (r *Response, err error) {
-  var _args62 ReadOnlySchedulerGetConfigSummaryArgs
-  _args62.Job = job
-  var _result63 ReadOnlySchedulerGetConfigSummaryResult
-  if err = p.Client_().Call(ctx, "getConfigSummary", &_args62, &_result63); err != nil {
+  var _args63 ReadOnlySchedulerGetConfigSummaryArgs
+  _args63.Job = job
+  var _result64 ReadOnlySchedulerGetConfigSummaryResult
+  if err = p.Client_().Call(ctx, "getConfigSummary", &_args63, &_result64); err != nil {
     return
   }
-  return _result63.GetSuccess(), nil
+  return _result64.GetSuccess(), nil
 }
 
 // Fetches the status of jobs.
@@ -16933,13 +17490,13 @@ func (p *ReadOnlySchedulerClient) GetConfigSummary(ctx context.Context, job *Job
 // Parameters:
 //  - OwnerRole
 func (p *ReadOnlySchedulerClient) GetJobs(ctx context.Context, ownerRole string) (r *Response, err error) {
-  var _args64 ReadOnlySchedulerGetJobsArgs
-  _args64.OwnerRole = ownerRole
-  var _result65 ReadOnlySchedulerGetJobsResult
-  if err = p.Client_().Call(ctx, "getJobs", &_args64, &_result65); err != nil {
+  var _args65 ReadOnlySchedulerGetJobsArgs
+  _args65.OwnerRole = ownerRole
+  var _result66 ReadOnlySchedulerGetJobsResult
+  if err = p.Client_().Call(ctx, "getJobs", &_args65, &_result66); err != nil {
     return
   }
-  return _result65.GetSuccess(), nil
+  return _result66.GetSuccess(), nil
 }
 
 // Fetches the quota allocated for a user.
@@ -16947,13 +17504,13 @@ func (p *ReadOnlySchedulerClient) GetJobs(ctx context.Context, ownerRole string)
 // Parameters:
 //  - OwnerRole
 func (p *ReadOnlySchedulerClient) GetQuota(ctx context.Context, ownerRole string) (r *Response, err error) {
-  var _args66 ReadOnlySchedulerGetQuotaArgs
-  _args66.OwnerRole = ownerRole
-  var _result67 ReadOnlySchedulerGetQuotaResult
-  if err = p.Client_().Call(ctx, "getQuota", &_args66, &_result67); err != nil {
+  var _args67 ReadOnlySchedulerGetQuotaArgs
+  _args67.OwnerRole = ownerRole
+  var _result68 ReadOnlySchedulerGetQuotaResult
+  if err = p.Client_().Call(ctx, "getQuota", &_args67, &_result68); err != nil {
     return
   }
-  return _result67.GetSuccess(), nil
+  return _result68.GetSuccess(), nil
 }
 
 // Populates fields in a job configuration as though it were about to be run.
@@ -16962,13 +17519,13 @@ func (p *ReadOnlySchedulerClient) GetQuota(ctx context.Context, ownerRole string
 // Parameters:
 //  - Description
 func (p *ReadOnlySchedulerClient) PopulateJobConfig(ctx context.Context, description *JobConfiguration) (r *Response, err error) {
-  var _args68 ReadOnlySchedulerPopulateJobConfigArgs
-  _args68.Description = description
-  var _result69 ReadOnlySchedulerPopulateJobConfigResult
-  if err = p.Client_().Call(ctx, "populateJobConfig", &_args68, &_result69); err != nil {
+  var _args69 ReadOnlySchedulerPopulateJobConfigArgs
+  _args69.Description = description
+  var _result70 ReadOnlySchedulerPopulateJobConfigResult
+  if err = p.Client_().Call(ctx, "populateJobConfig", &_args69, &_result70); err != nil {
     return
   }
-  return _result69.GetSuccess(), nil
+  return _result70.GetSuccess(), nil
 }
 
 // Gets job update summaries.
@@ -16976,13 +17533,13 @@ func (p *ReadOnlySchedulerClient) PopulateJobConfig(ctx context.Context, descrip
 // Parameters:
 //  - JobUpdateQuery
 func (p *ReadOnlySchedulerClient) GetJobUpdateSummaries(ctx context.Context, jobUpdateQuery *JobUpdateQuery) (r *Response, err error) {
-  var _args70 ReadOnlySchedulerGetJobUpdateSummariesArgs
-  _args70.JobUpdateQuery = jobUpdateQuery
-  var _result71 ReadOnlySchedulerGetJobUpdateSummariesResult
-  if err = p.Client_().Call(ctx, "getJobUpdateSummaries", &_args70, &_result71); err != nil {
+  var _args71 ReadOnlySchedulerGetJobUpdateSummariesArgs
+  _args71.JobUpdateQuery = jobUpdateQuery
+  var _result72 ReadOnlySchedulerGetJobUpdateSummariesResult
+  if err = p.Client_().Call(ctx, "getJobUpdateSummaries", &_args71, &_result72); err != nil {
     return
   }
-  return _result71.GetSuccess(), nil
+  return _result72.GetSuccess(), nil
 }
 
 // Gets job update details.
@@ -16990,13 +17547,13 @@ func (p *ReadOnlySchedulerClient) GetJobUpdateSummaries(ctx context.Context, job
 // Parameters:
 //  - Query
 func (p *ReadOnlySchedulerClient) GetJobUpdateDetails(ctx context.Context, query *JobUpdateQuery) (r *Response, err error) {
-  var _args72 ReadOnlySchedulerGetJobUpdateDetailsArgs
-  _args72.Query = query
-  var _result73 ReadOnlySchedulerGetJobUpdateDetailsResult
-  if err = p.Client_().Call(ctx, "getJobUpdateDetails", &_args72, &_result73); err != nil {
+  var _args73 ReadOnlySchedulerGetJobUpdateDetailsArgs
+  _args73.Query = query
+  var _result74 ReadOnlySchedulerGetJobUpdateDetailsResult
+  if err = p.Client_().Call(ctx, "getJobUpdateDetails", &_args73, &_result74); err != nil {
     return
   }
-  return _result73.GetSuccess(), nil
+  return _result74.GetSuccess(), nil
 }
 
 // Gets the diff between client (desired) and server (current) job states.
@@ -17004,23 +17561,23 @@ func (p *ReadOnlySchedulerClient) GetJobUpdateDetails(ctx context.Context, query
 // Parameters:
 //  - Request
 func (p *ReadOnlySchedulerClient) GetJobUpdateDiff(ctx context.Context, request *JobUpdateRequest) (r *Response, err error) {
-  var _args74 ReadOnlySchedulerGetJobUpdateDiffArgs
-  _args74.Request = request
-  var _result75 ReadOnlySchedulerGetJobUpdateDiffResult
-  if err = p.Client_().Call(ctx, "getJobUpdateDiff", &_args74, &_result75); err != nil {
+  var _args75 ReadOnlySchedulerGetJobUpdateDiffArgs
+  _args75.Request = request
+  var _result76 ReadOnlySchedulerGetJobUpdateDiffResult
+  if err = p.Client_().Call(ctx, "getJobUpdateDiff", &_args75, &_result76); err != nil {
     return
   }
-  return _result75.GetSuccess(), nil
+  return _result76.GetSuccess(), nil
 }
 
 // Gets tier configurations.
 func (p *ReadOnlySchedulerClient) GetTierConfigs(ctx context.Context) (r *Response, err error) {
-  var _args76 ReadOnlySchedulerGetTierConfigsArgs
-  var _result77 ReadOnlySchedulerGetTierConfigsResult
-  if err = p.Client_().Call(ctx, "getTierConfigs", &_args76, &_result77); err != nil {
+  var _args77 ReadOnlySchedulerGetTierConfigsArgs
+  var _result78 ReadOnlySchedulerGetTierConfigsResult
+  if err = p.Client_().Call(ctx, "getTierConfigs", &_args77, &_result78); err != nil {
     return
   }
-  return _result77.GetSuccess(), nil
+  return _result78.GetSuccess(), nil
 }
 
 type ReadOnlySchedulerProcessor struct {
@@ -17043,21 +17600,21 @@ func (p *ReadOnlySchedulerProcessor) ProcessorMap() map[string]thrift.TProcessor
 
 func NewReadOnlySchedulerProcessor(handler ReadOnlyScheduler) *ReadOnlySchedulerProcessor {
 
-  self78 := &ReadOnlySchedulerProcessor{handler:handler, processorMap:make(map[string]thrift.TProcessorFunction)}
-  self78.processorMap["getRoleSummary"] = &readOnlySchedulerProcessorGetRoleSummary{handler:handler}
-  self78.processorMap["getJobSummary"] = &readOnlySchedulerProcessorGetJobSummary{handler:handler}
-  self78.processorMap["getTasksStatus"] = &readOnlySchedulerProcessorGetTasksStatus{handler:handler}
-  self78.processorMap["getTasksWithoutConfigs"] = &readOnlySchedulerProcessorGetTasksWithoutConfigs{handler:handler}
-  self78.processorMap["getPendingReason"] = &readOnlySchedulerProcessorGetPendingReason{handler:handler}
-  self78.processorMap["getConfigSummary"] = &readOnlySchedulerProcessorGetConfigSummary{handler:handler}
-  self78.processorMap["getJobs"] = &readOnlySchedulerProcessorGetJobs{handler:handler}
-  self78.processorMap["getQuota"] = &readOnlySchedulerProcessorGetQuota{handler:handler}
-  self78.processorMap["populateJobConfig"] = &readOnlySchedulerProcessorPopulateJobConfig{handler:handler}
-  self78.processorMap["getJobUpdateSummaries"] = &readOnlySchedulerProcessorGetJobUpdateSummaries{handler:handler}
-  self78.processorMap["getJobUpdateDetails"] = &readOnlySchedulerProcessorGetJobUpdateDetails{handler:handler}
-  self78.processorMap["getJobUpdateDiff"] = &readOnlySchedulerProcessorGetJobUpdateDiff{handler:handler}
-  self78.processorMap["getTierConfigs"] = &readOnlySchedulerProcessorGetTierConfigs{handler:handler}
-return self78
+  self79 := &ReadOnlySchedulerProcessor{handler:handler, processorMap:make(map[string]thrift.TProcessorFunction)}
+  self79.processorMap["getRoleSummary"] = &readOnlySchedulerProcessorGetRoleSummary{handler:handler}
+  self79.processorMap["getJobSummary"] = &readOnlySchedulerProcessorGetJobSummary{handler:handler}
+  self79.processorMap["getTasksStatus"] = &readOnlySchedulerProcessorGetTasksStatus{handler:handler}
+  self79.processorMap["getTasksWithoutConfigs"] = &readOnlySchedulerProcessorGetTasksWithoutConfigs{handler:handler}
+  self79.processorMap["getPendingReason"] = &readOnlySchedulerProcessorGetPendingReason{handler:handler}
+  self79.processorMap["getConfigSummary"] = &readOnlySchedulerProcessorGetConfigSummary{handler:handler}
+  self79.processorMap["getJobs"] = &readOnlySchedulerProcessorGetJobs{handler:handler}
+  self79.processorMap["getQuota"] = &readOnlySchedulerProcessorGetQuota{handler:handler}
+  self79.processorMap["populateJobConfig"] = &readOnlySchedulerProcessorPopulateJobConfig{handler:handler}
+  self79.processorMap["getJobUpdateSummaries"] = &readOnlySchedulerProcessorGetJobUpdateSummaries{handler:handler}
+  self79.processorMap["getJobUpdateDetails"] = &readOnlySchedulerProcessorGetJobUpdateDetails{handler:handler}
+  self79.processorMap["getJobUpdateDiff"] = &readOnlySchedulerProcessorGetJobUpdateDiff{handler:handler}
+  self79.processorMap["getTierConfigs"] = &readOnlySchedulerProcessorGetTierConfigs{handler:handler}
+return self79
 }
 
 func (p *ReadOnlySchedulerProcessor) Process(ctx context.Context, iprot, oprot thrift.TProtocol) (success bool, err thrift.TException) {
@@ -17068,12 +17625,12 @@ func (p *ReadOnlySchedulerProcessor) Process(ctx context.Context, iprot, oprot t
   }
   iprot.Skip(thrift.STRUCT)
   iprot.ReadMessageEnd()
-  x79 := thrift.NewTApplicationException(thrift.UNKNOWN_METHOD, "Unknown function " + name)
+  x80 := thrift.NewTApplicationException(thrift.UNKNOWN_METHOD, "Unknown function " + name)
   oprot.WriteMessageBegin(name, thrift.EXCEPTION, seqId)
-  x79.Write(oprot)
+  x80.Write(oprot)
   oprot.WriteMessageEnd()
   oprot.Flush(ctx)
-  return false, x79
+  return false, x80
 
 }
 
@@ -20280,13 +20837,13 @@ func NewAuroraSchedulerManagerClient(c thrift.TClient) *AuroraSchedulerManagerCl
 // Parameters:
 //  - Description
 func (p *AuroraSchedulerManagerClient) CreateJob(ctx context.Context, description *JobConfiguration) (r *Response, err error) {
-  var _args131 AuroraSchedulerManagerCreateJobArgs
-  _args131.Description = description
-  var _result132 AuroraSchedulerManagerCreateJobResult
-  if err = p.Client_().Call(ctx, "createJob", &_args131, &_result132); err != nil {
+  var _args132 AuroraSchedulerManagerCreateJobArgs
+  _args132.Description = description
+  var _result133 AuroraSchedulerManagerCreateJobResult
+  if err = p.Client_().Call(ctx, "createJob", &_args132, &_result133); err != nil {
     return
   }
-  return _result132.GetSuccess(), nil
+  return _result133.GetSuccess(), nil
 }
 
 // Enters a job into the cron schedule, without actually starting the job.
@@ -20296,13 +20853,13 @@ func (p *AuroraSchedulerManagerClient) CreateJob(ctx context.Context, descriptio
 // Parameters:
 //  - Description
 func (p *AuroraSchedulerManagerClient) ScheduleCronJob(ctx context.Context, description *JobConfiguration) (r *Response, err error) {
-  var _args133 AuroraSchedulerManagerScheduleCronJobArgs
-  _args133.Description = description
-  var _result134 AuroraSchedulerManagerScheduleCronJobResult
-  if err = p.Client_().Call(ctx, "scheduleCronJob", &_args133, &_result134); err != nil {
+  var _args134 AuroraSchedulerManagerScheduleCronJobArgs
+  _args134.Description = description
+  var _result135 AuroraSchedulerManagerScheduleCronJobResult
+  if err = p.Client_().Call(ctx, "scheduleCronJob", &_args134, &_result135); err != nil {
     return
   }
-  return _result134.GetSuccess(), nil
+  return _result135.GetSuccess(), nil
 }
 
 // Removes a job from the cron schedule. The request will be denied if the job was not previously
@@ -20311,13 +20868,13 @@ func (p *AuroraSchedulerManagerClient) ScheduleCronJob(ctx context.Context, desc
 // Parameters:
 //  - Job
 func (p *AuroraSchedulerManagerClient) DescheduleCronJob(ctx context.Context, job *JobKey) (r *Response, err error) {
-  var _args135 AuroraSchedulerManagerDescheduleCronJobArgs
-  _args135.Job = job
-  var _result136 AuroraSchedulerManagerDescheduleCronJobResult
-  if err = p.Client_().Call(ctx, "descheduleCronJob", &_args135, &_result136); err != nil {
+  var _args136 AuroraSchedulerManagerDescheduleCronJobArgs
+  _args136.Job = job
+  var _result137 AuroraSchedulerManagerDescheduleCronJobResult
+  if err = p.Client_().Call(ctx, "descheduleCronJob", &_args136, &_result137); err != nil {
     return
   }
-  return _result136.GetSuccess(), nil
+  return _result137.GetSuccess(), nil
 }
 
 // Starts a cron job immediately.  The request will be denied if the specified job does not
@@ -20326,13 +20883,13 @@ func (p *AuroraSchedulerManagerClient) DescheduleCronJob(ctx context.Context, jo
 // Parameters:
 //  - Job
 func (p *AuroraSchedulerManagerClient) StartCronJob(ctx context.Context, job *JobKey) (r *Response, err error) {
-  var _args137 AuroraSchedulerManagerStartCronJobArgs
-  _args137.Job = job
-  var _result138 AuroraSchedulerManagerStartCronJobResult
-  if err = p.Client_().Call(ctx, "startCronJob", &_args137, &_result138); err != nil {
+  var _args138 AuroraSchedulerManagerStartCronJobArgs
+  _args138.Job = job
+  var _result139 AuroraSchedulerManagerStartCronJobResult
+  if err = p.Client_().Call(ctx, "startCronJob", &_args138, &_result139); err != nil {
     return
   }
-  return _result138.GetSuccess(), nil
+  return _result139.GetSuccess(), nil
 }
 
 // Restarts a batch of shards.
@@ -20341,14 +20898,14 @@ func (p *AuroraSchedulerManagerClient) StartCronJob(ctx context.Context, job *Jo
 //  - Job
 //  - ShardIds
 func (p *AuroraSchedulerManagerClient) RestartShards(ctx context.Context, job *JobKey, shardIds []int32) (r *Response, err error) {
-  var _args139 AuroraSchedulerManagerRestartShardsArgs
-  _args139.Job = job
-  _args139.ShardIds = shardIds
-  var _result140 AuroraSchedulerManagerRestartShardsResult
-  if err = p.Client_().Call(ctx, "restartShards", &_args139, &_result140); err != nil {
+  var _args140 AuroraSchedulerManagerRestartShardsArgs
+  _args140.Job = job
+  _args140.ShardIds = shardIds
+  var _result141 AuroraSchedulerManagerRestartShardsResult
+  if err = p.Client_().Call(ctx, "restartShards", &_args140, &_result141); err != nil {
     return
   }
-  return _result140.GetSuccess(), nil
+  return _result141.GetSuccess(), nil
 }
 
 // Initiates a kill on tasks.
@@ -20358,15 +20915,15 @@ func (p *AuroraSchedulerManagerClient) RestartShards(ctx context.Context, job *J
 //  - Instances
 //  - Message
 func (p *AuroraSchedulerManagerClient) KillTasks(ctx context.Context, job *JobKey, instances []int32, message string) (r *Response, err error) {
-  var _args141 AuroraSchedulerManagerKillTasksArgs
-  _args141.Job = job
-  _args141.Instances = instances
-  _args141.Message = message
-  var _result142 AuroraSchedulerManagerKillTasksResult
-  if err = p.Client_().Call(ctx, "killTasks", &_args141, &_result142); err != nil {
+  var _args142 AuroraSchedulerManagerKillTasksArgs
+  _args142.Job = job
+  _args142.Instances = instances
+  _args142.Message = message
+  var _result143 AuroraSchedulerManagerKillTasksResult
+  if err = p.Client_().Call(ctx, "killTasks", &_args142, &_result143); err != nil {
     return
   }
-  return _result142.GetSuccess(), nil
+  return _result143.GetSuccess(), nil
 }
 
 // Adds new instances with the TaskConfig of the existing instance pointed by the key.
@@ -20375,14 +20932,14 @@ func (p *AuroraSchedulerManagerClient) KillTasks(ctx context.Context, job *JobKe
 //  - Key
 //  - Count
 func (p *AuroraSchedulerManagerClient) AddInstances(ctx context.Context, key *InstanceKey, count int32) (r *Response, err error) {
-  var _args143 AuroraSchedulerManagerAddInstancesArgs
-  _args143.Key = key
-  _args143.Count = count
-  var _result144 AuroraSchedulerManagerAddInstancesResult
-  if err = p.Client_().Call(ctx, "addInstances", &_args143, &_result144); err != nil {
+  var _args144 AuroraSchedulerManagerAddInstancesArgs
+  _args144.Key = key
+  _args144.Count = count
+  var _result145 AuroraSchedulerManagerAddInstancesResult
+  if err = p.Client_().Call(ctx, "addInstances", &_args144, &_result145); err != nil {
     return
   }
-  return _result144.GetSuccess(), nil
+  return _result145.GetSuccess(), nil
 }
 
 // Replaces the template (configuration) for the existing cron job.
@@ -20391,13 +20948,13 @@ func (p *AuroraSchedulerManagerClient) AddInstances(ctx context.Context, key *In
 // Parameters:
 //  - Config
 func (p *AuroraSchedulerManagerClient) ReplaceCronTemplate(ctx context.Context, config *JobConfiguration) (r *Response, err error) {
-  var _args145 AuroraSchedulerManagerReplaceCronTemplateArgs
-  _args145.Config = config
-  var _result146 AuroraSchedulerManagerReplaceCronTemplateResult
-  if err = p.Client_().Call(ctx, "replaceCronTemplate", &_args145, &_result146); err != nil {
+  var _args146 AuroraSchedulerManagerReplaceCronTemplateArgs
+  _args146.Config = config
+  var _result147 AuroraSchedulerManagerReplaceCronTemplateResult
+  if err = p.Client_().Call(ctx, "replaceCronTemplate", &_args146, &_result147); err != nil {
     return
   }
-  return _result146.GetSuccess(), nil
+  return _result147.GetSuccess(), nil
 }
 
 // Starts update of the existing service job.
@@ -20406,14 +20963,14 @@ func (p *AuroraSchedulerManagerClient) ReplaceCronTemplate(ctx context.Context, 
 //  - Request: A description of how to change the job.
 //  - Message: A user-specified message to include with the induced job update state change.
 func (p *AuroraSchedulerManagerClient) StartJobUpdate(ctx context.Context, request *JobUpdateRequest, message string) (r *Response, err error) {
-  var _args147 AuroraSchedulerManagerStartJobUpdateArgs
-  _args147.Request = request
-  _args147.Message = message
-  var _result148 AuroraSchedulerManagerStartJobUpdateResult
-  if err = p.Client_().Call(ctx, "startJobUpdate", &_args147, &_result148); err != nil {
+  var _args148 AuroraSchedulerManagerStartJobUpdateArgs
+  _args148.Request = request
+  _args148.Message = message
+  var _result149 AuroraSchedulerManagerStartJobUpdateResult
+  if err = p.Client_().Call(ctx, "startJobUpdate", &_args148, &_result149); err != nil {
     return
   }
-  return _result148.GetSuccess(), nil
+  return _result149.GetSuccess(), nil
 }
 
 // Pauses the specified job update. Can be resumed by resumeUpdate call.
@@ -20422,14 +20979,14 @@ func (p *AuroraSchedulerManagerClient) StartJobUpdate(ctx context.Context, reque
 //  - Key: The update to pause.
 //  - Message: A user-specified message to include with the induced job update state change.
 func (p *AuroraSchedulerManagerClient) PauseJobUpdate(ctx context.Context, key *JobUpdateKey, message string) (r *Response, err error) {
-  var _args149 AuroraSchedulerManagerPauseJobUpdateArgs
-  _args149.Key = key
-  _args149.Message = message
-  var _result150 AuroraSchedulerManagerPauseJobUpdateResult
-  if err = p.Client_().Call(ctx, "pauseJobUpdate", &_args149, &_result150); err != nil {
+  var _args150 AuroraSchedulerManagerPauseJobUpdateArgs
+  _args150.Key = key
+  _args150.Message = message
+  var _result151 AuroraSchedulerManagerPauseJobUpdateResult
+  if err = p.Client_().Call(ctx, "pauseJobUpdate", &_args150, &_result151); err != nil {
     return
   }
-  return _result150.GetSuccess(), nil
+  return _result151.GetSuccess(), nil
 }
 
 // Resumes progress of a previously paused job update.
@@ -20438,14 +20995,14 @@ func (p *AuroraSchedulerManagerClient) PauseJobUpdate(ctx context.Context, key *
 //  - Key: The update to resume.
 //  - Message: A user-specified message to include with the induced job update state change.
 func (p *AuroraSchedulerManagerClient) ResumeJobUpdate(ctx context.Context, key *JobUpdateKey, message string) (r *Response, err error) {
-  var _args151 AuroraSchedulerManagerResumeJobUpdateArgs
-  _args151.Key = key
-  _args151.Message = message
-  var _result152 AuroraSchedulerManagerResumeJobUpdateResult
-  if err = p.Client_().Call(ctx, "resumeJobUpdate", &_args151, &_result152); err != nil {
+  var _args152 AuroraSchedulerManagerResumeJobUpdateArgs
+  _args152.Key = key
+  _args152.Message = message
+  var _result153 AuroraSchedulerManagerResumeJobUpdateResult
+  if err = p.Client_().Call(ctx, "resumeJobUpdate", &_args152, &_result153); err != nil {
     return
   }
-  return _result152.GetSuccess(), nil
+  return _result153.GetSuccess(), nil
 }
 
 // Permanently aborts the job update. Does not remove the update history.
@@ -20454,14 +21011,14 @@ func (p *AuroraSchedulerManagerClient) ResumeJobUpdate(ctx context.Context, key 
 //  - Key: The update to abort.
 //  - Message: A user-specified message to include with the induced job update state change.
 func (p *AuroraSchedulerManagerClient) AbortJobUpdate(ctx context.Context, key *JobUpdateKey, message string) (r *Response, err error) {
-  var _args153 AuroraSchedulerManagerAbortJobUpdateArgs
-  _args153.Key = key
-  _args153.Message = message
-  var _result154 AuroraSchedulerManagerAbortJobUpdateResult
-  if err = p.Client_().Call(ctx, "abortJobUpdate", &_args153, &_result154); err != nil {
+  var _args154 AuroraSchedulerManagerAbortJobUpdateArgs
+  _args154.Key = key
+  _args154.Message = message
+  var _result155 AuroraSchedulerManagerAbortJobUpdateResult
+  if err = p.Client_().Call(ctx, "abortJobUpdate", &_args154, &_result155); err != nil {
     return
   }
-  return _result154.GetSuccess(), nil
+  return _result155.GetSuccess(), nil
 }
 
 // Rollbacks the specified active job update to the initial state.
@@ -20470,14 +21027,14 @@ func (p *AuroraSchedulerManagerClient) AbortJobUpdate(ctx context.Context, key *
 //  - Key: The update to rollback.
 //  - Message: A user-specified message to include with the induced job update state change.
 func (p *AuroraSchedulerManagerClient) RollbackJobUpdate(ctx context.Context, key *JobUpdateKey, message string) (r *Response, err error) {
-  var _args155 AuroraSchedulerManagerRollbackJobUpdateArgs
-  _args155.Key = key
-  _args155.Message = message
-  var _result156 AuroraSchedulerManagerRollbackJobUpdateResult
-  if err = p.Client_().Call(ctx, "rollbackJobUpdate", &_args155, &_result156); err != nil {
+  var _args156 AuroraSchedulerManagerRollbackJobUpdateArgs
+  _args156.Key = key
+  _args156.Message = message
+  var _result157 AuroraSchedulerManagerRollbackJobUpdateResult
+  if err = p.Client_().Call(ctx, "rollbackJobUpdate", &_args156, &_result157); err != nil {
     return
   }
-  return _result156.GetSuccess(), nil
+  return _result157.GetSuccess(), nil
 }
 
 // Allows progress of the job update in case blockIfNoPulsesAfterMs is specified in
@@ -20487,13 +21044,13 @@ func (p *AuroraSchedulerManagerClient) RollbackJobUpdate(ctx context.Context, ke
 // Parameters:
 //  - Key
 func (p *AuroraSchedulerManagerClient) PulseJobUpdate(ctx context.Context, key *JobUpdateKey) (r *Response, err error) {
-  var _args157 AuroraSchedulerManagerPulseJobUpdateArgs
-  _args157.Key = key
-  var _result158 AuroraSchedulerManagerPulseJobUpdateResult
-  if err = p.Client_().Call(ctx, "pulseJobUpdate", &_args157, &_result158); err != nil {
+  var _args158 AuroraSchedulerManagerPulseJobUpdateArgs
+  _args158.Key = key
+  var _result159 AuroraSchedulerManagerPulseJobUpdateResult
+  if err = p.Client_().Call(ctx, "pulseJobUpdate", &_args158, &_result159); err != nil {
     return
   }
-  return _result158.GetSuccess(), nil
+  return _result159.GetSuccess(), nil
 }
 
 type AuroraSchedulerManagerProcessor struct {
@@ -20501,22 +21058,22 @@ type AuroraSchedulerManagerProcessor struct {
 }
 
 func NewAuroraSchedulerManagerProcessor(handler AuroraSchedulerManager) *AuroraSchedulerManagerProcessor {
-  self159 := &AuroraSchedulerManagerProcessor{NewReadOnlySchedulerProcessor(handler)}
-  self159.AddToProcessorMap("createJob", &auroraSchedulerManagerProcessorCreateJob{handler:handler})
-  self159.AddToProcessorMap("scheduleCronJob", &auroraSchedulerManagerProcessorScheduleCronJob{handler:handler})
-  self159.AddToProcessorMap("descheduleCronJob", &auroraSchedulerManagerProcessorDescheduleCronJob{handler:handler})
-  self159.AddToProcessorMap("startCronJob", &auroraSchedulerManagerProcessorStartCronJob{handler:handler})
-  self159.AddToProcessorMap("restartShards", &auroraSchedulerManagerProcessorRestartShards{handler:handler})
-  self159.AddToProcessorMap("killTasks", &auroraSchedulerManagerProcessorKillTasks{handler:handler})
-  self159.AddToProcessorMap("addInstances", &auroraSchedulerManagerProcessorAddInstances{handler:handler})
-  self159.AddToProcessorMap("replaceCronTemplate", &auroraSchedulerManagerProcessorReplaceCronTemplate{handler:handler})
-  self159.AddToProcessorMap("startJobUpdate", &auroraSchedulerManagerProcessorStartJobUpdate{handler:handler})
-  self159.AddToProcessorMap("pauseJobUpdate", &auroraSchedulerManagerProcessorPauseJobUpdate{handler:handler})
-  self159.AddToProcessorMap("resumeJobUpdate", &auroraSchedulerManagerProcessorResumeJobUpdate{handler:handler})
-  self159.AddToProcessorMap("abortJobUpdate", &auroraSchedulerManagerProcessorAbortJobUpdate{handler:handler})
-  self159.AddToProcessorMap("rollbackJobUpdate", &auroraSchedulerManagerProcessorRollbackJobUpdate{handler:handler})
-  self159.AddToProcessorMap("pulseJobUpdate", &auroraSchedulerManagerProcessorPulseJobUpdate{handler:handler})
-  return self159
+  self160 := &AuroraSchedulerManagerProcessor{NewReadOnlySchedulerProcessor(handler)}
+  self160.AddToProcessorMap("createJob", &auroraSchedulerManagerProcessorCreateJob{handler:handler})
+  self160.AddToProcessorMap("scheduleCronJob", &auroraSchedulerManagerProcessorScheduleCronJob{handler:handler})
+  self160.AddToProcessorMap("descheduleCronJob", &auroraSchedulerManagerProcessorDescheduleCronJob{handler:handler})
+  self160.AddToProcessorMap("startCronJob", &auroraSchedulerManagerProcessorStartCronJob{handler:handler})
+  self160.AddToProcessorMap("restartShards", &auroraSchedulerManagerProcessorRestartShards{handler:handler})
+  self160.AddToProcessorMap("killTasks", &auroraSchedulerManagerProcessorKillTasks{handler:handler})
+  self160.AddToProcessorMap("addInstances", &auroraSchedulerManagerProcessorAddInstances{handler:handler})
+  self160.AddToProcessorMap("replaceCronTemplate", &auroraSchedulerManagerProcessorReplaceCronTemplate{handler:handler})
+  self160.AddToProcessorMap("startJobUpdate", &auroraSchedulerManagerProcessorStartJobUpdate{handler:handler})
+  self160.AddToProcessorMap("pauseJobUpdate", &auroraSchedulerManagerProcessorPauseJobUpdate{handler:handler})
+  self160.AddToProcessorMap("resumeJobUpdate", &auroraSchedulerManagerProcessorResumeJobUpdate{handler:handler})
+  self160.AddToProcessorMap("abortJobUpdate", &auroraSchedulerManagerProcessorAbortJobUpdate{handler:handler})
+  self160.AddToProcessorMap("rollbackJobUpdate", &auroraSchedulerManagerProcessorRollbackJobUpdate{handler:handler})
+  self160.AddToProcessorMap("pulseJobUpdate", &auroraSchedulerManagerProcessorPulseJobUpdate{handler:handler})
+  return self160
 }
 
 type auroraSchedulerManagerProcessorCreateJob struct {
@@ -22081,13 +22638,13 @@ func (p *AuroraSchedulerManagerRestartShardsArgs)  ReadField3(iprot thrift.TProt
   tSet := make([]int32, 0, size)
   p.ShardIds =  tSet
   for i := 0; i < size; i ++ {
-var _elem160 int32
+var _elem161 int32
     if v, err := iprot.ReadI32(); err != nil {
     return thrift.PrependError("error reading field 0: ", err)
 } else {
-    _elem160 = v
+    _elem161 = v
 }
-    p.ShardIds = append(p.ShardIds, _elem160)
+    p.ShardIds = append(p.ShardIds, _elem161)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -22360,13 +22917,13 @@ func (p *AuroraSchedulerManagerKillTasksArgs)  ReadField5(iprot thrift.TProtocol
   tSet := make([]int32, 0, size)
   p.Instances =  tSet
   for i := 0; i < size; i ++ {
-var _elem161 int32
+var _elem162 int32
     if v, err := iprot.ReadI32(); err != nil {
     return thrift.PrependError("error reading field 0: ", err)
 } else {
-    _elem161 = v
+    _elem162 = v
 }
-    p.Instances = append(p.Instances, _elem161)
+    p.Instances = append(p.Instances, _elem162)
   }
   if err := iprot.ReadSetEnd(); err != nil {
     return thrift.PrependError("error reading set end: ", err)
@@ -24467,14 +25024,14 @@ func NewAuroraAdminClient(c thrift.TClient) *AuroraAdminClient {
 //  - OwnerRole
 //  - Quota
 func (p *AuroraAdminClient) SetQuota(ctx context.Context, ownerRole string, quota *ResourceAggregate) (r *Response, err error) {
-  var _args316 AuroraAdminSetQuotaArgs
-  _args316.OwnerRole = ownerRole
-  _args316.Quota = quota
-  var _result317 AuroraAdminSetQuotaResult
-  if err = p.Client_().Call(ctx, "setQuota", &_args316, &_result317); err != nil {
+  var _args317 AuroraAdminSetQuotaArgs
+  _args317.OwnerRole = ownerRole
+  _args317.Quota = quota
+  var _result318 AuroraAdminSetQuotaResult
+  if err = p.Client_().Call(ctx, "setQuota", &_args317, &_result318); err != nil {
     return
   }
-  return _result317.GetSuccess(), nil
+  return _result318.GetSuccess(), nil
 }
 
 // Forces a task into a specific state.  This does not guarantee the task will enter the given
@@ -24485,34 +25042,34 @@ func (p *AuroraAdminClient) SetQuota(ctx context.Context, ownerRole string, quot
 //  - TaskId
 //  - Status
 func (p *AuroraAdminClient) ForceTaskState(ctx context.Context, taskId string, status ScheduleStatus) (r *Response, err error) {
-  var _args318 AuroraAdminForceTaskStateArgs
-  _args318.TaskId = taskId
-  _args318.Status = status
-  var _result319 AuroraAdminForceTaskStateResult
-  if err = p.Client_().Call(ctx, "forceTaskState", &_args318, &_result319); err != nil {
+  var _args319 AuroraAdminForceTaskStateArgs
+  _args319.TaskId = taskId
+  _args319.Status = status
+  var _result320 AuroraAdminForceTaskStateResult
+  if err = p.Client_().Call(ctx, "forceTaskState", &_args319, &_result320); err != nil {
     return
   }
-  return _result319.GetSuccess(), nil
+  return _result320.GetSuccess(), nil
 }
 
 // Immediately writes a storage snapshot to disk.
 func (p *AuroraAdminClient) PerformBackup(ctx context.Context) (r *Response, err error) {
-  var _args320 AuroraAdminPerformBackupArgs
-  var _result321 AuroraAdminPerformBackupResult
-  if err = p.Client_().Call(ctx, "performBackup", &_args320, &_result321); err != nil {
+  var _args321 AuroraAdminPerformBackupArgs
+  var _result322 AuroraAdminPerformBackupResult
+  if err = p.Client_().Call(ctx, "performBackup", &_args321, &_result322); err != nil {
     return
   }
-  return _result321.GetSuccess(), nil
+  return _result322.GetSuccess(), nil
 }
 
 // Lists backups that are available for recovery.
 func (p *AuroraAdminClient) ListBackups(ctx context.Context) (r *Response, err error) {
-  var _args322 AuroraAdminListBackupsArgs
-  var _result323 AuroraAdminListBackupsResult
-  if err = p.Client_().Call(ctx, "listBackups", &_args322, &_result323); err != nil {
+  var _args323 AuroraAdminListBackupsArgs
+  var _result324 AuroraAdminListBackupsResult
+  if err = p.Client_().Call(ctx, "listBackups", &_args323, &_result324); err != nil {
     return
   }
-  return _result323.GetSuccess(), nil
+  return _result324.GetSuccess(), nil
 }
 
 // Loads a backup to an in-memory storage.  This must precede all other recovery operations.
@@ -24520,13 +25077,13 @@ func (p *AuroraAdminClient) ListBackups(ctx context.Context) (r *Response, err e
 // Parameters:
 //  - BackupId
 func (p *AuroraAdminClient) StageRecovery(ctx context.Context, backupId string) (r *Response, err error) {
-  var _args324 AuroraAdminStageRecoveryArgs
-  _args324.BackupId = backupId
-  var _result325 AuroraAdminStageRecoveryResult
-  if err = p.Client_().Call(ctx, "stageRecovery", &_args324, &_result325); err != nil {
+  var _args325 AuroraAdminStageRecoveryArgs
+  _args325.BackupId = backupId
+  var _result326 AuroraAdminStageRecoveryResult
+  if err = p.Client_().Call(ctx, "stageRecovery", &_args325, &_result326); err != nil {
     return
   }
-  return _result325.GetSuccess(), nil
+  return _result326.GetSuccess(), nil
 }
 
 // Queries for tasks in a staged recovery.
@@ -24534,13 +25091,13 @@ func (p *AuroraAdminClient) StageRecovery(ctx context.Context, backupId string) 
 // Parameters:
 //  - Query
 func (p *AuroraAdminClient) QueryRecovery(ctx context.Context, query *TaskQuery) (r *Response, err error) {
-  var _args326 AuroraAdminQueryRecoveryArgs
-  _args326.Query = query
-  var _result327 AuroraAdminQueryRecoveryResult
-  if err = p.Client_().Call(ctx, "queryRecovery", &_args326, &_result327); err != nil {
+  var _args327 AuroraAdminQueryRecoveryArgs
+  _args327.Query = query
+  var _result328 AuroraAdminQueryRecoveryResult
+  if err = p.Client_().Call(ctx, "queryRecovery", &_args327, &_result328); err != nil {
     return
   }
-  return _result327.GetSuccess(), nil
+  return _result328.GetSuccess(), nil
 }
 
 // Deletes tasks from a staged recovery.
@@ -24548,33 +25105,33 @@ func (p *AuroraAdminClient) QueryRecovery(ctx context.Context, query *TaskQuery)
 // Parameters:
 //  - Query
 func (p *AuroraAdminClient) DeleteRecoveryTasks(ctx context.Context, query *TaskQuery) (r *Response, err error) {
-  var _args328 AuroraAdminDeleteRecoveryTasksArgs
-  _args328.Query = query
-  var _result329 AuroraAdminDeleteRecoveryTasksResult
-  if err = p.Client_().Call(ctx, "deleteRecoveryTasks", &_args328, &_result329); err != nil {
+  var _args329 AuroraAdminDeleteRecoveryTasksArgs
+  _args329.Query = query
+  var _result330 AuroraAdminDeleteRecoveryTasksResult
+  if err = p.Client_().Call(ctx, "deleteRecoveryTasks", &_args329, &_result330); err != nil {
     return
   }
-  return _result329.GetSuccess(), nil
+  return _result330.GetSuccess(), nil
 }
 
 // Commits a staged recovery, completely replacing the previous storage state.
 func (p *AuroraAdminClient) CommitRecovery(ctx context.Context) (r *Response, err error) {
-  var _args330 AuroraAdminCommitRecoveryArgs
-  var _result331 AuroraAdminCommitRecoveryResult
-  if err = p.Client_().Call(ctx, "commitRecovery", &_args330, &_result331); err != nil {
+  var _args331 AuroraAdminCommitRecoveryArgs
+  var _result332 AuroraAdminCommitRecoveryResult
+  if err = p.Client_().Call(ctx, "commitRecovery", &_args331, &_result332); err != nil {
     return
   }
-  return _result331.GetSuccess(), nil
+  return _result332.GetSuccess(), nil
 }
 
 // Unloads (aborts) a staged recovery.
 func (p *AuroraAdminClient) UnloadRecovery(ctx context.Context) (r *Response, err error) {
-  var _args332 AuroraAdminUnloadRecoveryArgs
-  var _result333 AuroraAdminUnloadRecoveryResult
-  if err = p.Client_().Call(ctx, "unloadRecovery", &_args332, &_result333); err != nil {
+  var _args333 AuroraAdminUnloadRecoveryArgs
+  var _result334 AuroraAdminUnloadRecoveryResult
+  if err = p.Client_().Call(ctx, "unloadRecovery", &_args333, &_result334); err != nil {
     return
   }
-  return _result333.GetSuccess(), nil
+  return _result334.GetSuccess(), nil
 }
 
 // Put the given hosts into maintenance mode.
@@ -24582,13 +25139,13 @@ func (p *AuroraAdminClient) UnloadRecovery(ctx context.Context) (r *Response, er
 // Parameters:
 //  - Hosts
 func (p *AuroraAdminClient) StartMaintenance(ctx context.Context, hosts *Hosts) (r *Response, err error) {
-  var _args334 AuroraAdminStartMaintenanceArgs
-  _args334.Hosts = hosts
-  var _result335 AuroraAdminStartMaintenanceResult
-  if err = p.Client_().Call(ctx, "startMaintenance", &_args334, &_result335); err != nil {
+  var _args335 AuroraAdminStartMaintenanceArgs
+  _args335.Hosts = hosts
+  var _result336 AuroraAdminStartMaintenanceResult
+  if err = p.Client_().Call(ctx, "startMaintenance", &_args335, &_result336); err != nil {
     return
   }
-  return _result335.GetSuccess(), nil
+  return _result336.GetSuccess(), nil
 }
 
 // Ask scheduler to begin moving tasks scheduled on given hosts.
@@ -24596,13 +25153,13 @@ func (p *AuroraAdminClient) StartMaintenance(ctx context.Context, hosts *Hosts) 
 // Parameters:
 //  - Hosts
 func (p *AuroraAdminClient) DrainHosts(ctx context.Context, hosts *Hosts) (r *Response, err error) {
-  var _args336 AuroraAdminDrainHostsArgs
-  _args336.Hosts = hosts
-  var _result337 AuroraAdminDrainHostsResult
-  if err = p.Client_().Call(ctx, "drainHosts", &_args336, &_result337); err != nil {
+  var _args337 AuroraAdminDrainHostsArgs
+  _args337.Hosts = hosts
+  var _result338 AuroraAdminDrainHostsResult
+  if err = p.Client_().Call(ctx, "drainHosts", &_args337, &_result338); err != nil {
     return
   }
-  return _result337.GetSuccess(), nil
+  return _result338.GetSuccess(), nil
 }
 
 // Retrieve the current maintenance states for a group of hosts.
@@ -24610,13 +25167,13 @@ func (p *AuroraAdminClient) DrainHosts(ctx context.Context, hosts *Hosts) (r *Re
 // Parameters:
 //  - Hosts
 func (p *AuroraAdminClient) MaintenanceStatus(ctx context.Context, hosts *Hosts) (r *Response, err error) {
-  var _args338 AuroraAdminMaintenanceStatusArgs
-  _args338.Hosts = hosts
-  var _result339 AuroraAdminMaintenanceStatusResult
-  if err = p.Client_().Call(ctx, "maintenanceStatus", &_args338, &_result339); err != nil {
+  var _args339 AuroraAdminMaintenanceStatusArgs
+  _args339.Hosts = hosts
+  var _result340 AuroraAdminMaintenanceStatusResult
+  if err = p.Client_().Call(ctx, "maintenanceStatus", &_args339, &_result340); err != nil {
     return
   }
-  return _result339.GetSuccess(), nil
+  return _result340.GetSuccess(), nil
 }
 
 // Set the given hosts back into serving mode.
@@ -24624,13 +25181,13 @@ func (p *AuroraAdminClient) MaintenanceStatus(ctx context.Context, hosts *Hosts)
 // Parameters:
 //  - Hosts
 func (p *AuroraAdminClient) EndMaintenance(ctx context.Context, hosts *Hosts) (r *Response, err error) {
-  var _args340 AuroraAdminEndMaintenanceArgs
-  _args340.Hosts = hosts
-  var _result341 AuroraAdminEndMaintenanceResult
-  if err = p.Client_().Call(ctx, "endMaintenance", &_args340, &_result341); err != nil {
+  var _args341 AuroraAdminEndMaintenanceArgs
+  _args341.Hosts = hosts
+  var _result342 AuroraAdminEndMaintenanceResult
+  if err = p.Client_().Call(ctx, "endMaintenance", &_args341, &_result342); err != nil {
     return
   }
-  return _result341.GetSuccess(), nil
+  return _result342.GetSuccess(), nil
 }
 
 // Ask scheduler to put hosts into DRAINING mode and move scheduled tasks off of the hosts
@@ -24642,25 +25199,25 @@ func (p *AuroraAdminClient) EndMaintenance(ctx context.Context, hosts *Hosts) (r
 //  - DefaultSlaPolicy
 //  - TimeoutSecs
 func (p *AuroraAdminClient) SlaDrainHosts(ctx context.Context, hosts *Hosts, defaultSlaPolicy *SlaPolicy, timeoutSecs int64) (r *Response, err error) {
-  var _args342 AuroraAdminSlaDrainHostsArgs
-  _args342.Hosts = hosts
-  _args342.DefaultSlaPolicy = defaultSlaPolicy
-  _args342.TimeoutSecs = timeoutSecs
-  var _result343 AuroraAdminSlaDrainHostsResult
-  if err = p.Client_().Call(ctx, "slaDrainHosts", &_args342, &_result343); err != nil {
+  var _args343 AuroraAdminSlaDrainHostsArgs
+  _args343.Hosts = hosts
+  _args343.DefaultSlaPolicy = defaultSlaPolicy
+  _args343.TimeoutSecs = timeoutSecs
+  var _result344 AuroraAdminSlaDrainHostsResult
+  if err = p.Client_().Call(ctx, "slaDrainHosts", &_args343, &_result344); err != nil {
     return
   }
-  return _result343.GetSuccess(), nil
+  return _result344.GetSuccess(), nil
 }
 
 // Start a storage snapshot and block until it completes.
 func (p *AuroraAdminClient) Snapshot(ctx context.Context) (r *Response, err error) {
-  var _args344 AuroraAdminSnapshotArgs
-  var _result345 AuroraAdminSnapshotResult
-  if err = p.Client_().Call(ctx, "snapshot", &_args344, &_result345); err != nil {
+  var _args345 AuroraAdminSnapshotArgs
+  var _result346 AuroraAdminSnapshotResult
+  if err = p.Client_().Call(ctx, "snapshot", &_args345, &_result346); err != nil {
     return
   }
-  return _result345.GetSuccess(), nil
+  return _result346.GetSuccess(), nil
 }
 
 // Tell scheduler to trigger an explicit task reconciliation with the given settings.
@@ -24668,23 +25225,23 @@ func (p *AuroraAdminClient) Snapshot(ctx context.Context) (r *Response, err erro
 // Parameters:
 //  - Settings
 func (p *AuroraAdminClient) TriggerExplicitTaskReconciliation(ctx context.Context, settings *ExplicitReconciliationSettings) (r *Response, err error) {
-  var _args346 AuroraAdminTriggerExplicitTaskReconciliationArgs
-  _args346.Settings = settings
-  var _result347 AuroraAdminTriggerExplicitTaskReconciliationResult
-  if err = p.Client_().Call(ctx, "triggerExplicitTaskReconciliation", &_args346, &_result347); err != nil {
+  var _args347 AuroraAdminTriggerExplicitTaskReconciliationArgs
+  _args347.Settings = settings
+  var _result348 AuroraAdminTriggerExplicitTaskReconciliationResult
+  if err = p.Client_().Call(ctx, "triggerExplicitTaskReconciliation", &_args347, &_result348); err != nil {
     return
   }
-  return _result347.GetSuccess(), nil
+  return _result348.GetSuccess(), nil
 }
 
 // Tell scheduler to trigger an implicit task reconciliation.
 func (p *AuroraAdminClient) TriggerImplicitTaskReconciliation(ctx context.Context) (r *Response, err error) {
-  var _args348 AuroraAdminTriggerImplicitTaskReconciliationArgs
-  var _result349 AuroraAdminTriggerImplicitTaskReconciliationResult
-  if err = p.Client_().Call(ctx, "triggerImplicitTaskReconciliation", &_args348, &_result349); err != nil {
+  var _args349 AuroraAdminTriggerImplicitTaskReconciliationArgs
+  var _result350 AuroraAdminTriggerImplicitTaskReconciliationResult
+  if err = p.Client_().Call(ctx, "triggerImplicitTaskReconciliation", &_args349, &_result350); err != nil {
     return
   }
-  return _result349.GetSuccess(), nil
+  return _result350.GetSuccess(), nil
 }
 
 // Force prune any (terminal) tasks that match the query. If no statuses are supplied with the
@@ -24694,13 +25251,13 @@ func (p *AuroraAdminClient) TriggerImplicitTaskReconciliation(ctx context.Contex
 // Parameters:
 //  - Query
 func (p *AuroraAdminClient) PruneTasks(ctx context.Context, query *TaskQuery) (r *Response, err error) {
-  var _args350 AuroraAdminPruneTasksArgs
-  _args350.Query = query
-  var _result351 AuroraAdminPruneTasksResult
-  if err = p.Client_().Call(ctx, "pruneTasks", &_args350, &_result351); err != nil {
+  var _args351 AuroraAdminPruneTasksArgs
+  _args351.Query = query
+  var _result352 AuroraAdminPruneTasksResult
+  if err = p.Client_().Call(ctx, "pruneTasks", &_args351, &_result352); err != nil {
     return
   }
-  return _result351.GetSuccess(), nil
+  return _result352.GetSuccess(), nil
 }
 
 type AuroraAdminProcessor struct {
@@ -24708,26 +25265,26 @@ type AuroraAdminProcessor struct {
 }
 
 func NewAuroraAdminProcessor(handler AuroraAdmin) *AuroraAdminProcessor {
-  self352 := &AuroraAdminProcessor{NewAuroraSchedulerManagerProcessor(handler)}
-  self352.AddToProcessorMap("setQuota", &auroraAdminProcessorSetQuota{handler:handler})
-  self352.AddToProcessorMap("forceTaskState", &auroraAdminProcessorForceTaskState{handler:handler})
-  self352.AddToProcessorMap("performBackup", &auroraAdminProcessorPerformBackup{handler:handler})
-  self352.AddToProcessorMap("listBackups", &auroraAdminProcessorListBackups{handler:handler})
-  self352.AddToProcessorMap("stageRecovery", &auroraAdminProcessorStageRecovery{handler:handler})
-  self352.AddToProcessorMap("queryRecovery", &auroraAdminProcessorQueryRecovery{handler:handler})
-  self352.AddToProcessorMap("deleteRecoveryTasks", &auroraAdminProcessorDeleteRecoveryTasks{handler:handler})
-  self352.AddToProcessorMap("commitRecovery", &auroraAdminProcessorCommitRecovery{handler:handler})
-  self352.AddToProcessorMap("unloadRecovery", &auroraAdminProcessorUnloadRecovery{handler:handler})
-  self352.AddToProcessorMap("startMaintenance", &auroraAdminProcessorStartMaintenance{handler:handler})
-  self352.AddToProcessorMap("drainHosts", &auroraAdminProcessorDrainHosts{handler:handler})
-  self352.AddToProcessorMap("maintenanceStatus", &auroraAdminProcessorMaintenanceStatus{handler:handler})
-  self352.AddToProcessorMap("endMaintenance", &auroraAdminProcessorEndMaintenance{handler:handler})
-  self352.AddToProcessorMap("slaDrainHosts", &auroraAdminProcessorSlaDrainHosts{handler:handler})
-  self352.AddToProcessorMap("snapshot", &auroraAdminProcessorSnapshot{handler:handler})
-  self352.AddToProcessorMap("triggerExplicitTaskReconciliation", &auroraAdminProcessorTriggerExplicitTaskReconciliation{handler:handler})
-  self352.AddToProcessorMap("triggerImplicitTaskReconciliation", &auroraAdminProcessorTriggerImplicitTaskReconciliation{handler:handler})
-  self352.AddToProcessorMap("pruneTasks", &auroraAdminProcessorPruneTasks{handler:handler})
-  return self352
+  self353 := &AuroraAdminProcessor{NewAuroraSchedulerManagerProcessor(handler)}
+  self353.AddToProcessorMap("setQuota", &auroraAdminProcessorSetQuota{handler:handler})
+  self353.AddToProcessorMap("forceTaskState", &auroraAdminProcessorForceTaskState{handler:handler})
+  self353.AddToProcessorMap("performBackup", &auroraAdminProcessorPerformBackup{handler:handler})
+  self353.AddToProcessorMap("listBackups", &auroraAdminProcessorListBackups{handler:handler})
+  self353.AddToProcessorMap("stageRecovery", &auroraAdminProcessorStageRecovery{handler:handler})
+  self353.AddToProcessorMap("queryRecovery", &auroraAdminProcessorQueryRecovery{handler:handler})
+  self353.AddToProcessorMap("deleteRecoveryTasks", &auroraAdminProcessorDeleteRecoveryTasks{handler:handler})
+  self353.AddToProcessorMap("commitRecovery", &auroraAdminProcessorCommitRecovery{handler:handler})
+  self353.AddToProcessorMap("unloadRecovery", &auroraAdminProcessorUnloadRecovery{handler:handler})
+  self353.AddToProcessorMap("startMaintenance", &auroraAdminProcessorStartMaintenance{handler:handler})
+  self353.AddToProcessorMap("drainHosts", &auroraAdminProcessorDrainHosts{handler:handler})
+  self353.AddToProcessorMap("maintenanceStatus", &auroraAdminProcessorMaintenanceStatus{handler:handler})
+  self353.AddToProcessorMap("endMaintenance", &auroraAdminProcessorEndMaintenance{handler:handler})
+  self353.AddToProcessorMap("slaDrainHosts", &auroraAdminProcessorSlaDrainHosts{handler:handler})
+  self353.AddToProcessorMap("snapshot", &auroraAdminProcessorSnapshot{handler:handler})
+  self353.AddToProcessorMap("triggerExplicitTaskReconciliation", &auroraAdminProcessorTriggerExplicitTaskReconciliation{handler:handler})
+  self353.AddToProcessorMap("triggerImplicitTaskReconciliation", &auroraAdminProcessorTriggerImplicitTaskReconciliation{handler:handler})
+  self353.AddToProcessorMap("pruneTasks", &auroraAdminProcessorPruneTasks{handler:handler})
+  return self353
 }
 
 type auroraAdminProcessorSetQuota struct {

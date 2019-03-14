@@ -147,6 +147,21 @@ func (u *UpdateJob) RollbackOnFail(rollback bool) *UpdateJob {
 	return u
 }
 
+func (u *UpdateJob) BatchUpdateStrategy(strategy aurora.BatchJobUpdateStrategy) *UpdateJob {
+	u.req.Settings.UpdateStrategy = &aurora.JobUpdateStrategy{BatchStrategy: &strategy}
+	return u
+}
+
+func (u *UpdateJob) QueueUpdateStrategy(strategy aurora.QueueJobUpdateStrategy) *UpdateJob {
+	u.req.Settings.UpdateStrategy = &aurora.JobUpdateStrategy{QueueStrategy: &strategy}
+	return u
+}
+
+func (u *UpdateJob) VariableBatchStrategy(strategy aurora.VariableBatchJobUpdateStrategy) *UpdateJob {
+	u.req.Settings.UpdateStrategy = &aurora.JobUpdateStrategy{VarBatchStrategy: &strategy}
+	return u
+}
+
 func NewUpdateSettings() *aurora.JobUpdateSettings {
 
 	us := new(aurora.JobUpdateSettings)
