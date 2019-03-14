@@ -81,6 +81,15 @@ func (m *Monitor) JobUpdateStatus(
 	interval time.Duration,
 	timeout time.Duration) (aurora.JobUpdateStatus, error) {
 
+	// Minimal unit is the second, if it's below a second, multiply input by seconds
+	if interval < 1*time.Second {
+		interval *= time.Second
+	}
+
+	if timeout < 1*time.Second {
+		timeout *= time.Second
+	}
+
 	desiredStatusesSlice := make([]aurora.JobUpdateStatus, 0)
 
 	for k := range desiredStatuses {
