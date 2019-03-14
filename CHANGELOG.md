@@ -1,4 +1,4 @@
-1.21.1 (unreleased)
+1.22.0 (unreleased)
 
 * CreateService and StartJobUpdate do not continue retrying if a timeout has been encountered
 by the HTTP client. Instead they now return an error that conforms to the Timedout interface.
@@ -12,3 +12,5 @@ Users can check for a Timedout error by using `realis.IsTimeout(err)`.
 * Please use `realis.ActiveStates`, `realis.SlaveAssignedStates`,`realis.LiveStates`, `realis.TerminalStates`, `realis.ActiveJobUpdateStates`, `realis.AwaitingPulseJobUpdateStates` in their places when map representations are needed.
 * `GetInstanceIds(key *aurora.JobKey, states map[aurora.ScheduleStatus]bool) (map[int32]bool, error)` has changed signature to ` GetInstanceIds(key *aurora.JobKey, states []aurora.ScheduleStatus) ([]int32, error)`
 * Adding support for GPU as resource.
+* Changing compose environment to Aurora snapshot in order to support staggered update.
+* Adding staggered updates API.
