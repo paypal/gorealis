@@ -1,4 +1,9 @@
-1.21.1 (unreleased)
+1.22.0 (unreleased)
+
+* Changing compose environment to Aurora snapshot in order to support staggered update.
+* Adding staggered updates API.
+
+1.21.1
 
 * CreateService and StartJobUpdate do not continue retrying if a timeout has been encountered
 by the HTTP client. Instead they now return an error that conforms to the Timedout interface.
