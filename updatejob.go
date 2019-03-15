@@ -96,6 +96,7 @@ func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings)
 		}
 
 		if ptr.NumGpus != nil {
+			job.resources[GPU] = &aurora.Resource{}
 			job.resources[GPU].NumGpus = ptr.NumGpus
 			continue // Guard against Union violations that Go won't enforce
 		}
