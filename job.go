@@ -74,7 +74,7 @@ const (
 type AuroraJob struct {
 	jobConfig *aurora.JobConfiguration
 	resources map[ResourceType]*aurora.Resource
-	metadata map[string]*aurora.Metadata
+	metadata  map[string]*aurora.Metadata
 	portCount int
 }
 
@@ -108,7 +108,7 @@ func NewJob() Job {
 	return &AuroraJob{
 		jobConfig: jobConfig,
 		resources: resources,
-		metadata: make(map[string]*aurora.Metadata),
+		metadata:  make(map[string]*aurora.Metadata),
 		portCount: 0,
 	}
 }
