@@ -74,6 +74,7 @@ const (
 type AuroraJob struct {
 	jobConfig *aurora.JobConfiguration
 	resources map[ResourceType]*aurora.Resource
+	metadata  map[string]*aurora.Metadata
 	portCount int
 }
 
@@ -107,6 +108,7 @@ func NewJob() Job {
 	return &AuroraJob{
 		jobConfig: jobConfig,
 		resources: resources,
+		metadata:  make(map[string]*aurora.Metadata),
 		portCount: 0,
 	}
 }
@@ -243,7 +245,12 @@ func (j *AuroraJob) AddURIs(extract bool, cache bool, values ...string) Job {
 // Adds a Mesos label to the job. Note that Aurora will add the
 // prefix "org.apache.aurora.metadata." to the beginning of each key.
 func (j *AuroraJob) AddLabel(key string, value string) Job {
-	j.jobConfig.TaskConfig.Metadata = append(j.jobConfig.TaskConfig.Metadata, &aurora.Metadata{Key: key, Value: value})
+	if _, ok := j.metadata[key]; ok {
+		j.metadata[key].Value = value
+	} else {
+		j.metadata[key] = &aurora.Metadata{Key: key, Value: value}
+		j.jobConfig.TaskConfig.Metadata = append(j.jobConfig.TaskConfig.Metadata, j.metadata[key])
+	}
 	return j
 }
 
