@@ -6,6 +6,7 @@ branches:
   only:
   - master
   - master-v2.0
+  - future
 
 go:
   - "1.10.x"
