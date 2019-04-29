@@ -1,3 +1,5 @@
+1.21.1 (unreleased)
+
 1.21.0
 
 * Version numbering change. Future versions will be labled X.Y.Z where X is the major version, Y is the Aurora version the library has been tested against (e.g. 21 -> 0.21.0), and X is the minor revision.
