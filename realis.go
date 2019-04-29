@@ -306,7 +306,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 
 	config.logger.DebugPrintln("Number of options applied to config: ", len(options))
 
-	//Set default Transport to JSON if needed.
+	// Set default Transport to JSON if needed.
 	if !config.jsonTransport && !config.binTransport {
 		config.jsonTransport = true
 	}
@@ -415,7 +415,7 @@ func defaultTTransport(urlstr string, timeoutms int, config *RealisConfig) (thri
 		if config.certspath != "" {
 			rootCAs, err := GetCerts(config.certspath)
 			if err != nil {
-				config.logger.Println("error occured couldn't fetch certs")
+				config.logger.Println("error occurred couldn't fetch certs")
 				return nil, err
 			}
 			tlsConfig.RootCAs = rootCAs
@@ -429,7 +429,7 @@ func defaultTTransport(urlstr string, timeoutms int, config *RealisConfig) (thri
 		if config.clientkey != "" && config.clientcert != "" {
 			cert, err := tls.LoadX509KeyPair(config.clientcert, config.clientkey)
 			if err != nil {
-				config.logger.Println("error occured loading client certs and keys")
+				config.logger.Println("error occurred loading client certs and keys")
 				return nil, err
 			}
 			tlsConfig.Certificates = []tls.Certificate{cert}
