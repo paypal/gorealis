@@ -28,7 +28,7 @@ import (
 
 type Backoff struct {
 	Duration time.Duration // the base duration
-	Factor   float64       // Duration is multipled by factor each iteration
+	Factor   float64       // Duration is multiplied by a factor each iteration
 	Jitter   float64       // The amount of jitter applied each iteration
 	Steps    int           // Exit with error after this many steps
 }
@@ -77,7 +77,7 @@ func ExponentialBackoff(backoff Backoff, logger Logger, condition ConditionFunc)
 				adjusted = Jitter(duration, backoff.Jitter)
 			}
 
-			logger.Printf("A retriable error occurred during function call, backing off for %v before retrying\n", adjusted)
+			logger.Printf("A retryable error occurred during function call, backing off for %v before retrying\n", adjusted)
 			time.Sleep(adjusted)
 			duration = time.Duration(float64(duration) * backoff.Factor)
 		}
