@@ -437,56 +437,18 @@ func defaultTTransport(urlstr string, timeoutms int, config *RealisConfig) (thri
 		transport.TLSClientConfig = tlsConfig
 	}
 
-	trans, err := thrift.NewTHttpPostClientWithOptions(urlstr+"/api",
+	trans, err := thrift.NewTHttpClientWithOptions(urlstr+"/api",
 		thrift.THttpClientOptions{Client: &http.Client{Timeout: time.Millisecond * time.Duration(timeoutms), Transport: &transport, Jar: jar}})
 
 	if err != nil {
-		return &thrift.THttpClient{}, errors.Wrap(err, "Error creating transport")
+		return nil, errors.Wrap(err, "Error creating transport")
 	}
 
 	if err := trans.Open(); err != nil {
-		return &thrift.THttpClient{}, errors.Wrapf(err, "Error opening connection to %s", urlstr)
+		return nil, errors.Wrapf(err, "Error opening connection to %s", urlstr)
 	}
 
 	return trans, nil
-}
-
-// Create a default configuration of the transport layer, requires a URL to test connection with.
-// Uses HTTP Post as transport layer and Thrift JSON as the wire protocol by default.
-func newDefaultConfig(url string, timeoutms int, config *RealisConfig) (*RealisConfig, error) {
-	return newTJSONConfig(url, timeoutms, config)
-}
-
-// Creates a realis config object using HTTP Post and Thrift JSON protocol to communicate with Aurora.
-func newTJSONConfig(url string, timeoutms int, config *RealisConfig) (*RealisConfig, error) {
-	trans, err := defaultTTransport(url, timeoutms, config)
-	if err != nil {
-		return &RealisConfig{}, errors.Wrap(err, "Error creating realis config")
-	}
-
-	httpTrans := (trans).(*thrift.THttpClient)
-	httpTrans.SetHeader("Content-Type", "application/x-thrift")
-	httpTrans.SetHeader("User-Agent", "gorealis v"+VERSION)
-
-	return &RealisConfig{transport: trans, protoFactory: thrift.NewTJSONProtocolFactory()}, nil
-}
-
-// Creates a realis config config using HTTP Post and Thrift Binary protocol to communicate with Aurora.
-func newTBinaryConfig(url string, timeoutms int, config *RealisConfig) (*RealisConfig, error) {
-	trans, err := defaultTTransport(url, timeoutms, config)
-	if err != nil {
-		return &RealisConfig{}, errors.Wrap(err, "Error creating realis config")
-	}
-
-	httpTrans := (trans).(*thrift.THttpClient)
-	httpTrans.DelHeader("Content-Type") // Workaround for using thrift HttpPostClient
-
-	httpTrans.SetHeader("Accept", "application/vnd.apache.thrift.binary")
-	httpTrans.SetHeader("Content-Type", "application/vnd.apache.thrift.binary")
-	httpTrans.SetHeader("User-Agent", "gorealis v"+VERSION)
-
-	return &RealisConfig{transport: trans, protoFactory: thrift.NewTBinaryProtocolFactoryDefault()}, nil
-
 }
 
 func basicAuth(username, password string) string {
@@ -785,7 +747,7 @@ func (r *realisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message str
 	return resp, err
 }
 
-//Pause Job Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.
+// Pause Job Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.
 func (r *realisClient) PauseJobUpdate(updateKey *aurora.JobUpdateKey, message string) (*aurora.Response, error) {
 
 	r.logger.DebugPrintf("PauseJobUpdate Thrift Payload: %+v %v\n", updateKey, message)
@@ -801,7 +763,7 @@ func (r *realisClient) PauseJobUpdate(updateKey *aurora.JobUpdateKey, message st
 	return resp, nil
 }
 
-//Resume Paused Job Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.
+// Resume Paused Job Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.
 func (r *realisClient) ResumeJobUpdate(updateKey *aurora.JobUpdateKey, message string) (*aurora.Response, error) {
 
 	r.logger.DebugPrintf("ResumeJobUpdate Thrift Payload: %+v %v\n", updateKey, message)
@@ -817,7 +779,7 @@ func (r *realisClient) ResumeJobUpdate(updateKey *aurora.JobUpdateKey, message s
 	return resp, nil
 }
 
-//Pulse Job Update on Aurora. UpdateID is returned from StartJobUpdate or the Aurora web UI.
+// Pulse Job Update on Aurora. UpdateID is returned from StartJobUpdate or the Aurora web UI.
 func (r *realisClient) PulseJobUpdate(updateKey *aurora.JobUpdateKey) (*aurora.Response, error) {
 
 	r.logger.DebugPrintf("PulseJobUpdate Thrift Payload: %+v\n", updateKey)
