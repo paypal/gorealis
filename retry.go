@@ -133,7 +133,7 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 				adjusted = Jitter(duration, backoff.Jitter)
 			}
 
-			r.logger.Printf("A retriable error occurred during thrift call, backing off for %v before retry %v\n", adjusted, curStep)
+			r.logger.Printf("A retryable error occurred during thrift call, backing off for %v before retry %v\n", adjusted, curStep)
 
 			time.Sleep(adjusted)
 			duration = time.Duration(float64(duration) * backoff.Factor)
@@ -169,7 +169,7 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 					// when the server is overloaded and should be retried. All other errors that are permanent
 					// will not be retried.
 					if e.Err != io.EOF && !e.Temporary() {
-						return nil, errors.Wrap(clientErr, "Permanent connection error")
+						return nil, errors.Wrap(clientErr, "permanent connection error")
 					}
 				}
 			}
@@ -183,7 +183,7 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 			// If there was no client error, but the response is nil, something went wrong.
 			// Ideally, we'll never encounter this but we're placing a safeguard here.
 			if resp == nil {
-				return nil, errors.New("Response from aurora is nil")
+				return nil, errors.New("response from aurora is nil")
 			}
 
 			// Check Response Code from thrift and make a decision to continue retrying or not.
@@ -210,7 +210,7 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 				// It is currently not used as a response in the scheduler so it is unknown how to handle it.
 			default:
 				r.logger.DebugPrintf("unhandled response code %v received from Aurora\n", responseCode)
-				return nil, errors.Errorf("unhandled response code from Aurora %v\n", responseCode.String())
+				return nil, errors.Errorf("unhandled response code from Aurora %v", responseCode.String())
 			}
 		}
 

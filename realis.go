@@ -111,7 +111,7 @@ type RealisConfig struct {
 	logger                      *LevelLogger
 	InsecureSkipVerify          bool
 	certspath                   string
-	clientkey, clientcert       string
+	clientKey, clientCert       string
 	options                     []ClientOption
 	debug                       bool
 	trace                       bool
@@ -124,6 +124,8 @@ var defaultBackoff = Backoff{
 	Factor:   5.0,
 	Jitter:   0.1,
 }
+
+const APIPath = "/api"
 
 type ClientOption func(*RealisConfig)
 
@@ -204,7 +206,7 @@ func Certspath(certspath string) ClientOption {
 
 func ClientCerts(clientKey, clientCert string) ClientOption {
 	return func(config *RealisConfig) {
-		config.clientkey, config.clientcert = clientKey, clientCert
+		config.clientKey, config.clientCert = clientKey, clientCert
 	}
 }
 
@@ -383,15 +385,15 @@ func GetDefaultClusterFromZKUrl(zkurl string) *Cluster {
 	}
 }
 
-func GetCerts(certpath string) (*x509.CertPool, error) {
+func GetCerts(certPath string) (*x509.CertPool, error) {
 	globalRootCAs := x509.NewCertPool()
-	caFiles, err := ioutil.ReadDir(certpath)
+	caFiles, err := ioutil.ReadDir(certPath)
 	if err != nil {
 		return nil, err
 	}
 	for _, cert := range caFiles {
-		capathfile := filepath.Join(certpath, cert.Name())
-		caCert, err := ioutil.ReadFile(capathfile)
+		caPathFile := filepath.Join(certPath, cert.Name())
+		caCert, err := ioutil.ReadFile(caPathFile)
 		if err != nil {
 			return nil, err
 		}
@@ -401,7 +403,7 @@ func GetCerts(certpath string) (*x509.CertPool, error) {
 }
 
 // Creates a default Thrift Transport object for communications in gorealis using an HTTP Post Client
-func defaultTTransport(urlstr string, timeoutms int, config *RealisConfig) (thrift.TTransport, error) {
+func defaultTTransport(url string, timeoutMs int, config *RealisConfig) (thrift.TTransport, error) {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return &thrift.THttpClient{}, errors.Wrap(err, "Error creating Cookie Jar")
@@ -420,14 +422,14 @@ func defaultTTransport(urlstr string, timeoutms int, config *RealisConfig) (thri
 			}
 			tlsConfig.RootCAs = rootCAs
 		}
-		if config.clientkey != "" && config.clientcert == "" {
-			return nil, fmt.Errorf("have to provide both client key,cert. Only client key provided ")
+		if config.clientKey != "" && config.clientCert == "" {
+			return nil, fmt.Errorf("have to provide both client key, cert. Only client key provided ")
 		}
-		if config.clientkey == "" && config.clientcert != "" {
-			return nil, fmt.Errorf("have to provide both client key,cert. Only client cert provided ")
+		if config.clientKey == "" && config.clientCert != "" {
+			return nil, fmt.Errorf("have to provide both client key, cert. Only client cert provided ")
 		}
-		if config.clientkey != "" && config.clientcert != "" {
-			cert, err := tls.LoadX509KeyPair(config.clientcert, config.clientkey)
+		if config.clientKey != "" && config.clientCert != "" {
+			cert, err := tls.LoadX509KeyPair(config.clientCert, config.clientKey)
 			if err != nil {
 				config.logger.Println("error occurred loading client certs and keys")
 				return nil, err
@@ -437,15 +439,20 @@ func defaultTTransport(urlstr string, timeoutms int, config *RealisConfig) (thri
 		transport.TLSClientConfig = tlsConfig
 	}
 
-	trans, err := thrift.NewTHttpClientWithOptions(urlstr+"/api",
-		thrift.THttpClientOptions{Client: &http.Client{Timeout: time.Millisecond * time.Duration(timeoutms), Transport: &transport, Jar: jar}})
+	trans, err := thrift.NewTHttpClientWithOptions(
+		url+APIPath,
+		thrift.THttpClientOptions{
+			Client: &http.Client{
+				Timeout:   time.Millisecond * time.Duration(timeoutMs),
+				Transport: &transport,
+				Jar:       jar}})
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating transport")
 	}
 
 	if err := trans.Open(); err != nil {
-		return nil, errors.Wrapf(err, "Error opening connection to %s", urlstr)
+		return nil, errors.Wrapf(err, "Error opening connection to %s", url)
 	}
 
 	return trans, nil
