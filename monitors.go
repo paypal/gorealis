@@ -52,7 +52,10 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 	switch status {
 	case aurora.JobUpdateStatus_ROLLED_FORWARD:
 		return true, nil
-	case aurora.JobUpdateStatus_ROLLED_BACK, aurora.JobUpdateStatus_ABORTED, aurora.JobUpdateStatus_ERROR, aurora.JobUpdateStatus_FAILED:
+	case aurora.JobUpdateStatus_ROLLED_BACK,
+		aurora.JobUpdateStatus_ABORTED,
+		aurora.JobUpdateStatus_ERROR,
+		aurora.JobUpdateStatus_FAILED:
 		return false, errors.Errorf("bad terminal state for update: %v", status)
 	default:
 		return false, errors.Errorf("unexpected update state: %v", status)
@@ -87,7 +90,7 @@ func (m *Monitor) JobUpdateStatus(updateKey aurora.JobUpdateKey,
 
 			if len(updateDetail) == 0 {
 				m.Client.RealisConfig().logger.Println("No update found")
-				return aurora.JobUpdateStatus(-1), errors.New("No update found for " + updateKey.String())
+				return aurora.JobUpdateStatus(-1), errors.New("no update found for " + updateKey.String())
 			}
 			status := updateDetail[0].Update.Summary.State.Status
 
@@ -109,7 +112,12 @@ func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval, timeo
 // Monitor a Job until all instances enter a desired status.
 // Defaults sets of desired statuses provided by the thrift API include:
 // ACTIVE_STATES, SLAVE_ASSIGNED_STATES, LIVE_STATES, and TERMINAL_STATES
-func (m *Monitor) ScheduleStatus(key *aurora.JobKey, instanceCount int32, desiredStatuses map[aurora.ScheduleStatus]bool, interval, timeout int) (bool, error) {
+func (m *Monitor) ScheduleStatus(
+	key *aurora.JobKey,
+	instanceCount int32,
+	desiredStatuses map[aurora.ScheduleStatus]bool,
+	interval int,
+	timeout int) (bool, error) {
 
 	ticker := time.NewTicker(time.Second * time.Duration(interval))
 	defer ticker.Stop()

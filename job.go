@@ -123,7 +123,7 @@ func (j *AuroraJob) Environment(env string) Job {
 func (j *AuroraJob) Role(role string) Job {
 	j.jobConfig.Key.Role = role
 
-	//Will be deprecated
+	// Will be deprecated
 	identity := &aurora.Identity{User: role}
 	j.jobConfig.Owner = identity
 	j.jobConfig.TaskConfig.Owner = identity
