@@ -116,10 +116,11 @@ func ExponentialBackoff(backoff Backoff, logger Logger, condition ConditionFunc)
 type auroraThriftCall func() (resp *aurora.Response, err error)
 
 // Duplicates the functionality of ExponentialBackoff but is specifically targeted towards ThriftCalls.
-func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*aurora.Response, error) {
+func (r *realisClient) thriftCallWithRetries(returnOnTimeout bool, thriftCall auroraThriftCall) (*aurora.Response, error) {
 	var resp *aurora.Response
 	var clientErr error
 	var curStep int
+	timeouts := 0
 
 	backoff := r.config.backoff
 	duration := backoff.Duration
@@ -151,7 +152,7 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 			r.logger.TracePrintf("Aurora Thrift Call ended resp: %v clientErr: %v\n", resp, clientErr)
 		}()
 
-		// Check if our thrift call is returning an error. This is a retriable event as we don't know
+		// Check if our thrift call is returning an error. This is a retryable event as we don't know
 		// if it was caused by network issues.
 		if clientErr != nil {
 
@@ -170,6 +171,19 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 					// will not be retried.
 					if e.Err != io.EOF && !e.Temporary() {
 						return nil, errors.Wrap(clientErr, "permanent connection error")
+					}
+
+					// Corner case where thrift payload was received by Aurora but connection timedout before Aurora was
+					// able to reply. In this case we will return whatever response was received and a TimedOut behaving
+					// error. Users can take special action on a timeout by using IsTimedout and reacting accordingly.
+					if e.Timeout() {
+						timeouts++
+						r.logger.DebugPrintf(
+							"Client closed connection (timedout) %v times before server responded, consider increasing connection timeout",
+							timeouts)
+						if returnOnTimeout {
+							return resp, newTimedoutError(errors.New("client connection closed before server answer"))
+						}
 					}
 				}
 			}

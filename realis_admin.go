@@ -24,9 +24,11 @@ func (r *realisClient) DrainHosts(hosts ...string) (*aurora.Response, *aurora.Dr
 
 	r.logger.DebugPrintf("DrainHosts Thrift Payload: %v\n", drainList)
 
-	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
-		return r.adminClient.DrainHosts(nil, drainList)
-	})
+	resp, retryErr := r.thriftCallWithRetries(
+		false,
+		func() (*aurora.Response, error) {
+			return r.adminClient.DrainHosts(nil, drainList)
+		})
 
 	if retryErr != nil {
 		return resp, result, errors.Wrap(retryErr, "Unable to recover connection")
@@ -54,9 +56,11 @@ func (r *realisClient) SLADrainHosts(policy *aurora.SlaPolicy, timeout int64, ho
 
 	r.logger.DebugPrintf("SLADrainHosts Thrift Payload: %v\n", drainList)
 
-	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
-		return r.adminClient.SlaDrainHosts(nil, drainList, policy, timeout)
-	})
+	resp, retryErr := r.thriftCallWithRetries(
+		false,
+		func() (*aurora.Response, error) {
+			return r.adminClient.SlaDrainHosts(nil, drainList, policy, timeout)
+		})
 
 	if retryErr != nil {
 		return result, errors.Wrap(retryErr, "Unable to recover connection")
@@ -82,9 +86,11 @@ func (r *realisClient) StartMaintenance(hosts ...string) (*aurora.Response, *aur
 
 	r.logger.DebugPrintf("StartMaintenance Thrift Payload: %v\n", hostList)
 
-	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
-		return r.adminClient.StartMaintenance(nil, hostList)
-	})
+	resp, retryErr := r.thriftCallWithRetries(
+		false,
+		func() (*aurora.Response, error) {
+			return r.adminClient.StartMaintenance(nil, hostList)
+		})
 
 	if retryErr != nil {
 		return resp, result, errors.Wrap(retryErr, "Unable to recover connection")
@@ -110,9 +116,11 @@ func (r *realisClient) EndMaintenance(hosts ...string) (*aurora.Response, *auror
 
 	r.logger.DebugPrintf("EndMaintenance Thrift Payload: %v\n", hostList)
 
-	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
-		return r.adminClient.EndMaintenance(nil, hostList)
-	})
+	resp, retryErr := r.thriftCallWithRetries(
+		false,
+		func() (*aurora.Response, error) {
+			return r.adminClient.EndMaintenance(nil, hostList)
+		})
 
 	if retryErr != nil {
 		return resp, result, errors.Wrap(retryErr, "Unable to recover connection")
@@ -140,9 +148,11 @@ func (r *realisClient) MaintenanceStatus(hosts ...string) (*aurora.Response, *au
 
 	// Make thrift call. If we encounter an error sending the call, attempt to reconnect
 	// and continue trying to resend command until we run out of retries.
-	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
-		return r.adminClient.MaintenanceStatus(nil, hostList)
-	})
+	resp, retryErr := r.thriftCallWithRetries(
+		false,
+		func() (*aurora.Response, error) {
+			return r.adminClient.MaintenanceStatus(nil, hostList)
+		})
 
 	if retryErr != nil {
 		return resp, result, errors.Wrap(retryErr, "Unable to recover connection")
@@ -158,17 +168,15 @@ func (r *realisClient) MaintenanceStatus(hosts ...string) (*aurora.Response, *au
 // SetQuota sets a quota aggregate for the given role
 // TODO(zircote) Currently investigating an error that is returned from thrift calls that include resources for `NamedPort` and `NumGpu`
 func (r *realisClient) SetQuota(role string, cpu *float64, ramMb *int64, diskMb *int64) (*aurora.Response, error) {
-	ramRes := aurora.NewResource()
-	ramRes.RamMb = ramMb
-	cpuRes := aurora.NewResource()
-	cpuRes.NumCpus = cpu
-	diskRes := aurora.NewResource()
-	diskRes.DiskMb = diskMb
-	quota := aurora.NewResourceAggregate()
-	quota.Resources = []*aurora.Resource{cpuRes, ramRes, diskRes}
-	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
-		return r.adminClient.SetQuota(nil, role, quota)
-	})
+	quota := &aurora.ResourceAggregate{
+		Resources: []*aurora.Resource{{NumCpus: cpu}, {RamMb: ramMb}, {DiskMb: diskMb}},
+	}
+
+	resp, retryErr := r.thriftCallWithRetries(
+		false,
+		func() (*aurora.Response, error) {
+			return r.adminClient.SetQuota(nil, role, quota)
+		})
 
 	if retryErr != nil {
 		return resp, errors.Wrap(retryErr, "Unable to set role quota")
@@ -180,9 +188,11 @@ func (r *realisClient) SetQuota(role string, cpu *float64, ramMb *int64, diskMb 
 // GetQuota returns the resource aggregate for the given role
 func (r *realisClient) GetQuota(role string) (*aurora.Response, error) {
 
-	resp, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
-		return r.adminClient.GetQuota(nil, role)
-	})
+	resp, retryErr := r.thriftCallWithRetries(
+		false,
+		func() (*aurora.Response, error) {
+			return r.adminClient.GetQuota(nil, role)
+		})
 
 	if retryErr != nil {
 		return resp, errors.Wrap(retryErr, "Unable to get role quota")
@@ -193,9 +203,11 @@ func (r *realisClient) GetQuota(role string) (*aurora.Response, error) {
 // Force Aurora Scheduler to perform a snapshot and write to Mesos log
 func (r *realisClient) Snapshot() error {
 
-	_, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
-		return r.adminClient.Snapshot(nil)
-	})
+	_, retryErr := r.thriftCallWithRetries(
+		false,
+		func() (*aurora.Response, error) {
+			return r.adminClient.Snapshot(nil)
+		})
 
 	if retryErr != nil {
 		return errors.Wrap(retryErr, "Unable to recover connection")
@@ -207,9 +219,11 @@ func (r *realisClient) Snapshot() error {
 // Force Aurora Scheduler to write backup file to a file in the backup directory
 func (r *realisClient) PerformBackup() error {
 
-	_, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
-		return r.adminClient.PerformBackup(nil)
-	})
+	_, retryErr := r.thriftCallWithRetries(
+		false,
+		func() (*aurora.Response, error) {
+			return r.adminClient.PerformBackup(nil)
+		})
 
 	if retryErr != nil {
 		return errors.Wrap(retryErr, "Unable to recover connection")
@@ -220,9 +234,11 @@ func (r *realisClient) PerformBackup() error {
 
 func (r *realisClient) ForceImplicitTaskReconciliation() error {
 
-	_, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
-		return r.adminClient.TriggerImplicitTaskReconciliation(nil)
-	})
+	_, retryErr := r.thriftCallWithRetries(
+		false,
+		func() (*aurora.Response, error) {
+			return r.adminClient.TriggerImplicitTaskReconciliation(nil)
+		})
 
 	if retryErr != nil {
 		return errors.Wrap(retryErr, "Unable to recover connection")
@@ -240,9 +256,10 @@ func (r *realisClient) ForceExplicitTaskReconciliation(batchSize *int32) error {
 
 	settings.BatchSize = batchSize
 
-	_, retryErr := r.thriftCallWithRetries(func() (*aurora.Response, error) {
-		return r.adminClient.TriggerExplicitTaskReconciliation(nil, settings)
-	})
+	_, retryErr := r.thriftCallWithRetries(false,
+		func() (*aurora.Response, error) {
+			return r.adminClient.TriggerExplicitTaskReconciliation(nil, settings)
+		})
 
 	if retryErr != nil {
 		return errors.Wrap(retryErr, "Unable to recover connection")
