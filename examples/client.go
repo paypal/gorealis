@@ -31,7 +31,7 @@ var cmd, executor, url, clustersConfig, clusterName, updateId, username, passwor
 var caCertsPath string
 var clientKey, clientCert string
 
-var CONNECTION_TIMEOUT = 20000
+var ConnectionTimeout = 20000
 
 func init() {
 	flag.StringVar(&cmd, "cmd", "", "Job request type to send to Aurora Scheduler")
@@ -82,7 +82,7 @@ func main() {
 	clientOptions := []realis.ClientOption{
 		realis.BasicAuth(username, password),
 		realis.ThriftJSON(),
-		realis.TimeoutMS(CONNECTION_TIMEOUT),
+		realis.TimeoutMS(ConnectionTimeout),
 		realis.BackOff(realis.Backoff{
 			Steps:    2,
 			Duration: 10 * time.Second,
@@ -92,7 +92,6 @@ func main() {
 		realis.Debug(),
 	}
 
-	//check if zkUrl is available.
 	if zkUrl != "" {
 		fmt.Println("zkUrl: ", zkUrl)
 		clientOptions = append(clientOptions, realis.ZKUrl(zkUrl))
