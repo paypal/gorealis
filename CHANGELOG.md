@@ -1,5 +1,9 @@
 1.21.1 (unreleased)
 
+* CreateService and StartJobUpdate do not continue retrying if a timeout has been encountered
+by the HTTP client. Instead they now return an error that conforms to the Timedout interface.
+Users can check for a Timedout error by using `realis.IsTimeout(err)`.
+
 1.21.0
 
 * Version numbering change. Future versions will be labled X.Y.Z where X is the major version, Y is the Aurora version the library has been tested against (e.g. 21 -> 0.21.0), and X is the minor revision.
