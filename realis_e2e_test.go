@@ -159,7 +159,7 @@ func TestNoopLogger(t *testing.T) {
 }
 
 func TestLeaderFromZK(t *testing.T) {
-	cluster := realis.GetDefaultClusterFromZKUrl("192.168.33.7")
+	cluster := realis.GetDefaultClusterFromZKUrl("192.168.33.2:2181")
 	url, err := realis.LeaderFromZK(*cluster)
 
 	assert.NoError(t, err)
