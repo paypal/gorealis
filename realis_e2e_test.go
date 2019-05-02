@@ -35,11 +35,13 @@ var r realis.Realis
 var monitor *realis.Monitor
 var thermosPayload []byte
 
+const AuroraURL = "http://192.168.33.7:8081"
+
 func TestMain(m *testing.M) {
 	var err error
 
 	// New configuration to connect to docker container
-	r, err = realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
+	r, err = realis.NewRealisClient(realis.SchedulerUrl(AuroraURL),
 		realis.BasicAuth("aurora", "secret"),
 		realis.TimeoutMS(20000))
 
@@ -93,7 +95,7 @@ func TestNonExistentEndpoint(t *testing.T) {
 }
 
 func TestThriftBinary(t *testing.T) {
-	r, err := realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
+	r, err := realis.NewRealisClient(realis.SchedulerUrl(AuroraURL),
 		realis.BasicAuth("aurora", "secret"),
 		realis.TimeoutMS(20000),
 		realis.ThriftBinary())
@@ -115,7 +117,7 @@ func TestThriftBinary(t *testing.T) {
 }
 
 func TestThriftJSON(t *testing.T) {
-	r, err := realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
+	r, err := realis.NewRealisClient(realis.SchedulerUrl(AuroraURL),
 		realis.BasicAuth("aurora", "secret"),
 		realis.TimeoutMS(20000),
 		realis.ThriftJSON())
@@ -137,7 +139,7 @@ func TestThriftJSON(t *testing.T) {
 }
 
 func TestNoopLogger(t *testing.T) {
-	r, err := realis.NewRealisClient(realis.SchedulerUrl("http://192.168.33.7:8081"),
+	r, err := realis.NewRealisClient(realis.SchedulerUrl(AuroraURL),
 		realis.BasicAuth("aurora", "secret"),
 		realis.SetLogger(realis.NoopLogger{}))
 
@@ -157,10 +159,12 @@ func TestNoopLogger(t *testing.T) {
 }
 
 func TestLeaderFromZK(t *testing.T) {
-	cluster := realis.GetDefaultClusterFromZKUrl("192.168.33.2:2181")
+	cluster := realis.GetDefaultClusterFromZKUrl("192.168.33.7")
 	url, err := realis.LeaderFromZK(*cluster)
 
 	assert.NoError(t, err)
+
+	// Address stored inside of ZK might be different than the one we connect to in our tests.
 	assert.Equal(t, "http://192.168.33.7:8081", url)
 }
 
@@ -461,6 +465,37 @@ func TestRealisClient_CreateService(t *testing.T) {
 	// Kill task test task after confirming it came up fine
 	_, err = r.KillJob(job.JobKey())
 	assert.NoError(t, err)
+
+	success, err := monitor.Instances(job.JobKey(), 0, 1, 50)
+	assert.True(t, success)
+
+	// Test case where http connection timeouts out.
+	t.Run("TimeoutError", func(t *testing.T) {
+		timeoutClient, err := realis.NewRealisClient(realis.SchedulerUrl(AuroraURL),
+			realis.BasicAuth("aurora", "secret"),
+			realis.TimeoutMS(20))
+		assert.NoError(t, err)
+
+		defer timeoutClient.Close()
+
+		// Make sure a timedout error was returned
+		_, _, err = timeoutClient.CreateService(job, settings)
+		assert.Error(t, err)
+		assert.True(t, realis.IsTimeout(err))
+
+		summary, err := r.GetJobUpdateSummaries(&aurora.JobUpdateQuery{Role: &job.JobKey().Role, JobKey: job.JobKey()})
+		assert.NoError(t, err)
+
+		// If the call went through, then clean up
+		if len(summary.GetResult_().GetGetJobUpdateSummariesResult_().GetUpdateSummaries()) > 1 {
+			key := summary.GetResult_().GetGetJobUpdateSummariesResult_().GetUpdateSummaries()[0].GetKey()
+
+			_, err = r.AbortJobUpdate(*key, "Cleaning up")
+			_, err = r.KillJob(job.JobKey())
+			assert.NoError(t, err)
+		}
+
+	})
 }
 
 // Test configuring an executor that doesn't exist for CreateJob API
