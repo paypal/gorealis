@@ -275,6 +275,25 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		assert.True(t, success)
 		assert.NoError(t, err)
 	})
+
+	t.Run("Duplicate_Metadata", func(t *testing.T) {
+		job.Name("thermos_duplicate_metadata").
+			AddLabel("hostname", "cookie").
+			AddLabel("hostname", "candy").
+			AddLabel("hostname", "popcorn").
+			AddLabel("hostname", "chips").
+			AddLabel("chips", "chips")
+
+		_, err := r.CreateJob(job)
+		assert.NoError(t, err)
+
+		success, err := monitor.Instances(job.JobKey(), 2, 1, 50)
+		assert.True(t, success)
+		assert.NoError(t, err)
+
+		_, err = r.KillJob(job.JobKey())
+		assert.NoError(t, err)
+	})
 }
 
 // Test configuring an executor that doesn't exist for CreateJob API
