@@ -35,13 +35,13 @@ var r realis.Realis
 var monitor *realis.Monitor
 var thermosPayload []byte
 
-const AuroraURL = "http://192.168.33.7:8081"
+const auroraURL = "http://192.168.33.7:8081"
 
 func TestMain(m *testing.M) {
 	var err error
 
 	// New configuration to connect to docker container
-	r, err = realis.NewRealisClient(realis.SchedulerUrl(AuroraURL),
+	r, err = realis.NewRealisClient(realis.SchedulerUrl(auroraURL),
 		realis.BasicAuth("aurora", "secret"),
 		realis.TimeoutMS(20000))
 
@@ -95,7 +95,7 @@ func TestNonExistentEndpoint(t *testing.T) {
 }
 
 func TestThriftBinary(t *testing.T) {
-	r, err := realis.NewRealisClient(realis.SchedulerUrl(AuroraURL),
+	r, err := realis.NewRealisClient(realis.SchedulerUrl(auroraURL),
 		realis.BasicAuth("aurora", "secret"),
 		realis.TimeoutMS(20000),
 		realis.ThriftBinary())
@@ -117,7 +117,7 @@ func TestThriftBinary(t *testing.T) {
 }
 
 func TestThriftJSON(t *testing.T) {
-	r, err := realis.NewRealisClient(realis.SchedulerUrl(AuroraURL),
+	r, err := realis.NewRealisClient(realis.SchedulerUrl(auroraURL),
 		realis.BasicAuth("aurora", "secret"),
 		realis.TimeoutMS(20000),
 		realis.ThriftJSON())
@@ -139,7 +139,7 @@ func TestThriftJSON(t *testing.T) {
 }
 
 func TestNoopLogger(t *testing.T) {
-	r, err := realis.NewRealisClient(realis.SchedulerUrl(AuroraURL),
+	r, err := realis.NewRealisClient(realis.SchedulerUrl(auroraURL),
 		realis.BasicAuth("aurora", "secret"),
 		realis.SetLogger(realis.NoopLogger{}))
 
@@ -488,32 +488,59 @@ func TestRealisClient_CreateService(t *testing.T) {
 	success, err := monitor.Instances(job.JobKey(), 0, 1, 50)
 	assert.True(t, success)
 
+	// Create a client which will timeout and close the connection before receiving an answer
+	timeoutClient, err := realis.NewRealisClient(realis.SchedulerUrl(auroraURL),
+		realis.BasicAuth("aurora", "secret"),
+		realis.TimeoutMS(10))
+	assert.NoError(t, err)
+	defer timeoutClient.Close()
+
 	// Test case where http connection timeouts out.
 	t.Run("TimeoutError", func(t *testing.T) {
-		timeoutClient, err := realis.NewRealisClient(realis.SchedulerUrl(AuroraURL),
-			realis.BasicAuth("aurora", "secret"),
-			realis.TimeoutMS(20))
-		assert.NoError(t, err)
-
-		defer timeoutClient.Close()
+		job.Name("createService_timeout")
 
 		// Make sure a timedout error was returned
 		_, _, err = timeoutClient.CreateService(job, settings)
 		assert.Error(t, err)
 		assert.True(t, realis.IsTimeout(err))
 
-		summary, err := r.GetJobUpdateSummaries(&aurora.JobUpdateQuery{Role: &job.JobKey().Role, JobKey: job.JobKey()})
+		updateReceivedQuery := aurora.JobUpdateQuery{
+			Role:           &job.JobKey().Role,
+			JobKey:         job.JobKey(),
+			UpdateStatuses: aurora.ACTIVE_JOB_UPDATE_STATES,
+			Limit:          1}
+
+		updateSummaries, err := monitor.JobUpdateQuery(updateReceivedQuery, time.Second*1, time.Second*50)
 		assert.NoError(t, err)
 
-		// If the call went through, then clean up
-		if len(summary.GetResult_().GetGetJobUpdateSummariesResult_().GetUpdateSummaries()) > 1 {
-			key := summary.GetResult_().GetGetJobUpdateSummariesResult_().GetUpdateSummaries()[0].GetKey()
+		assert.Len(t, updateSummaries, 1)
 
-			_, err = r.AbortJobUpdate(*key, "Cleaning up")
-			_, err = r.KillJob(job.JobKey())
-			assert.NoError(t, err)
-		}
+		_, err = r.AbortJobUpdate(*updateSummaries[0].Key, "Cleaning up")
+		_, err = r.KillJob(job.JobKey())
+		assert.NoError(t, err)
 
+	})
+
+	// Test case where http connection timeouts out.
+	t.Run("TimeoutError_BadPayload", func(t *testing.T) {
+		// Illegal payload
+		job.InstanceCount(-1)
+		job.Name("createService_timeout_bad_payload")
+
+		// Make sure a timedout error was returned
+		_, _, err = timeoutClient.CreateService(job, settings)
+		assert.Error(t, err)
+		assert.True(t, realis.IsTimeout(err))
+
+		summary, err := r.GetJobUpdateSummaries(
+			&aurora.JobUpdateQuery{
+				Role:           &job.JobKey().Role,
+				JobKey:         job.JobKey(),
+				UpdateStatuses: aurora.ACTIVE_JOB_UPDATE_STATES})
+		assert.NoError(t, err)
+
+		// Payload should have been rejected, no update should exist
+		assert.Len(t, summary.GetResult_().GetGetJobUpdateSummariesResult_().GetUpdateSummaries(), 0)
 	})
 }
 
