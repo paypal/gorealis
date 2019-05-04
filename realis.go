@@ -495,10 +495,8 @@ func (r *realisClient) Close() {
 // Uses predefined set of states to retrieve a set of active jobs in Apache Aurora.
 func (r *realisClient) GetInstanceIds(key *aurora.JobKey, states []aurora.ScheduleStatus) ([]int32, error) {
 	taskQ := &aurora.TaskQuery{
-		Role:        &key.Role,
-		Environment: &key.Environment,
-		JobName:     &key.Name,
-		Statuses:    states,
+		JobKeys:  []*aurora.JobKey{{Environment: key.Environment, Role: key.Role, Name: key.Name}},
+		Statuses: states,
 	}
 
 	r.logger.DebugPrintf("GetTasksWithoutConfigs Thrift Payload: %+v\n", taskQ)
