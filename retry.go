@@ -179,7 +179,7 @@ func (r *realisClient) thriftCallWithRetries(returnOnTimeout bool, thriftCall au
 					if e.Timeout() {
 						timeouts++
 						r.logger.DebugPrintf(
-							"Client closed connection (timedout) %v times before server responded, consider increasing connection timeout",
+							"Client closed connection (timedout) %d times before server responded, consider increasing connection timeout",
 							timeouts)
 						if returnOnTimeout {
 							return resp, newTimedoutError(errors.New("client connection closed before server answer"))
