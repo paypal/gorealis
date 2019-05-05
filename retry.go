@@ -28,7 +28,7 @@ import (
 
 type Backoff struct {
 	Duration time.Duration // the base duration
-	Factor   float64       // Duration is multipled by factor each iteration
+	Factor   float64       // Duration is multiplied by a factor each iteration
 	Jitter   float64       // The amount of jitter applied each iteration
 	Steps    int           // Exit with error after this many steps
 }
@@ -77,7 +77,7 @@ func ExponentialBackoff(backoff Backoff, logger Logger, condition ConditionFunc)
 				adjusted = Jitter(duration, backoff.Jitter)
 			}
 
-			logger.Printf("A retriable error occurred during function call, backing off for %v before retrying\n", adjusted)
+			logger.Printf("A retryable error occurred during function call, backing off for %v before retrying\n", adjusted)
 			time.Sleep(adjusted)
 			duration = time.Duration(float64(duration) * backoff.Factor)
 		}
@@ -116,10 +116,11 @@ func ExponentialBackoff(backoff Backoff, logger Logger, condition ConditionFunc)
 type auroraThriftCall func() (resp *aurora.Response, err error)
 
 // Duplicates the functionality of ExponentialBackoff but is specifically targeted towards ThriftCalls.
-func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*aurora.Response, error) {
+func (r *realisClient) thriftCallWithRetries(returnOnTimeout bool, thriftCall auroraThriftCall) (*aurora.Response, error) {
 	var resp *aurora.Response
 	var clientErr error
 	var curStep int
+	timeouts := 0
 
 	backoff := r.config.backoff
 	duration := backoff.Duration
@@ -133,7 +134,7 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 				adjusted = Jitter(duration, backoff.Jitter)
 			}
 
-			r.logger.Printf("A retriable error occurred during thrift call, backing off for %v before retry %v\n", adjusted, curStep)
+			r.logger.Printf("A retryable error occurred during thrift call, backing off for %v before retry %v\n", adjusted, curStep)
 
 			time.Sleep(adjusted)
 			duration = time.Duration(float64(duration) * backoff.Factor)
@@ -151,7 +152,7 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 			r.logger.TracePrintf("Aurora Thrift Call ended resp: %v clientErr: %v\n", resp, clientErr)
 		}()
 
-		// Check if our thrift call is returning an error. This is a retriable event as we don't know
+		// Check if our thrift call is returning an error. This is a retryable event as we don't know
 		// if it was caused by network issues.
 		if clientErr != nil {
 
@@ -169,7 +170,20 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 					// when the server is overloaded and should be retried. All other errors that are permanent
 					// will not be retried.
 					if e.Err != io.EOF && !e.Temporary() {
-						return nil, errors.Wrap(clientErr, "Permanent connection error")
+						return nil, errors.Wrap(clientErr, "permanent connection error")
+					}
+
+					// Corner case where thrift payload was received by Aurora but connection timedout before Aurora was
+					// able to reply. In this case we will return whatever response was received and a TimedOut behaving
+					// error. Users can take special action on a timeout by using IsTimedout and reacting accordingly.
+					if e.Timeout() {
+						timeouts++
+						r.logger.DebugPrintf(
+							"Client closed connection (timedout) %d times before server responded, consider increasing connection timeout",
+							timeouts)
+						if returnOnTimeout {
+							return resp, newTimedoutError(errors.New("client connection closed before server answer"))
+						}
 					}
 				}
 			}
@@ -183,7 +197,7 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 			// If there was no client error, but the response is nil, something went wrong.
 			// Ideally, we'll never encounter this but we're placing a safeguard here.
 			if resp == nil {
-				return nil, errors.New("Response from aurora is nil")
+				return nil, errors.New("response from aurora is nil")
 			}
 
 			// Check Response Code from thrift and make a decision to continue retrying or not.
@@ -210,7 +224,7 @@ func (r *realisClient) thriftCallWithRetries(thriftCall auroraThriftCall) (*auro
 				// It is currently not used as a response in the scheduler so it is unknown how to handle it.
 			default:
 				r.logger.DebugPrintf("unhandled response code %v received from Aurora\n", responseCode)
-				return nil, errors.Errorf("unhandled response code from Aurora %v\n", responseCode.String())
+				return nil, errors.Errorf("unhandled response code from Aurora %v", responseCode.String())
 			}
 		}
 

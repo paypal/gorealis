@@ -58,3 +58,18 @@ updateJob.InstanceCount(1)
 updateJob.Ram(128)
 msg, err := r.UpdateJob(updateJob, "")
 ```
+
+
+* Handling a timeout scenario:
+
+When sending an API call to Aurora, the call may timeout at the client side.
+This means that the time limit has been reached while waiting for the scheduler
+to reply. In such a case it is recommended that the timeout is increased through
+the use of the `realis.TimeoutMS()` option.
+
+As these timeouts cannot be totally avoided, there exists a mechanism to mitigate such
+scenarios. The `StartJobUpdate` and `CreateService` API will return an error that
+implements the Timeout interface.
+
+An error can be checked to see if it is a Timeout error by using the `realis.IsTimeout()`
+function.

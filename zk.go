@@ -103,7 +103,7 @@ func LeaderFromZKOpts(options ...ZKOpt) (string, error) {
 
 		c, _, err := zk.Connect(config.endpoints, config.timeout, func(c *zk.Conn) { c.SetLogger(config.logger) })
 		if err != nil {
-			return false, NewTemporaryError(errors.Wrap(err, "Failed to connect to Zookeeper"))
+			return false, NewTemporaryError(errors.Wrap(err, "failed to connect to Zookeeper"))
 		}
 
 		defer c.Close()
@@ -117,7 +117,7 @@ func LeaderFromZKOpts(options ...ZKOpt) (string, error) {
 				return false, errors.Wrapf(err, "path %s is an invalid Zookeeper path", config.path)
 			}
 
-			return false, NewTemporaryError(errors.Wrapf(err, "Path %s doesn't exist on Zookeeper ", config.path))
+			return false, NewTemporaryError(errors.Wrapf(err, "path %s doesn't exist on Zookeeper ", config.path))
 		}
 
 		// Search for the leader through all the children in the given path
@@ -134,12 +134,12 @@ func LeaderFromZKOpts(options ...ZKOpt) (string, error) {
 						return false, errors.Wrapf(err, "path %s is an invalid Zookeeper path", childPath)
 					}
 
-					return false, NewTemporaryError(errors.Wrap(err, "Error fetching contents of leader"))
+					return false, NewTemporaryError(errors.Wrap(err, "unable to fetch contents of leader"))
 				}
 
 				err = json.Unmarshal([]byte(data), serviceInst)
 				if err != nil {
-					return false, NewTemporaryError(errors.Wrap(err, "Unable to unmarshall contents of leader"))
+					return false, NewTemporaryError(errors.Wrap(err, "unable to unmarshal contents of leader"))
 				}
 
 				// Should only be one endpoint.
@@ -162,11 +162,11 @@ func LeaderFromZKOpts(options ...ZKOpt) (string, error) {
 		}
 
 		// Leader data might not be available yet, try to fetch again.
-		return false, NewTemporaryError(errors.New("No leader found"))
+		return false, NewTemporaryError(errors.New("no leader found"))
 	})
 
 	if retryErr != nil {
-		config.logger.Printf("Failed to determine leader after %v attempts", config.backoff.Steps)
+		config.logger.Printf("failed to determine leader after %v attempts", config.backoff.Steps)
 		return "", retryErr
 	}
 
