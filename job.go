@@ -178,7 +178,9 @@ func (j *AuroraJob) GPU(gpu int64) Job {
 	// rejects jobs with GPU resources attached to it.
 	if _, ok := j.resources[GPU]; !ok {
 		j.resources[GPU] = &aurora.Resource{}
-		j.JobConfig().GetTaskConfig().Resources = append(j.JobConfig().GetTaskConfig().Resources, j.resources[GPU])
+		j.JobConfig().GetTaskConfig().Resources = append(
+			j.JobConfig().GetTaskConfig().Resources,
+			j.resources[GPU])
 	}
 
 	j.resources[GPU].NumGpus = &gpu
@@ -259,7 +261,9 @@ func (j *AuroraJob) AddLabel(key string, value string) Job {
 func (j *AuroraJob) AddNamedPorts(names ...string) Job {
 	j.portCount += len(names)
 	for _, name := range names {
-		j.jobConfig.TaskConfig.Resources = append(j.jobConfig.TaskConfig.Resources, &aurora.Resource{NamedPort: &name})
+		j.jobConfig.TaskConfig.Resources = append(
+			j.jobConfig.TaskConfig.Resources,
+			&aurora.Resource{NamedPort: &name})
 	}
 
 	return j
@@ -274,7 +278,9 @@ func (j *AuroraJob) AddPorts(num int) Job {
 	j.portCount += num
 	for i := start; i < j.portCount; i++ {
 		portName := "org.apache.aurora.port." + strconv.Itoa(i)
-		j.jobConfig.TaskConfig.Resources = append(j.jobConfig.TaskConfig.Resources, &aurora.Resource{NamedPort: &portName})
+		j.jobConfig.TaskConfig.Resources = append(
+			j.jobConfig.TaskConfig.Resources,
+			&aurora.Resource{NamedPort: &portName})
 	}
 
 	return j

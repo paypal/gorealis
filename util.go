@@ -67,7 +67,7 @@ func validateAndPopulateAuroraURL(urlStr string) (string, error) {
 		return "", errors.Errorf("only protocols http and https are supported %v\n", u.Scheme)
 	}
 
-	if u.Path != "/api" {
+	if u.Path != APIPath {
 		return "", errors.Errorf("expected /api path %v\n", u.Path)
 	}
 

@@ -16,6 +16,7 @@
 package realis
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
@@ -38,12 +39,15 @@ import (
 
 const VERSION = "1.21.0"
 
-// TODO(rdelvalle): Move documentation to interface in order to make godoc look better/more accessible
+// TODO(rdelvalle): Move documentation to interface in order to make godoc look better accessible
+// Or get rid of itnerface
 type Realis interface {
 	AbortJobUpdate(updateKey aurora.JobUpdateKey, message string) (*aurora.Response, error)
 	AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error)
 	CreateJob(auroraJob Job) (*aurora.Response, error)
-	CreateService(auroraJob Job, settings *aurora.JobUpdateSettings) (*aurora.Response, *aurora.StartJobUpdateResult_, error)
+	CreateService(
+		auroraJob Job,
+		settings *aurora.JobUpdateSettings) (*aurora.Response, *aurora.StartJobUpdateResult_, error)
 	DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, error)
 	FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error)
 	GetInstanceIds(key *aurora.JobKey, states []aurora.ScheduleStatus) ([]int32, error)
@@ -243,7 +247,11 @@ func newTJSONTransport(url string, timeout int, config *RealisConfig) (thrift.TT
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create transport")
 	}
-	httpTrans := (trans).(*thrift.THttpClient)
+	httpTrans, ok := (trans).(*thrift.THttpClient)
+	if !ok {
+		return nil, errors.Wrap(err, "transport does not contain a thrift client")
+	}
+
 	httpTrans.SetHeader("Content-Type", "application/x-thrift")
 	httpTrans.SetHeader("User-Agent", "gorealis v"+VERSION)
 	return trans, err
@@ -254,7 +262,11 @@ func newTBinTransport(url string, timeout int, config *RealisConfig) (thrift.TTr
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create transport")
 	}
-	httpTrans := (trans).(*thrift.THttpClient)
+	httpTrans, ok := (trans).(*thrift.THttpClient)
+	if !ok {
+		return nil, errors.Wrap(err, "transport does not contain a thrift client")
+	}
+
 	httpTrans.DelHeader("Content-Type") // Workaround for using thrift HttpPostClient
 	httpTrans.SetHeader("Accept", "application/vnd.apache.thrift.binary")
 	httpTrans.SetHeader("Content-Type", "application/vnd.apache.thrift.binary")
@@ -328,14 +340,18 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		url, err = LeaderFromZK(*config.cluster)
 		// If ZK is configured, throw an error if the leader is unable to be determined
 		if err != nil {
-			return nil, NewTemporaryError(errors.Wrap(err, "unable to use zk to get leader	"))
+			return nil, NewTemporaryError(errors.Wrap(err, "unable to use zk to get leader"))
 		}
 		config.logger.Println("Scheduler URL from ZK: ", url)
 	} else if config.url != "" {
-		url = config.url
 		config.logger.Println("Scheduler URL: ", url)
 	} else {
 		return nil, errors.New("incomplete Options -- url, cluster.json, or Zookeeper address required")
+	}
+
+	url, err = validateAndPopulateAuroraURL(url)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid Aurora url")
 	}
 
 	if config.jsonTransport {
@@ -359,7 +375,10 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 
 	// Adding Basic Authentication.
 	if config.username != "" && config.password != "" {
-		httpTrans := (config.transport).(*thrift.THttpClient)
+		httpTrans, ok := (config.transport).(*thrift.THttpClient)
+		if !ok {
+			return nil, errors.New("transport provided does not contain an THttpClient")
+		}
 		httpTrans.SetHeader("Authorization", "Basic "+basicAuth(config.username, config.password))
 	}
 
@@ -504,7 +523,7 @@ func (r *realisClient) GetInstanceIds(key *aurora.JobKey, states []aurora.Schedu
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.client.GetTasksWithoutConfigs(nil, taskQ)
+			return r.client.GetTasksWithoutConfigs(context.TODO(), taskQ)
 		})
 
 	// If we encountered an error we couldn't recover from by retrying, return an error to the user
@@ -529,7 +548,7 @@ func (r *realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQue
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.readonlyClient.GetJobUpdateSummaries(nil, jobUpdateQuery)
+			return r.readonlyClient.GetJobUpdateSummaries(context.TODO(), jobUpdateQuery)
 		})
 
 	if retryErr != nil {
@@ -546,7 +565,7 @@ func (r *realisClient) GetJobs(role string) (*aurora.Response, *aurora.GetJobsRe
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.readonlyClient.GetJobs(nil, role)
+			return r.readonlyClient.GetJobs(context.TODO(), role)
 		})
 
 	if retryErr != nil {
@@ -567,7 +586,7 @@ func (r *realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*a
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.client.KillTasks(nil, key, instances, "")
+			return r.client.KillTasks(context.TODO(), key, instances, "")
 		})
 
 	if retryErr != nil {
@@ -589,7 +608,7 @@ func (r *realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 		false,
 		func() (*aurora.Response, error) {
 			// Giving the KillTasks thrift call an empty set tells the Aurora scheduler to kill all active shards
-			return r.client.KillTasks(nil, key, nil, "")
+			return r.client.KillTasks(context.TODO(), key, nil, "")
 		})
 
 	if retryErr != nil {
@@ -609,7 +628,7 @@ func (r *realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.client.CreateJob(nil, auroraJob.JobConfig())
+			return r.client.CreateJob(context.TODO(), auroraJob.JobConfig())
 		})
 
 	if retryErr != nil {
@@ -619,7 +638,9 @@ func (r *realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 }
 
 // This API uses an update thrift call to create the services giving a few more robust features.
-func (r *realisClient) CreateService(auroraJob Job, settings *aurora.JobUpdateSettings) (*aurora.Response, *aurora.StartJobUpdateResult_, error) {
+func (r *realisClient) CreateService(
+	auroraJob Job,
+	settings *aurora.JobUpdateSettings) (*aurora.Response, *aurora.StartJobUpdateResult_, error) {
 	// Create a new job update object and ship it to the StartJobUpdate api
 	update := NewUpdateJob(auroraJob.TaskConfig(), settings)
 	update.InstanceCount(auroraJob.GetInstanceCount())
@@ -646,7 +667,7 @@ func (r *realisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.client.ScheduleCronJob(nil, auroraJob.JobConfig())
+			return r.client.ScheduleCronJob(context.TODO(), auroraJob.JobConfig())
 		})
 
 	if retryErr != nil {
@@ -662,7 +683,7 @@ func (r *realisClient) DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.client.DescheduleCronJob(nil, key)
+			return r.client.DescheduleCronJob(context.TODO(), key)
 		})
 
 	if retryErr != nil {
@@ -680,7 +701,7 @@ func (r *realisClient) StartCronJob(key *aurora.JobKey) (*aurora.Response, error
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.client.StartCronJob(nil, key)
+			return r.client.StartCronJob(context.TODO(), key)
 		})
 
 	if retryErr != nil {
@@ -697,7 +718,7 @@ func (r *realisClient) RestartInstances(key *aurora.JobKey, instances ...int32) 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.client.RestartShards(nil, key, instances)
+			return r.client.RestartShards(context.TODO(), key, instances)
 		})
 
 	if retryErr != nil {
@@ -720,7 +741,7 @@ func (r *realisClient) RestartJob(key *aurora.JobKey) (*aurora.Response, error) 
 		resp, retryErr := r.thriftCallWithRetries(
 			false,
 			func() (*aurora.Response, error) {
-				return r.client.RestartShards(nil, key, instanceIds)
+				return r.client.RestartShards(context.TODO(), key, instanceIds)
 			})
 
 		if retryErr != nil {
@@ -741,7 +762,7 @@ func (r *realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*au
 	resp, retryErr := r.thriftCallWithRetries(
 		true,
 		func() (*aurora.Response, error) {
-			return r.client.StartJobUpdate(nil, updateJob.req, message)
+			return r.client.StartJobUpdate(context.TODO(), updateJob.req, message)
 		})
 
 	if retryErr != nil {
@@ -765,7 +786,7 @@ func (r *realisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message str
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.client.AbortJobUpdate(nil, &updateKey, message)
+			return r.client.AbortJobUpdate(context.TODO(), &updateKey, message)
 		})
 
 	if retryErr != nil {
@@ -774,7 +795,11 @@ func (r *realisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message str
 
 	// Make this call synchronous by  blocking until it job has successfully transitioned to aborted
 	m := Monitor{Client: r}
-	_, err := m.JobUpdateStatus(updateKey, map[aurora.JobUpdateStatus]bool{aurora.JobUpdateStatus_ABORTED: true}, time.Second*5, time.Minute)
+	_, err := m.JobUpdateStatus(
+		updateKey,
+		map[aurora.JobUpdateStatus]bool{aurora.JobUpdateStatus_ABORTED: true},
+		time.Second*5,
+		time.Minute)
 
 	return resp, err
 }
@@ -787,7 +812,7 @@ func (r *realisClient) PauseJobUpdate(updateKey *aurora.JobUpdateKey, message st
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.client.PauseJobUpdate(nil, updateKey, message)
+			return r.client.PauseJobUpdate(context.TODO(), updateKey, message)
 		})
 
 	if retryErr != nil {
@@ -805,7 +830,7 @@ func (r *realisClient) ResumeJobUpdate(updateKey *aurora.JobUpdateKey, message s
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.client.ResumeJobUpdate(nil, updateKey, message)
+			return r.client.ResumeJobUpdate(context.TODO(), updateKey, message)
 		})
 
 	if retryErr != nil {
@@ -823,7 +848,7 @@ func (r *realisClient) PulseJobUpdate(updateKey *aurora.JobUpdateKey) (*aurora.R
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.client.PulseJobUpdate(nil, updateKey)
+			return r.client.PulseJobUpdate(context.TODO(), updateKey)
 		})
 
 	if retryErr != nil {
@@ -842,7 +867,7 @@ func (r *realisClient) AddInstances(instKey aurora.InstanceKey, count int32) (*a
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.client.AddInstances(nil, &instKey, count)
+			return r.client.AddInstances(context.TODO(), &instKey, count)
 		})
 
 	if retryErr != nil {
@@ -881,7 +906,7 @@ func (r *realisClient) GetTaskStatus(query *aurora.TaskQuery) ([]*aurora.Schedul
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.client.GetTasksStatus(nil, query)
+			return r.client.GetTasksStatus(context.TODO(), query)
 		})
 
 	if retryErr != nil {
@@ -899,7 +924,7 @@ func (r *realisClient) GetPendingReason(query *aurora.TaskQuery) ([]*aurora.Pend
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.client.GetPendingReason(nil, query)
+			return r.client.GetPendingReason(context.TODO(), query)
 		})
 
 	if retryErr != nil {
@@ -923,7 +948,7 @@ func (r *realisClient) GetTasksWithoutConfigs(query *aurora.TaskQuery) ([]*auror
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.client.GetTasksWithoutConfigs(nil, query)
+			return r.client.GetTasksWithoutConfigs(context.TODO(), query)
 		})
 
 	if retryErr != nil {
@@ -949,7 +974,7 @@ func (r *realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.Task
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.client.GetTasksStatus(nil, taskQ)
+			return r.client.GetTasksStatus(context.TODO(), taskQ)
 		})
 
 	if retryErr != nil {
@@ -977,7 +1002,7 @@ func (r *realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aur
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.client.GetJobUpdateDetails(nil, &updateQuery)
+			return r.client.GetJobUpdateDetails(context.TODO(), &updateQuery)
 		})
 
 	if retryErr != nil {
@@ -994,7 +1019,7 @@ func (r *realisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.client.RollbackJobUpdate(nil, &key, message)
+			return r.client.RollbackJobUpdate(context.TODO(), &key, message)
 		})
 
 	if retryErr != nil {

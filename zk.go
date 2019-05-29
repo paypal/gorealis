@@ -146,7 +146,8 @@ func LeaderFromZKOpts(options ...ZKOpt) (string, error) {
 				// This should never be encountered as it would indicate Aurora
 				// writing bad info into Zookeeper but is kept here as a safety net.
 				if len(serviceInst.AdditionalEndpoints) > 1 {
-					return false, NewTemporaryError(errors.New("ambiguous endpoints in json blob, Aurora wrote bad info to ZK"))
+					return false,
+						NewTemporaryError(errors.New("ambiguous endpoints in json blob, Aurora wrote bad info to ZK"))
 				}
 
 				var scheme, host, port string

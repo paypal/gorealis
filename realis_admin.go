@@ -1,6 +1,8 @@
 package realis
 
 import (
+	"context"
+
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/pkg/errors"
 )
@@ -27,7 +29,7 @@ func (r *realisClient) DrainHosts(hosts ...string) (*aurora.Response, *aurora.Dr
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.adminClient.DrainHosts(nil, drainList)
+			return r.adminClient.DrainHosts(context.TODO(), drainList)
 		})
 
 	if retryErr != nil {
@@ -44,7 +46,10 @@ func (r *realisClient) DrainHosts(hosts ...string) (*aurora.Response, *aurora.Dr
 // Start SLA Aware Drain.
 // defaultSlaPolicy is the fallback SlaPolicy to use if a task does not have an SlaPolicy.
 // After timeoutSecs, tasks will be forcefully drained without checking SLA.
-func (r *realisClient) SLADrainHosts(policy *aurora.SlaPolicy, timeout int64, hosts ...string) (*aurora.DrainHostsResult_, error) {
+func (r *realisClient) SLADrainHosts(
+	policy *aurora.SlaPolicy,
+	timeout int64,
+	hosts ...string) (*aurora.DrainHostsResult_, error) {
 	var result *aurora.DrainHostsResult_
 
 	if len(hosts) == 0 {
@@ -59,7 +64,7 @@ func (r *realisClient) SLADrainHosts(policy *aurora.SlaPolicy, timeout int64, ho
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.adminClient.SlaDrainHosts(nil, drainList, policy, timeout)
+			return r.adminClient.SlaDrainHosts(context.TODO(), drainList, policy, timeout)
 		})
 
 	if retryErr != nil {
@@ -89,7 +94,7 @@ func (r *realisClient) StartMaintenance(hosts ...string) (*aurora.Response, *aur
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.adminClient.StartMaintenance(nil, hostList)
+			return r.adminClient.StartMaintenance(context.TODO(), hostList)
 		})
 
 	if retryErr != nil {
@@ -119,7 +124,7 @@ func (r *realisClient) EndMaintenance(hosts ...string) (*aurora.Response, *auror
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.adminClient.EndMaintenance(nil, hostList)
+			return r.adminClient.EndMaintenance(context.TODO(), hostList)
 		})
 
 	if retryErr != nil {
@@ -151,7 +156,7 @@ func (r *realisClient) MaintenanceStatus(hosts ...string) (*aurora.Response, *au
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.adminClient.MaintenanceStatus(nil, hostList)
+			return r.adminClient.MaintenanceStatus(context.TODO(), hostList)
 		})
 
 	if retryErr != nil {
@@ -166,7 +171,8 @@ func (r *realisClient) MaintenanceStatus(hosts ...string) (*aurora.Response, *au
 }
 
 // SetQuota sets a quota aggregate for the given role
-// TODO(zircote) Currently investigating an error that is returned from thrift calls that include resources for `NamedPort` and `NumGpu`
+// TODO(zircote) Currently investigating an error that is returned
+// from thrift calls that include resources for `NamedPort` and `NumGpu`
 func (r *realisClient) SetQuota(role string, cpu *float64, ramMb *int64, diskMb *int64) (*aurora.Response, error) {
 	quota := &aurora.ResourceAggregate{
 		Resources: []*aurora.Resource{{NumCpus: cpu}, {RamMb: ramMb}, {DiskMb: diskMb}},
@@ -175,7 +181,7 @@ func (r *realisClient) SetQuota(role string, cpu *float64, ramMb *int64, diskMb 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.adminClient.SetQuota(nil, role, quota)
+			return r.adminClient.SetQuota(context.TODO(), role, quota)
 		})
 
 	if retryErr != nil {
@@ -191,7 +197,7 @@ func (r *realisClient) GetQuota(role string) (*aurora.Response, error) {
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.adminClient.GetQuota(nil, role)
+			return r.adminClient.GetQuota(context.TODO(), role)
 		})
 
 	if retryErr != nil {
@@ -206,7 +212,7 @@ func (r *realisClient) Snapshot() error {
 	_, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.adminClient.Snapshot(nil)
+			return r.adminClient.Snapshot(context.TODO())
 		})
 
 	if retryErr != nil {
@@ -222,7 +228,7 @@ func (r *realisClient) PerformBackup() error {
 	_, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.adminClient.PerformBackup(nil)
+			return r.adminClient.PerformBackup(context.TODO())
 		})
 
 	if retryErr != nil {
@@ -237,7 +243,7 @@ func (r *realisClient) ForceImplicitTaskReconciliation() error {
 	_, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
-			return r.adminClient.TriggerImplicitTaskReconciliation(nil)
+			return r.adminClient.TriggerImplicitTaskReconciliation(context.TODO())
 		})
 
 	if retryErr != nil {
@@ -250,7 +256,7 @@ func (r *realisClient) ForceImplicitTaskReconciliation() error {
 func (r *realisClient) ForceExplicitTaskReconciliation(batchSize *int32) error {
 
 	if batchSize != nil && *batchSize < 1 {
-		return errors.New("Invalid batch size.")
+		return errors.New("invalid batch size")
 	}
 	settings := aurora.NewExplicitReconciliationSettings()
 
@@ -258,7 +264,7 @@ func (r *realisClient) ForceExplicitTaskReconciliation(batchSize *int32) error {
 
 	_, retryErr := r.thriftCallWithRetries(false,
 		func() (*aurora.Response, error) {
-			return r.adminClient.TriggerExplicitTaskReconciliation(nil, settings)
+			return r.adminClient.TriggerExplicitTaskReconciliation(context.TODO(), settings)
 		})
 
 	if retryErr != nil {

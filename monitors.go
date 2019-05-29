@@ -27,7 +27,10 @@ type Monitor struct {
 }
 
 // Polls the scheduler every certain amount of time to see if the update has succeeded
-func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout int) (bool, error) {
+func (m *Monitor) JobUpdate(
+	updateKey aurora.JobUpdateKey,
+	interval int,
+	timeout int) (bool, error) {
 
 	updateQ := aurora.JobUpdateQuery{
 		Key:   &updateKey,
@@ -40,7 +43,10 @@ func (m *Monitor) JobUpdate(updateKey aurora.JobUpdateKey, interval int, timeout
 			aurora.JobUpdateStatus_FAILED,
 		},
 	}
-	updateSummaries, err := m.JobUpdateQuery(updateQ, time.Duration(interval)*time.Second, time.Duration(timeout)*time.Second)
+	updateSummaries, err := m.JobUpdateQuery(
+		updateQ,
+		time.Duration(interval)*time.Second,
+		time.Duration(timeout)*time.Second)
 
 	status := updateSummaries[0].State.Status
 
@@ -119,7 +125,10 @@ func (m *Monitor) JobUpdateQuery(
 }
 
 // Monitor a Job until all instances enter one of the LIVE_STATES
-func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval, timeout int) (bool, error) {
+func (m *Monitor) Instances(
+	key *aurora.JobKey,
+	instances int32,
+	interval, timeout int) (bool, error) {
 	return m.ScheduleStatus(key, instances, LiveStates, interval, timeout)
 }
 
@@ -164,9 +173,13 @@ func (m *Monitor) ScheduleStatus(
 	}
 }
 
-// Monitor host status until all hosts match the status provided. Returns a map where the value is true if the host
+// Monitor host status until all hosts match the status provided.
+// Returns a map where the value is true if the host
 // is in one of the desired mode(s) or false if it is not as of the time when the monitor exited.
-func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode, interval, timeout int) (map[string]bool, error) {
+func (m *Monitor) HostMaintenance(
+	hosts []string,
+	modes []aurora.MaintenanceMode,
+	interval, timeout int) (map[string]bool, error) {
 
 	//  Transform modes to monitor for into a set for easy lookup
 	desiredMode := make(map[aurora.MaintenanceMode]struct{})
@@ -175,7 +188,8 @@ func (m *Monitor) HostMaintenance(hosts []string, modes []aurora.MaintenanceMode
 	}
 
 	// Turn slice into a host set to eliminate duplicates.
-	// We also can't use a simple count because multiple modes means we can have multiple matches for a single host.
+	// We also can't use a simple count because multiple modes means
+	// we can have multiple matches for a single host.
 	// I.e. host A transitions from ACTIVE to DRAINING to DRAINED while monitored
 	remainingHosts := make(map[string]struct{})
 	for _, host := range hosts {

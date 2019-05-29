@@ -76,6 +76,8 @@ func TestNonExistentEndpoint(t *testing.T) {
 		realis.TimeoutMS(200),
 		realis.BackOff(backoff),
 	)
+
+	assert.NoError(t, err)
 	defer r.Close()
 
 	taskQ := &aurora.TaskQuery{}
@@ -349,7 +351,7 @@ func TestRealisClient_GetPendingReason(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, reasons, 1)
 
-	resp, err = r.KillJob(job.JobKey())
+	_, err = r.KillJob(job.JobKey())
 	assert.NoError(t, err)
 }
 
@@ -515,7 +517,7 @@ func TestRealisClient_CreateService(t *testing.T) {
 
 		assert.Len(t, updateSummaries, 1)
 
-		_, err = r.AbortJobUpdate(*updateSummaries[0].Key, "Cleaning up")
+		r.AbortJobUpdate(*updateSummaries[0].Key, "Cleaning up")
 		_, err = r.KillJob(job.JobKey())
 		assert.NoError(t, err)
 
@@ -770,13 +772,10 @@ func TestRealisClient_Quota(t *testing.T) {
 			switch true {
 			case res.DiskMb != nil:
 				assert.Equal(t, disk, *res.DiskMb)
-				break
 			case res.NumCpus != nil:
 				assert.Equal(t, cpu, *res.NumCpus)
-				break
 			case res.RamMb != nil:
 				assert.Equal(t, ram, *res.RamMb)
-				break
 			}
 		}
 	})
@@ -829,7 +828,7 @@ func TestRealisClient_PartitionPolicy(t *testing.T) {
 	}
 
 	// Clean up after finishing test
-	_, err = r.KillJob(job.JobKey())
+	r.KillJob(job.JobKey())
 }
 
 func TestAuroraJob_UpdateSlaPolicy(t *testing.T) {
@@ -903,4 +902,8 @@ func TestAuroraJob_UpdateSlaPolicy(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func TestAuroraURLValidator(t *testing.T) {
+
 }
