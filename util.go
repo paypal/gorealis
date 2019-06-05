@@ -40,7 +40,7 @@ func init() {
 	}
 }
 
-func validateAndPopulateAuroraURL(urlStr string) (string, error) {
+func validateAuroraURL(urlStr string) (string, error) {
 
 	// If no protocol defined, assume http
 	if !strings.Contains(urlStr, "://") {

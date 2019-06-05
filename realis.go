@@ -349,7 +349,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		return nil, errors.New("incomplete Options -- url, cluster.json, or Zookeeper address required")
 	}
 
-	url, err = validateAndPopulateAuroraURL(url)
+	url, err = validateAuroraURL(url)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid Aurora url")
 	}

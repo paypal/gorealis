@@ -903,7 +903,3 @@ func TestAuroraJob_UpdateSlaPolicy(t *testing.T) {
 		})
 	}
 }
-
-func TestAuroraURLValidator(t *testing.T) {
-
-}
