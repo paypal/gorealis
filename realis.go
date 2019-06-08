@@ -37,10 +37,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-const VERSION = "1.21.0"
+const VERSION = "1.21.1"
 
 // TODO(rdelvalle): Move documentation to interface in order to make godoc look better accessible
-// Or get rid of itnerface
+// Or get rid of the interface
 type Realis interface {
 	AbortJobUpdate(updateKey aurora.JobUpdateKey, message string) (*aurora.Response, error)
 	AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error)
@@ -112,13 +112,14 @@ type RealisConfig struct {
 	transport                   thrift.TTransport
 	protoFactory                thrift.TProtocolFactory
 	logger                      *LevelLogger
-	InsecureSkipVerify          bool
+	insecureSkipVerify          bool
 	certspath                   string
 	clientKey, clientCert       string
 	options                     []ClientOption
 	debug                       bool
 	trace                       bool
 	zkOptions                   []ZKOpt
+	failOnPermanentErrors       bool
 }
 
 var defaultBackoff = Backoff{
@@ -128,11 +129,10 @@ var defaultBackoff = Backoff{
 	Jitter:   0.1,
 }
 
-const APIPath = "/api"
-
+// ClientOption - An alias for a function that modifies the realis config object
 type ClientOption func(*RealisConfig)
 
-//Config sets for options in RealisConfig.
+// BasicAuth - Set authentication used against Apache Shiro in the Aurora scheduler
 func BasicAuth(username, password string) ClientOption {
 	return func(config *RealisConfig) {
 		config.username = username
@@ -140,26 +140,29 @@ func BasicAuth(username, password string) ClientOption {
 	}
 }
 
+// SchedulerUrl - Set the immediate location of the current Aurora scheduler leader
 func SchedulerUrl(url string) ClientOption {
 	return func(config *RealisConfig) {
 		config.url = url
 	}
 }
 
+// TimeoutMS - Set the connection timeout for an HTTP post request in Miliseconds
 func TimeoutMS(timeout int) ClientOption {
 	return func(config *RealisConfig) {
 		config.timeoutms = timeout
 	}
 }
 
+// ZKCluster - Set a clusters.json provided cluster configuration to the client
 func ZKCluster(cluster *Cluster) ClientOption {
 	return func(config *RealisConfig) {
 		config.cluster = cluster
 	}
 }
 
+// ZKUrl - Set the direct location of a Zookeeper node on which the Aurora leader registers itself
 func ZKUrl(url string) ClientOption {
-
 	opts := []ZKOpt{ZKEndpoints(strings.Split(url, ",")...), ZKPath("/aurora/scheduler")}
 
 	return func(config *RealisConfig) {
@@ -171,6 +174,7 @@ func ZKUrl(url string) ClientOption {
 	}
 }
 
+// Retries - Configure the retry mechanism for the client
 func Retries(backoff Backoff) ClientOption {
 	return func(config *RealisConfig) {
 		config.backoff = backoff
@@ -195,9 +199,9 @@ func BackOff(b Backoff) ClientOption {
 	}
 }
 
-func InsecureSkipVerify(InsecureSkipVerify bool) ClientOption {
+func insecureSkipVerify(insecureSkipVerify bool) ClientOption {
 	return func(config *RealisConfig) {
-		config.InsecureSkipVerify = InsecureSkipVerify
+		config.insecureSkipVerify = insecureSkipVerify
 	}
 }
 
@@ -239,6 +243,14 @@ func Debug() ClientOption {
 func Trace() ClientOption {
 	return func(config *RealisConfig) {
 		config.trace = true
+	}
+}
+
+// FailOnPermanentErrors - If the client encounters a connection error the standard library
+// considers permanent, stop retrying and return an error to the user.
+func FailOnPermanentErrors() ClientOption {
+	return func(config *RealisConfig) {
+		config.failOnPermanentErrors = true
 	}
 }
 
@@ -344,15 +356,18 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		}
 		config.logger.Println("Scheduler URL from ZK: ", url)
 	} else if config.url != "" {
+		url = config.url
 		config.logger.Println("Scheduler URL: ", url)
 	} else {
 		return nil, errors.New("incomplete Options -- url, cluster.json, or Zookeeper address required")
 	}
 
+	config.logger.Println("Addresss obtained: ", url)
 	url, err = validateAuroraURL(url)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid Aurora url")
 	}
+	config.logger.Println("Corrected address: ", url)
 
 	if config.jsonTransport {
 		trans, err := newTJSONTransport(url, config.timeoutms, config)
@@ -424,7 +439,7 @@ func GetCerts(certPath string) (*x509.CertPool, error) {
 func defaultTTransport(url string, timeoutMs int, config *RealisConfig) (thrift.TTransport, error) {
 	var transport http.Transport
 	if config != nil {
-		tlsConfig := &tls.Config{InsecureSkipVerify: config.InsecureSkipVerify}
+		tlsConfig := &tls.Config{InsecureSkipVerify: config.insecureSkipVerify}
 
 		if config.certspath != "" {
 			rootCAs, err := GetCerts(config.certspath)
@@ -452,11 +467,13 @@ func defaultTTransport(url string, timeoutMs int, config *RealisConfig) (thrift.
 	}
 
 	trans, err := thrift.NewTHttpClientWithOptions(
-		url+APIPath,
+		url,
 		thrift.THttpClientOptions{
 			Client: &http.Client{
 				Timeout:   time.Millisecond * time.Duration(timeoutMs),
-				Transport: &transport}})
+				Transport: &transport,
+			},
+		})
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating transport")

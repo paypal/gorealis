@@ -8,6 +8,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const apiPath = "/api"
+
 var ActiveStates = make(map[aurora.ScheduleStatus]bool)
 var SlaveAssignedStates = make(map[aurora.ScheduleStatus]bool)
 var LiveStates = make(map[aurora.ScheduleStatus]bool)
@@ -67,7 +69,8 @@ func validateAuroraURL(urlStr string) (string, error) {
 		return "", errors.Errorf("only protocols http and https are supported %v\n", u.Scheme)
 	}
 
-	if u.Path != APIPath {
+	// This could theoretically be elsewhwere but we'll be strict for the sake of simplicty
+	if u.Path != apiPath {
 		return "", errors.Errorf("expected /api path %v\n", u.Path)
 	}
 

@@ -45,6 +45,12 @@ func TestAuroraURLValidator(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("ipAddrNoPath", func(t *testing.T) {
+		url, err := validateAuroraURL("http://192.168.1.33:8081")
+		assert.Equal(t, "http://192.168.1.33:8081/api", url)
+		assert.NoError(t, err)
+	})
+
 	t.Run("URLNoProtocol", func(t *testing.T) {
 		url, err := validateAuroraURL("goodurl.com:8081/api")
 		assert.Equal(t, "http://goodurl.com:8081/api", url)

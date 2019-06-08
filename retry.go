@@ -173,10 +173,11 @@ func (r *realisClient) thriftCallWithRetries(
 
 				e, ok := e.Err().(*url.Error)
 				if ok {
+
 					// EOF error occurs when the server closes the read buffer of the client. This is common
 					// when the server is overloaded and should be retried. All other errors that are permanent
 					// will not be retried.
-					if e.Err != io.EOF && !e.Temporary() {
+					if e.Err != io.EOF && !e.Temporary() && r.RealisConfig().failOnPermanentErrors {
 						return nil, errors.Wrap(clientErr, "permanent connection error")
 					}
 
