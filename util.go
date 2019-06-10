@@ -42,14 +42,14 @@ func init() {
 	}
 }
 
-func validateAuroraURL(urlStr string) (string, error) {
+func validateAuroraURL(location string) (string, error) {
 
 	// If no protocol defined, assume http
-	if !strings.Contains(urlStr, "://") {
-		urlStr = "http://" + urlStr
+	if !strings.Contains(location, "://") {
+		location = "http://" + location
 	}
 
-	u, err := url.Parse(urlStr)
+	u, err := url.Parse(location)
 
 	if err != nil {
 		return "", errors.Wrap(err, "error parsing url")

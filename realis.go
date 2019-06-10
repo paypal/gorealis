@@ -32,9 +32,10 @@ import (
 	"time"
 
 	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/pkg/errors"
+
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 	"github.com/paypal/gorealis/response"
-	"github.com/pkg/errors"
 )
 
 const VERSION = "1.21.1"
@@ -199,7 +200,7 @@ func BackOff(b Backoff) ClientOption {
 	}
 }
 
-func insecureSkipVerify(insecureSkipVerify bool) ClientOption {
+func InsecureSkipVerify(insecureSkipVerify bool) ClientOption {
 	return func(config *RealisConfig) {
 		config.insecureSkipVerify = insecureSkipVerify
 	}
