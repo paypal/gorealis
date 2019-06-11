@@ -77,7 +77,8 @@ func ExponentialBackoff(backoff Backoff, logger Logger, condition ConditionFunc)
 				adjusted = Jitter(duration, backoff.Jitter)
 			}
 
-			logger.Printf("A retryable error occurred during function call, backing off for %v before retrying\n", adjusted)
+			logger.Printf(
+				"A retryable error occurred during function call, backing off for %v before retrying\n", adjusted)
 			time.Sleep(adjusted)
 			duration = time.Duration(float64(duration) * backoff.Factor)
 		}
@@ -116,7 +117,10 @@ func ExponentialBackoff(backoff Backoff, logger Logger, condition ConditionFunc)
 type auroraThriftCall func() (resp *aurora.Response, err error)
 
 // Duplicates the functionality of ExponentialBackoff but is specifically targeted towards ThriftCalls.
-func (r *realisClient) thriftCallWithRetries(returnOnTimeout bool, thriftCall auroraThriftCall) (*aurora.Response, error) {
+func (r *realisClient) thriftCallWithRetries(
+	returnOnTimeout bool,
+	thriftCall auroraThriftCall) (*aurora.Response, error) {
+
 	var resp *aurora.Response
 	var clientErr error
 	var curStep int
@@ -134,7 +138,10 @@ func (r *realisClient) thriftCallWithRetries(returnOnTimeout bool, thriftCall au
 				adjusted = Jitter(duration, backoff.Jitter)
 			}
 
-			r.logger.Printf("A retryable error occurred during thrift call, backing off for %v before retry %v\n", adjusted, curStep)
+			r.logger.Printf(
+				"A retryable error occurred during thrift call, backing off for %v before retry %v\n",
+				adjusted,
+				curStep)
 
 			time.Sleep(adjusted)
 			duration = time.Duration(float64(duration) * backoff.Factor)
@@ -166,10 +173,11 @@ func (r *realisClient) thriftCallWithRetries(returnOnTimeout bool, thriftCall au
 
 				e, ok := e.Err().(*url.Error)
 				if ok {
+
 					// EOF error occurs when the server closes the read buffer of the client. This is common
 					// when the server is overloaded and should be retried. All other errors that are permanent
 					// will not be retried.
-					if e.Err != io.EOF && !e.Temporary() {
+					if e.Err != io.EOF && !e.Temporary() && r.RealisConfig().failOnPermanentErrors {
 						return nil, errors.Wrap(clientErr, "permanent connection error")
 					}
 
@@ -179,7 +187,8 @@ func (r *realisClient) thriftCallWithRetries(returnOnTimeout bool, thriftCall au
 					if e.Timeout() {
 						timeouts++
 						r.logger.DebugPrintf(
-							"Client closed connection (timedout) %d times before server responded, consider increasing connection timeout",
+							"Client closed connection (timedout) %d times before server responded, "+
+								"consider increasing connection timeout",
 							timeouts)
 						if returnOnTimeout {
 							return resp, newTimedoutError(errors.New("client connection closed before server answer"))
@@ -190,7 +199,8 @@ func (r *realisClient) thriftCallWithRetries(returnOnTimeout bool, thriftCall au
 
 			// In the future, reestablish connection should be able to check if it is actually possible
 			// to make a thrift call to Aurora. For now, a reconnect should always lead to a retry.
-			r.ReestablishConn()
+			// Ignoring error due to the fact that an error should be retried regardless
+			_ = r.ReestablishConn()
 
 		} else {
 

@@ -8,6 +8,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const apiPath = "/api"
+
 var ActiveStates = make(map[aurora.ScheduleStatus]bool)
 var SlaveAssignedStates = make(map[aurora.ScheduleStatus]bool)
 var LiveStates = make(map[aurora.ScheduleStatus]bool)
@@ -40,14 +42,14 @@ func init() {
 	}
 }
 
-func validateAndPopulateAuroraURL(urlStr string) (string, error) {
+func validateAuroraURL(location string) (string, error) {
 
 	// If no protocol defined, assume http
-	if !strings.Contains(urlStr, "://") {
-		urlStr = "http://" + urlStr
+	if !strings.Contains(location, "://") {
+		location = "http://" + location
 	}
 
-	u, err := url.Parse(urlStr)
+	u, err := url.Parse(location)
 
 	if err != nil {
 		return "", errors.Wrap(err, "error parsing url")
@@ -67,7 +69,8 @@ func validateAndPopulateAuroraURL(urlStr string) (string, error) {
 		return "", errors.Errorf("only protocols http and https are supported %v\n", u.Scheme)
 	}
 
-	if u.Path != "/api" {
+	// This could theoretically be elsewhwere but we'll be strict for the sake of simplicty
+	if u.Path != apiPath {
 		return "", errors.Errorf("expected /api path %v\n", u.Path)
 	}
 
