@@ -195,12 +195,6 @@ func TestRealisClient_ReestablishConn(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestGetCACerts(t *testing.T) {
-	certs, err := realis.GetCerts("./examples/certs")
-	require.NoError(t, err)
-	assert.Equal(t, len(certs.Subjects()), 2)
-}
-
 func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 
 	role := "vagrant"

@@ -26,6 +26,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Backoff determines how the retry mechanism should react after each failure and how many failures it should
+// tolerate.
 type Backoff struct {
 	Duration time.Duration // the base duration
 	Factor   float64       // Duration is multiplied by a factor each iteration
@@ -50,19 +52,16 @@ func Jitter(duration time.Duration, maxFactor float64) time.Duration {
 // if the loop should be aborted.
 type ConditionFunc func() (done bool, err error)
 
-// Modified version of the Kubernetes exponential-backoff code.
-// ExponentialBackoff repeats a condition check with exponential backoff.
-//
-// It checks the condition up to Steps times, increasing the wait by multiplying
-// the previous duration by Factor.
+// ExponentialBackoff is a modified version of the Kubernetes exponential-backoff code.
+// It repeats a condition check with exponential backoff and checks the condition up to
+// Steps times, increasing the wait by multiplying the previous duration by Factor.
 //
 // If Jitter is greater than zero, a random amount of each duration is added
 // (between duration and duration*(1+jitter)).
 //
 // If the condition never returns true, ErrWaitTimeout is returned. Errors
 // do not cause the function to return.
-
-func ExponentialBackoff(backoff Backoff, logger Logger, condition ConditionFunc) error {
+func ExponentialBackoff(backoff Backoff, logger logger, condition ConditionFunc) error {
 	var err error
 	var ok bool
 	var curStep int
@@ -95,10 +94,9 @@ func ExponentialBackoff(backoff Backoff, logger Logger, condition ConditionFunc)
 			// If the error is temporary, continue retrying.
 			if !IsTemporary(err) {
 				return err
-			} else {
-				// Print out the temporary error we experienced.
-				logger.Println(err)
 			}
+			// Print out the temporary error we experienced.
+			logger.Println(err)
 		}
 	}
 
@@ -109,9 +107,9 @@ func ExponentialBackoff(backoff Backoff, logger Logger, condition ConditionFunc)
 	// Provide more information to the user wherever possible
 	if err != nil {
 		return newRetryError(errors.Wrap(err, "ran out of retries"), curStep)
-	} else {
-		return newRetryError(errors.New("ran out of retries"), curStep)
 	}
+
+	return newRetryError(errors.New("ran out of retries"), curStep)
 }
 
 type auroraThriftCall func() (resp *aurora.Response, err error)
@@ -156,7 +154,7 @@ func (r *realisClient) thriftCallWithRetries(
 
 			resp, clientErr = thriftCall()
 
-			r.logger.TracePrintf("Aurora Thrift Call ended resp: %v clientErr: %v\n", resp, clientErr)
+			r.logger.tracePrintf("Aurora Thrift Call ended resp: %v clientErr: %v\n", resp, clientErr)
 		}()
 
 		// Check if our thrift call is returning an error. This is a retryable event as we don't know
@@ -169,7 +167,7 @@ func (r *realisClient) thriftCallWithRetries(
 			// Determine if error is a temporary URL error by going up the stack
 			e, ok := clientErr.(thrift.TTransportException)
 			if ok {
-				r.logger.DebugPrint("Encountered a transport exception")
+				r.logger.debugPrint("Encountered a transport exception")
 
 				e, ok := e.Err().(*url.Error)
 				if ok {
@@ -186,7 +184,7 @@ func (r *realisClient) thriftCallWithRetries(
 					// error. Users can take special action on a timeout by using IsTimedout and reacting accordingly.
 					if e.Timeout() {
 						timeouts++
-						r.logger.DebugPrintf(
+						r.logger.debugPrintf(
 							"Client closed connection (timedout) %d times before server responded, "+
 								"consider increasing connection timeout",
 							timeouts)
@@ -200,8 +198,10 @@ func (r *realisClient) thriftCallWithRetries(
 			// In the future, reestablish connection should be able to check if it is actually possible
 			// to make a thrift call to Aurora. For now, a reconnect should always lead to a retry.
 			// Ignoring error due to the fact that an error should be retried regardless
-			_ = r.ReestablishConn()
-
+			reestablishErr := r.ReestablishConn()
+			if reestablishErr != nil {
+				r.logger.debugPrintf("error re-establishing connection ", reestablishErr)
+			}
 		} else {
 
 			// If there was no client error, but the response is nil, something went wrong.
@@ -233,14 +233,14 @@ func (r *realisClient) thriftCallWithRetries(
 				// The only case that should fall down to here is a WARNING response code.
 				// It is currently not used as a response in the scheduler so it is unknown how to handle it.
 			default:
-				r.logger.DebugPrintf("unhandled response code %v received from Aurora\n", responseCode)
+				r.logger.debugPrintf("unhandled response code %v received from Aurora\n", responseCode)
 				return nil, errors.Errorf("unhandled response code from Aurora %v", responseCode.String())
 			}
 		}
 
 	}
 
-	r.logger.DebugPrintf("it took %v retries to complete this operation\n", curStep)
+	r.logger.debugPrintf("it took %v retries to complete this operation\n", curStep)
 
 	if curStep > 1 {
 		r.config.logger.Printf("retried this thrift call %d time(s)", curStep)
@@ -249,7 +249,7 @@ func (r *realisClient) thriftCallWithRetries(
 	// Provide more information to the user wherever possible.
 	if clientErr != nil {
 		return nil, newRetryError(errors.Wrap(clientErr, "ran out of retries, including latest error"), curStep)
-	} else {
-		return nil, newRetryError(errors.New("ran out of retries"), curStep)
 	}
+
+	return nil, newRetryError(errors.New("ran out of retries"), curStep)
 }

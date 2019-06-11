@@ -24,11 +24,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var backoff realis.Backoff = realis.Backoff{ // Reduce penalties for this test to make it quick
+var backoff = realis.Backoff{ // Reduce penalties for this test to make it quick
 	Steps:    5,
 	Duration: 1 * time.Second,
 	Factor:   1.0,
-	Jitter:   0.1}
+	Jitter:   0.1,
+}
 
 // Test for behavior when no endpoints are given to the ZK leader finding function.
 func TestZKNoEndpoints(t *testing.T) {

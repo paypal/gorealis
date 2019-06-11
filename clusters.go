@@ -21,6 +21,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Cluster contains the definition of the clusters.json file used by the default Aurora
+// client for configuration
 type Cluster struct {
 	Name          string `json:"name"`
 	AgentRoot     string `json:"slave_root"`
@@ -33,7 +35,8 @@ type Cluster struct {
 	AuthMechanism string `json:"auth_mechanism"`
 }
 
-// Loads clusters.json file traditionally located at /etc/aurora/clusters.json
+// LoadClusters loads clusters.json file traditionally located at /etc/aurora/clusters.json
+// for use with a gorealis client
 func LoadClusters(config string) (map[string]Cluster, error) {
 
 	file, err := os.Open(config)

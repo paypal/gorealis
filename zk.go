@@ -24,14 +24,14 @@ import (
 	"github.com/samuel/go-zookeeper/zk"
 )
 
-type Endpoint struct {
+type endpoint struct {
 	Host string `json:"host"`
 	Port int    `json:"port"`
 }
 
-type ServiceInstance struct {
-	Service             Endpoint            `json:"serviceEndpoint"`
-	AdditionalEndpoints map[string]Endpoint `json:"additionalEndpoints"`
+type serviceInstance struct {
+	Service             endpoint            `json:"serviceEndpoint"`
+	AdditionalEndpoints map[string]endpoint `json:"additionalEndpoints"`
 	Status              string              `json:"status"`
 }
 
@@ -40,47 +40,54 @@ type zkConfig struct {
 	path      string
 	backoff   Backoff
 	timeout   time.Duration
-	logger    Logger
+	logger    logger
 }
 
+// ZKOpt - Configuration option for the Zookeeper client used.
 type ZKOpt func(z *zkConfig)
 
+// ZKEndpoints - Endpoints on which a Zookeeper instance is running to be used by the client.
 func ZKEndpoints(endpoints ...string) ZKOpt {
 	return func(z *zkConfig) {
 		z.endpoints = endpoints
 	}
 }
 
+// ZKPath - Path to look for information in when connected to Zookeeper.
 func ZKPath(path string) ZKOpt {
 	return func(z *zkConfig) {
 		z.path = path
 	}
 }
 
+// ZKBackoff - Configuration for Retry mechanism used when connecting to Zookeeper.
+// TODO(rdelvalle): Determine if this is really necessary as the ZK library already has a retry built in.
 func ZKBackoff(b Backoff) ZKOpt {
 	return func(z *zkConfig) {
 		z.backoff = b
 	}
 }
 
+// ZKTimeout - How long to wait on a response from the Zookeeper instance before considering it dead.
 func ZKTimeout(d time.Duration) ZKOpt {
 	return func(z *zkConfig) {
 		z.timeout = d
 	}
 }
 
-func ZKLogger(l Logger) ZKOpt {
+// ZKLogger - Attach a logger to the Zookeeper client in order to debug issues.
+func ZKLogger(l logger) ZKOpt {
 	return func(z *zkConfig) {
 		z.logger = l
 	}
 }
 
-// Retrieves current Aurora leader from ZK.
+// LeaderFromZK - Retrieves current Aurora leader from ZK.
 func LeaderFromZK(cluster Cluster) (string, error) {
 	return LeaderFromZKOpts(ZKEndpoints(strings.Split(cluster.ZK, ",")...), ZKPath(cluster.SchedZKPath))
 }
 
-// Retrieves current Aurora leader from ZK with a custom configuration.
+// LeaderFromZKOpts - Retrieves current Aurora leader from ZK with a custom configuration.
 func LeaderFromZKOpts(options ...ZKOpt) (string, error) {
 	var leaderURL string
 
@@ -121,7 +128,6 @@ func LeaderFromZKOpts(options ...ZKOpt) (string, error) {
 		}
 
 		// Search for the leader through all the children in the given path
-		serviceInst := new(ServiceInstance)
 		for _, child := range children {
 
 			// Only the leader will start with member_
@@ -137,7 +143,8 @@ func LeaderFromZKOpts(options ...ZKOpt) (string, error) {
 					return false, NewTemporaryError(errors.Wrap(err, "unable to fetch contents of leader"))
 				}
 
-				err = json.Unmarshal([]byte(data), serviceInst)
+				var serviceInst serviceInstance
+				err = json.Unmarshal([]byte(data), &serviceInst)
 				if err != nil {
 					return false, NewTemporaryError(errors.Wrap(err, "unable to unmarshal contents of leader"))
 				}

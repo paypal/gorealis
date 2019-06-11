@@ -23,6 +23,8 @@ type timeout interface {
 	Timedout() bool
 }
 
+// IsTimeout returns true if the error being passed as an argument implements the Timeout interface
+// and the Timedout function returns true.
 func IsTimeout(err error) bool {
 	temp, ok := err.(timeout)
 	return ok && temp.Timedout()
@@ -61,41 +63,42 @@ func (r *retryErr) RetryCount() int {
 	return r.retryCount
 }
 
-// Helper function for testing verification to avoid whitebox testing
+// ToRetryCount is a helper function for testing verification to avoid whitebox testing
 // as well as keeping retryErr as a private.
 // Should NOT be used under any other context.
 func ToRetryCount(err error) *retryErr {
 	if retryErr, ok := err.(*retryErr); ok {
 		return retryErr
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func newRetryError(err error, retryCount int) *retryErr {
 	return &retryErr{error: err, timedout: true, retryCount: retryCount}
 }
 
-// Temporary errors indicate that the action may and should be retried.
+// Temporary errors indicate that the action may or should be retried.
 type temporary interface {
 	Temporary() bool
 }
 
+// IsTemporary indicates whether the error passed in as an argument implements the temporary interface
+// and if the Temporary function returns true.
 func IsTemporary(err error) bool {
 	temp, ok := err.(temporary)
 	return ok && temp.Temporary()
 }
 
-type TemporaryErr struct {
+type temporaryErr struct {
 	error
 	temporary bool
 }
 
-func (t *TemporaryErr) Temporary() bool {
+func (t *temporaryErr) Temporary() bool {
 	return t.temporary
 }
 
-// Retrying after receiving this error is advised
-func NewTemporaryError(err error) *TemporaryErr {
-	return &TemporaryErr{error: err, temporary: true}
+// NewTemporaryError creates a new error which satisfies the Temporary interface.
+func NewTemporaryError(err error) *temporaryErr {
+	return &temporaryErr{error: err, temporary: true}
 }

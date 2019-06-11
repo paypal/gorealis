@@ -20,6 +20,9 @@ import (
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 )
 
+// Job inteface is used to define a set of functions an Aurora Job object
+// must implemement.
+// TODO(rdelvalle): Consider getting rid of the Job interface
 type Job interface {
 	// Set Job Key environment.
 	Environment(env string) Job
@@ -61,24 +64,24 @@ type Job interface {
 	SlaPolicy(policy *aurora.SlaPolicy) Job
 }
 
-type ResourceType int
+type resourceType int
 
 const (
-	CPU ResourceType = iota
+	CPU resourceType = iota
 	RAM
 	DISK
 	GPU
 )
 
-// Structure to collect all information pertaining to an Aurora job.
+// AuroraJob is a structure to collect all information pertaining to an Aurora job.
 type AuroraJob struct {
 	jobConfig *aurora.JobConfiguration
-	resources map[ResourceType]*aurora.Resource
+	resources map[resourceType]*aurora.Resource
 	metadata  map[string]*aurora.Metadata
 	portCount int
 }
 
-// Create a Job object with everything initialized.
+// NewJob is used to create a Job object with everything initialized.
 func NewJob() Job {
 	jobConfig := aurora.NewJobConfiguration()
 	taskConfig := aurora.NewTaskConfig()
@@ -98,7 +101,7 @@ func NewJob() Job {
 	ramMb := aurora.NewResource()
 	diskMb := aurora.NewResource()
 
-	resources := map[ResourceType]*aurora.Resource{CPU: numCpus, RAM: ramMb, DISK: diskMb}
+	resources := map[resourceType]*aurora.Resource{CPU: numCpus, RAM: ramMb, DISK: diskMb}
 	taskConfig.Resources = []*aurora.Resource{numCpus, ramMb, diskMb}
 
 	numCpus.NumCpus = new(float64)
@@ -113,13 +116,13 @@ func NewJob() Job {
 	}
 }
 
-// Set Job Key environment.
+// Environment sets the Job Key environment.
 func (j *AuroraJob) Environment(env string) Job {
 	j.jobConfig.Key.Environment = env
 	return j
 }
 
-// Set Job Key Role.
+// Role sets the Job Key role.
 func (j *AuroraJob) Role(role string) Job {
 	j.jobConfig.Key.Role = role
 
@@ -130,13 +133,13 @@ func (j *AuroraJob) Role(role string) Job {
 	return j
 }
 
-// Set Job Key Name.
+// Name sets the Job Key Name.
 func (j *AuroraJob) Name(name string) Job {
 	j.jobConfig.Key.Name = name
 	return j
 }
 
-// Set name of the executor that will the task will be configured to.
+// ExecutorName sets the name of the executor that will the task will be configured to.
 func (j *AuroraJob) ExecutorName(name string) Job {
 
 	if j.jobConfig.TaskConfig.ExecutorConfig == nil {
@@ -147,7 +150,7 @@ func (j *AuroraJob) ExecutorName(name string) Job {
 	return j
 }
 
-// Will be included as part of entire task inside the scheduler that will be serialized.
+// ExecutorData sets the data blob that will be passed to the Mesos executor.
 func (j *AuroraJob) ExecutorData(data string) Job {
 
 	if j.jobConfig.TaskConfig.ExecutorConfig == nil {
@@ -158,21 +161,25 @@ func (j *AuroraJob) ExecutorData(data string) Job {
 	return j
 }
 
+// CPU sets the amount of CPU each task will use in an Aurora Job.
 func (j *AuroraJob) CPU(cpus float64) Job {
 	*j.resources[CPU].NumCpus = cpus
 	return j
 }
 
+// RAM sets the amount of RAM each task will use in an Aurora Job.
 func (j *AuroraJob) RAM(ram int64) Job {
 	*j.resources[RAM].RamMb = ram
 	return j
 }
 
+// Disk sets the amount of Disk each task will use in an Aurora Job.
 func (j *AuroraJob) Disk(disk int64) Job {
 	*j.resources[DISK].DiskMb = disk
 	return j
 }
 
+// GPU sets the amount of GPU each task will use in an Aurora Job.
 func (j *AuroraJob) GPU(gpu int64) Job {
 	// GPU resource must be set explicitly since the scheduler by default
 	// rejects jobs with GPU resources attached to it.
@@ -187,54 +194,58 @@ func (j *AuroraJob) GPU(gpu int64) Job {
 	return j
 }
 
-// How many failures to tolerate before giving up.
+// MaxFailure sets how many failures to tolerate before giving up per Job.
 func (j *AuroraJob) MaxFailure(maxFail int32) Job {
 	j.jobConfig.TaskConfig.MaxTaskFailures = maxFail
 	return j
 }
 
-// How many instances of the job to run
+// InstanceCount sets how many instances of the task to run for this Job.
 func (j *AuroraJob) InstanceCount(instCount int32) Job {
 	j.jobConfig.InstanceCount = instCount
 	return j
 }
 
+// CronSchedule allows the user to configure a cron schedule for this job to run in.
 func (j *AuroraJob) CronSchedule(cron string) Job {
 	j.jobConfig.CronSchedule = &cron
 	return j
 }
 
+// CronCollisionPolicy allows the user to decide what happens if two or more instances
+// of the same Cron job need to run.
 func (j *AuroraJob) CronCollisionPolicy(policy aurora.CronCollisionPolicy) Job {
 	j.jobConfig.CronCollisionPolicy = policy
 	return j
 }
 
-// How many instances of the job to run
+// GetInstanceCount returns how many tasks this Job contains.
 func (j *AuroraJob) GetInstanceCount() int32 {
 	return j.jobConfig.InstanceCount
 }
 
-// Restart the job's tasks if they fail
+// IsService returns true if the job is a long term running job or false if it is an ad-hoc job.
 func (j *AuroraJob) IsService(isService bool) Job {
 	j.jobConfig.TaskConfig.IsService = isService
 	return j
 }
 
-// Get the current job configurations key to use for some realis calls.
+// JobKey returns the job's configuration key.
 func (j *AuroraJob) JobKey() *aurora.JobKey {
 	return j.jobConfig.Key
 }
 
-// Get the current job configurations key to use for some realis calls.
+// JobConfig returns the job's configuration.
 func (j *AuroraJob) JobConfig() *aurora.JobConfiguration {
 	return j.jobConfig
 }
 
+// TaskConfig returns the job's task(shard) configuration.
 func (j *AuroraJob) TaskConfig() *aurora.TaskConfig {
 	return j.jobConfig.TaskConfig
 }
 
-// Add a list of URIs with the same extract and cache configuration. Scheduler must have
+// AddURIs adds a list of URIs with the same extract and cache configuration. Scheduler must have
 // --enable_mesos_fetcher flag enabled. Currently there is no duplicate detection.
 func (j *AuroraJob) AddURIs(extract bool, cache bool, values ...string) Job {
 	for _, value := range values {
@@ -244,7 +255,7 @@ func (j *AuroraJob) AddURIs(extract bool, cache bool, values ...string) Job {
 	return j
 }
 
-// Adds a Mesos label to the job. Note that Aurora will add the
+// AddLabel adds a Mesos label to the job. Note that Aurora will add the
 // prefix "org.apache.aurora.metadata." to the beginning of each key.
 func (j *AuroraJob) AddLabel(key string, value string) Job {
 	if _, ok := j.metadata[key]; ok {
@@ -256,7 +267,7 @@ func (j *AuroraJob) AddLabel(key string, value string) Job {
 	return j
 }
 
-// Add a named port to the job configuration  These are random ports as it's
+// AddNamedPorts adds a named port to the job configuration  These are random ports as it's
 // not currently possible to request specific ports using Aurora.
 func (j *AuroraJob) AddNamedPorts(names ...string) Job {
 	j.portCount += len(names)
@@ -269,7 +280,7 @@ func (j *AuroraJob) AddNamedPorts(names ...string) Job {
 	return j
 }
 
-// Adds a request for a number of ports to the job configuration. The names chosen for these ports
+// AddPorts adds a request for a number of ports to the job configuration. The names chosen for these ports
 // will be org.apache.aurora.port.X, where X is the current port count for the job configuration
 // starting at 0. These are random ports as it's not currently possible to request
 // specific ports using Aurora.
@@ -286,6 +297,8 @@ func (j *AuroraJob) AddPorts(num int) Job {
 	return j
 }
 
+// AddValueConstraint allows the user to add a value constrain to the job to limiti which agents the job's
+// tasks can be run on.
 // From Aurora Docs:
 // Add a Value constraint
 // name - Mesos slave attribute that the constraint is matched against.
@@ -307,6 +320,7 @@ func (j *AuroraJob) AddValueConstraint(name string, negated bool, values ...stri
 	return j
 }
 
+// AddLimitConstraint allows the user to limit how many tasks form the same Job are run on a single host.
 // From Aurora Docs:
 // A constraint that specifies the maximum number of active tasks on a host with
 // a matching attribute that may be scheduled simultaneously.
@@ -323,33 +337,34 @@ func (j *AuroraJob) AddLimitConstraint(name string, limit int32) Job {
 	return j
 }
 
+// AddDedicatedConstraint allows the user to add a dedicated constraint to a Job configuration.
 func (j *AuroraJob) AddDedicatedConstraint(role, name string) Job {
 	j.AddValueConstraint("dedicated", false, role+"/"+name)
 
 	return j
 }
 
-// Set a container to run for the job configuration to run.
+// Container sets a container to run for the job configuration to run.
 func (j *AuroraJob) Container(container Container) Job {
 	j.jobConfig.TaskConfig.Container = container.Build()
 
 	return j
 }
 
-// Set a partition policy for the job configuration to implement.
+// PartitionPolicy sets a partition policy for the job configuration to implement.
 func (j *AuroraJob) PartitionPolicy(policy *aurora.PartitionPolicy) Job {
 	j.jobConfig.TaskConfig.PartitionPolicy = policy
 	return j
 }
 
-// Set the Tier for the Job.
+// Tier sets the Tier for the Job.
 func (j *AuroraJob) Tier(tier string) Job {
 	j.jobConfig.TaskConfig.Tier = &tier
 
 	return j
 }
 
-// Set an SlaPolicy for the Job.
+// SlaPolicy sets an SlaPolicy for the Job.
 func (j *AuroraJob) SlaPolicy(policy *aurora.SlaPolicy) Job {
 	j.jobConfig.TaskConfig.SlaPolicy = policy
 

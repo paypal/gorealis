@@ -12,7 +12,6 @@
  * limitations under the License.
  */
 
-// Collection of monitors to create synchronicity
 package realis
 
 import (
@@ -22,11 +21,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Monitor is a wrapper for the Realis client which allows us to have functions with the same name for Monitoring purposes.
+// TODO(rdelvalle): Deprecate monitors and instead add prefix Monitor to all functions in this file like it is done in V2.
 type Monitor struct {
 	Client Realis
 }
 
-// Polls the scheduler every certain amount of time to see if the update has succeeded
+// JobUpdate polls the scheduler every certain amount of time to see if the update has entered a terminal state.
 func (m *Monitor) JobUpdate(
 	updateKey aurora.JobUpdateKey,
 	interval int,
@@ -71,6 +72,7 @@ func (m *Monitor) JobUpdate(
 	}
 }
 
+// JobUpdateStatus polls the scheduler every certain amount of time to see if the update has entered a specified state.
 func (m *Monitor) JobUpdateStatus(
 	updateKey aurora.JobUpdateKey,
 	desiredStatuses map[aurora.JobUpdateStatus]bool,
@@ -93,6 +95,7 @@ func (m *Monitor) JobUpdateStatus(
 	return summary[0].State.Status, err
 }
 
+// JobUpdateQuery polls the scheduler every certain amount of time to see if the query call returns any results.
 func (m *Monitor) JobUpdateQuery(
 	updateQuery aurora.JobUpdateQuery,
 	interval time.Duration,
@@ -124,7 +127,7 @@ func (m *Monitor) JobUpdateQuery(
 	}
 }
 
-// Monitor a Job until all instances enter one of the LIVE_STATES
+// Instances will monitor a Job until all instances enter one of the LIVE_STATES
 func (m *Monitor) Instances(
 	key *aurora.JobKey,
 	instances int32,
@@ -132,7 +135,7 @@ func (m *Monitor) Instances(
 	return m.ScheduleStatus(key, instances, LiveStates, interval, timeout)
 }
 
-// Monitor a Job until all instances enter a desired status.
+// ScheduleStatus will monitor a Job until all instances enter a desired status.
 // Defaults sets of desired statuses provided by the thrift API include:
 // ACTIVE_STATES, SLAVE_ASSIGNED_STATES, LIVE_STATES, and TERMINAL_STATES
 func (m *Monitor) ScheduleStatus(
@@ -173,7 +176,7 @@ func (m *Monitor) ScheduleStatus(
 	}
 }
 
-// Monitor host status until all hosts match the status provided.
+// HostMaintenance will monitor host status until all hosts match the status provided.
 // Returns a map where the value is true if the host
 // is in one of the desired mode(s) or false if it is not as of the time when the monitor exited.
 func (m *Monitor) HostMaintenance(

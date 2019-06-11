@@ -24,7 +24,7 @@ func (r *realisClient) DrainHosts(hosts ...string) (*aurora.Response, *aurora.Dr
 	drainList := aurora.NewHosts()
 	drainList.HostNames = hosts
 
-	r.logger.DebugPrintf("DrainHosts Thrift Payload: %v\n", drainList)
+	r.logger.debugPrintf("DrainHosts Thrift Payload: %v\n", drainList)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -59,7 +59,7 @@ func (r *realisClient) SLADrainHosts(
 	drainList := aurora.NewHosts()
 	drainList.HostNames = hosts
 
-	r.logger.DebugPrintf("SLADrainHosts Thrift Payload: %v\n", drainList)
+	r.logger.debugPrintf("SLADrainHosts Thrift Payload: %v\n", drainList)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -89,7 +89,7 @@ func (r *realisClient) StartMaintenance(hosts ...string) (*aurora.Response, *aur
 	hostList := aurora.NewHosts()
 	hostList.HostNames = hosts
 
-	r.logger.DebugPrintf("StartMaintenance Thrift Payload: %v\n", hostList)
+	r.logger.debugPrintf("StartMaintenance Thrift Payload: %v\n", hostList)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -119,7 +119,7 @@ func (r *realisClient) EndMaintenance(hosts ...string) (*aurora.Response, *auror
 	hostList := aurora.NewHosts()
 	hostList.HostNames = hosts
 
-	r.logger.DebugPrintf("EndMaintenance Thrift Payload: %v\n", hostList)
+	r.logger.debugPrintf("EndMaintenance Thrift Payload: %v\n", hostList)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -149,7 +149,7 @@ func (r *realisClient) MaintenanceStatus(hosts ...string) (*aurora.Response, *au
 	hostList := aurora.NewHosts()
 	hostList.HostNames = hosts
 
-	r.logger.DebugPrintf("MaintenanceStatus Thrift Payload: %v\n", hostList)
+	r.logger.debugPrintf("MaintenanceStatus Thrift Payload: %v\n", hostList)
 
 	// Make thrift call. If we encounter an error sending the call, attempt to reconnect
 	// and continue trying to resend command until we run out of retries.
