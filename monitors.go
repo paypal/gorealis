@@ -21,8 +21,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Monitor is a wrapper for the Realis client which allows us to have functions with the same name for Monitoring purposes.
-// TODO(rdelvalle): Deprecate monitors and instead add prefix Monitor to all functions in this file like it is done in V2.
+// Monitor is a wrapper for the Realis client which allows us to have functions
+// with the same name for Monitoring purposes.
+// TODO(rdelvalle): Deprecate monitors and instead add prefix Monitor to
+// all functions in this file like it is done in V2.
 type Monitor struct {
 	Client Realis
 }
