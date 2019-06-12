@@ -77,17 +77,17 @@ func TestNonExistentEndpoint(t *testing.T) {
 
 	t.Run("WithRetries", func(t *testing.T) {
 		// Attempt to connect to a bad endpoint
-		r, err := realis.NewRealisClient(
+		badClient, err := realis.NewRealisClient(
 			realis.SchedulerUrl(badEndpoint),
 			realis.TimeoutMS(200000),
 			realis.BackOff(backoff),
 		)
 
 		require.NoError(t, err)
-		require.NotNil(t, r)
-		defer r.Close()
+		require.NotNil(t, badClient)
+		defer badClient.Close()
 
-		_, err = r.GetTasksWithoutConfigs(taskQ)
+		_, err = badClient.GetTasksWithoutConfigs(taskQ)
 
 		// Check that we do error out of retrying
 		require.Error(t, err)
@@ -101,7 +101,7 @@ func TestNonExistentEndpoint(t *testing.T) {
 
 	t.Run("FailOnLookup", func(t *testing.T) {
 		// Attempt to connect to a bad endpoint
-		r, err := realis.NewRealisClient(
+		badClient, err := realis.NewRealisClient(
 			realis.SchedulerUrl(badEndpoint),
 			realis.TimeoutMS(200000),
 			realis.BackOff(backoff),
@@ -109,10 +109,10 @@ func TestNonExistentEndpoint(t *testing.T) {
 		)
 
 		require.NoError(t, err)
-		require.NotNil(t, r)
-		defer r.Close()
+		require.NotNil(t, badClient)
+		defer badClient.Close()
 
-		_, err = r.GetTasksWithoutConfigs(taskQ)
+		_, err = badClient.GetTasksWithoutConfigs(taskQ)
 
 		// Check that we do error out of retrying
 		require.Error(t, err)
@@ -193,12 +193,6 @@ func TestRealisClient_ReestablishConn(t *testing.T) {
 	err := r.ReestablishConn()
 
 	assert.NoError(t, err)
-}
-
-func TestGetCACerts(t *testing.T) {
-	certs, err := realis.GetCerts("./examples/certs")
-	require.NoError(t, err)
-	assert.Equal(t, len(certs.Subjects()), 2)
 }
 
 func TestRealisClient_CreateJob_Thermos(t *testing.T) {

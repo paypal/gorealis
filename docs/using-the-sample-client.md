@@ -1,6 +1,6 @@
 # Using the Sample client
 
-## Usage: 
+## Usage:
 ```
 Usage of ./client:
   -cluster string

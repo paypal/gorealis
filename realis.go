@@ -38,8 +38,10 @@ import (
 	"github.com/paypal/gorealis/response"
 )
 
-const VERSION = "1.21.1"
+const version = "1.21.1"
 
+// Realis is an interface that defines the various APIs that may be used to communicate with
+// the Apache Aurora scheduler.
 // TODO(rdelvalle): Move documentation to interface in order to make godoc look better accessible
 // Or get rid of the interface
 type Realis interface {
@@ -73,7 +75,7 @@ type Realis interface {
 	StartCronJob(key *aurora.JobKey) (*aurora.Response, error)
 	// TODO: Remove this method and make it private to avoid race conditions
 	ReestablishConn() error
-	RealisConfig() *RealisConfig
+	RealisConfig() *config
 	Close()
 
 	// Admin functions
@@ -93,7 +95,7 @@ type Realis interface {
 }
 
 type realisClient struct {
-	config         *RealisConfig
+	config         *config
 	client         *aurora.AuroraSchedulerManagerClient
 	readonlyClient *aurora.ReadOnlySchedulerClient
 	adminClient    *aurora.AuroraAdminClient
@@ -103,7 +105,7 @@ type realisClient struct {
 	transport      thrift.TTransport
 }
 
-type RealisConfig struct {
+type config struct {
 	username, password          string
 	url                         string
 	timeoutms                   int
@@ -130,43 +132,43 @@ var defaultBackoff = Backoff{
 	Jitter:   0.1,
 }
 
-// ClientOption - An alias for a function that modifies the realis config object
-type ClientOption func(*RealisConfig)
+// ClientOption is an alias for a function that modifies the realis config object
+type ClientOption func(*config)
 
-// BasicAuth - Set authentication used against Apache Shiro in the Aurora scheduler
+// BasicAuth sets authentication used against Apache Shiro in the Aurora scheduler
 func BasicAuth(username, password string) ClientOption {
-	return func(config *RealisConfig) {
+	return func(config *config) {
 		config.username = username
 		config.password = password
 	}
 }
 
-// SchedulerUrl - Set the immediate location of the current Aurora scheduler leader
+// SchedulerUrl sets the immediate location of the current Aurora scheduler leader
 func SchedulerUrl(url string) ClientOption {
-	return func(config *RealisConfig) {
+	return func(config *config) {
 		config.url = url
 	}
 }
 
-// TimeoutMS - Set the connection timeout for an HTTP post request in Miliseconds
+// TimeoutMS sets the connection timeout for an HTTP post request in Miliseconds
 func TimeoutMS(timeout int) ClientOption {
-	return func(config *RealisConfig) {
+	return func(config *config) {
 		config.timeoutms = timeout
 	}
 }
 
-// ZKCluster - Set a clusters.json provided cluster configuration to the client
+// ZKCluster sets a clusters.json provided cluster configuration to the client
 func ZKCluster(cluster *Cluster) ClientOption {
-	return func(config *RealisConfig) {
+	return func(config *config) {
 		config.cluster = cluster
 	}
 }
 
-// ZKUrl - Set the direct location of a Zookeeper node on which the Aurora leader registers itself
+// ZKUrl sets the direct location of a Zookeeper node on which the Aurora leader registers itself
 func ZKUrl(url string) ClientOption {
 	opts := []ZKOpt{ZKEndpoints(strings.Split(url, ",")...), ZKPath("/aurora/scheduler")}
 
-	return func(config *RealisConfig) {
+	return func(config *config) {
 		if config.zkOptions == nil {
 			config.zkOptions = opts
 		} else {
@@ -175,87 +177,97 @@ func ZKUrl(url string) ClientOption {
 	}
 }
 
-// Retries - Configure the retry mechanism for the client
+// Retries configures the retry mechanism for the client
 func Retries(backoff Backoff) ClientOption {
-	return func(config *RealisConfig) {
+	return func(config *config) {
 		config.backoff = backoff
 	}
 }
 
+// ThriftJSON configures the client to use the Thrift JSON protocol.
 func ThriftJSON() ClientOption {
-	return func(config *RealisConfig) {
+	return func(config *config) {
 		config.jsonTransport = true
 	}
 }
 
+// ThriftBinary configures the client to use the Thrift Binary protocol.
 func ThriftBinary() ClientOption {
-	return func(config *RealisConfig) {
+	return func(config *config) {
 		config.binTransport = true
 	}
 }
 
+// BackOff is an alternative name for the Retry mechanism configuration.
 func BackOff(b Backoff) ClientOption {
-	return func(config *RealisConfig) {
+	return func(config *config) {
 		config.backoff = b
 	}
 }
 
+// InsecureSkipVerify configures the client to not check for matching hosts names on certificates
+// when using an SSL enabled Aurora scheduler.
 func InsecureSkipVerify(insecureSkipVerify bool) ClientOption {
-	return func(config *RealisConfig) {
+	return func(config *config) {
 		config.insecureSkipVerify = insecureSkipVerify
 	}
 }
 
+// Certspath sets the directory where the server certificates to be used when connecting to an SSL enabled
+// Aurora scheduler are stored.
 func Certspath(certspath string) ClientOption {
-	return func(config *RealisConfig) {
+	return func(config *config) {
 		config.certspath = certspath
 	}
 }
 
+// ClientCerts allows users to set client key and certificate when connecting to an SSL enabled
+// Aurora scheduler.
 func ClientCerts(clientKey, clientCert string) ClientOption {
-	return func(config *RealisConfig) {
+	return func(config *config) {
 		config.clientKey, config.clientCert = clientKey, clientCert
 	}
 }
 
-// Use this option if you'd like to override default settings for connecting to Zookeeper.
+// ZookeeperOptions allows users to override default settings for connecting to Zookeeper.
 // See zk.go for what is possible to set as an option.
 func ZookeeperOptions(opts ...ZKOpt) ClientOption {
-	return func(config *RealisConfig) {
+	return func(config *config) {
 		config.zkOptions = opts
 	}
 }
 
-// Using the word set to avoid name collision with Interface.
-func SetLogger(l Logger) ClientOption {
-	return func(config *RealisConfig) {
-		config.logger = &LevelLogger{Logger: l}
+// SetLogger allows the user to attach a logger that implements the logger interface in logger.go
+// to the client.
+func SetLogger(l logger) ClientOption {
+	return func(config *config) {
+		config.logger = &LevelLogger{logger: l}
 	}
 }
 
-// Enable debug statements.
+// Debug enables debug statements in the client.
 func Debug() ClientOption {
-	return func(config *RealisConfig) {
+	return func(config *config) {
 		config.debug = true
 	}
 }
 
-// Enable debug statements.
+// Trace enables debug statements in the client.
 func Trace() ClientOption {
-	return func(config *RealisConfig) {
+	return func(config *config) {
 		config.trace = true
 	}
 }
 
-// FailOnPermanentErrors - If the client encounters a connection error the standard library
-// considers permanent, stop retrying and return an error to the user.
+// FailOnPermanentErrors allows the client to stop upon encountering a connection error the standard library
+// considers permanent and return an error to the user.
 func FailOnPermanentErrors() ClientOption {
-	return func(config *RealisConfig) {
+	return func(config *config) {
 		config.failOnPermanentErrors = true
 	}
 }
 
-func newTJSONTransport(url string, timeout int, config *RealisConfig) (thrift.TTransport, error) {
+func newTJSONTransport(url string, timeout int, config *config) (thrift.TTransport, error) {
 	trans, err := defaultTTransport(url, timeout, config)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create transport")
@@ -266,11 +278,11 @@ func newTJSONTransport(url string, timeout int, config *RealisConfig) (thrift.TT
 	}
 
 	httpTrans.SetHeader("Content-Type", "application/x-thrift")
-	httpTrans.SetHeader("User-Agent", "gorealis v"+VERSION)
+	httpTrans.SetHeader("User-Agent", "gorealis v"+version)
 	return trans, err
 }
 
-func newTBinTransport(url string, timeout int, config *RealisConfig) (thrift.TTransport, error) {
+func newTBinTransport(url string, timeout int, config *config) (thrift.TTransport, error) {
 	trans, err := defaultTTransport(url, timeout, config)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create transport")
@@ -283,22 +295,22 @@ func newTBinTransport(url string, timeout int, config *RealisConfig) (thrift.TTr
 	httpTrans.DelHeader("Content-Type") // Workaround for using thrift HttpPostClient
 	httpTrans.SetHeader("Accept", "application/vnd.apache.thrift.binary")
 	httpTrans.SetHeader("Content-Type", "application/vnd.apache.thrift.binary")
-	httpTrans.SetHeader("User-Agent", "gorealis v"+VERSION)
+	httpTrans.SetHeader("User-Agent", "gorealis v"+version)
 
 	return trans, err
 }
 
-// This client implementation of the realis interface uses a retry mechanism for all Thrift Calls.
+// NewRealisClient is a client implementation of the realis interface uses a retry mechanism for all Thrift Calls.
 // It will retry all calls which result in a temporary failure as well as calls that fail due to an EOF
 // being returned by the http client. Most permanent failures are now being caught by the thriftCallWithRetries
 // function and not being retried but there may be corner cases not yet handled.
 func NewRealisClient(options ...ClientOption) (Realis, error) {
-	config := &RealisConfig{}
+	config := &config{}
 
 	// Default configs
 	config.timeoutms = 10000
 	config.backoff = defaultBackoff
-	config.logger = &LevelLogger{Logger: log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC)}
+	config.logger = &LevelLogger{logger: log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC)}
 
 	// Save options to recreate client if a connection error happens
 	config.options = options
@@ -312,13 +324,13 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 
 	// Turn off all logging (including debug)
 	if config.logger == nil {
-		config.logger = &LevelLogger{Logger: NoopLogger{}}
+		config.logger = &LevelLogger{logger: NoopLogger{}}
 	}
 
 	// Set a logger if debug has been set to true but no logger has been set
 	if config.logger == nil && config.debug {
 		config.logger = &LevelLogger{
-			Logger: log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC),
+			logger: log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC),
 			debug:  true,
 		}
 	}
@@ -330,7 +342,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 	config.logger.EnableDebug(config.debug)
 	config.logger.EnableTrace(config.trace)
 
-	config.logger.DebugPrintln("Number of options applied to config: ", len(options))
+	config.logger.debugPrintln("Number of options applied to config: ", len(options))
 
 	// Set default Transport to JSON if needed.
 	if !config.jsonTransport && !config.binTransport {
@@ -403,11 +415,13 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		client:         aurora.NewAuroraSchedulerManagerClientFactory(config.transport, config.protoFactory),
 		readonlyClient: aurora.NewReadOnlySchedulerClientFactory(config.transport, config.protoFactory),
 		adminClient:    aurora.NewAuroraAdminClientFactory(config.transport, config.protoFactory),
-		logger:         LevelLogger{Logger: config.logger, debug: config.debug, trace: config.trace},
+		logger:         LevelLogger{logger: config.logger, debug: config.debug, trace: config.trace},
 		lock:           &sync.Mutex{},
 		transport:      config.transport}, nil
 }
 
+// GetDefaultClusterFromZKUrl creates a cluster object from a Zoookeper url. This is deprecated in favor of using
+// Zookeeper options.
 func GetDefaultClusterFromZKUrl(zkurl string) *Cluster {
 	return &Cluster{
 		Name:          "defaultCluster",
@@ -419,7 +433,7 @@ func GetDefaultClusterFromZKUrl(zkurl string) *Cluster {
 	}
 }
 
-func GetCerts(certPath string) (*x509.CertPool, error) {
+func createCertPool(certPath string) (*x509.CertPool, error) {
 	globalRootCAs := x509.NewCertPool()
 	caFiles, err := ioutil.ReadDir(certPath)
 	if err != nil {
@@ -437,13 +451,13 @@ func GetCerts(certPath string) (*x509.CertPool, error) {
 }
 
 // Creates a default Thrift Transport object for communications in gorealis using an HTTP Post Client
-func defaultTTransport(url string, timeoutMs int, config *RealisConfig) (thrift.TTransport, error) {
+func defaultTTransport(url string, timeoutMs int, config *config) (thrift.TTransport, error) {
 	var transport http.Transport
 	if config != nil {
 		tlsConfig := &tls.Config{InsecureSkipVerify: config.insecureSkipVerify}
 
 		if config.certspath != "" {
-			rootCAs, err := GetCerts(config.certspath)
+			rootCAs, err := createCertPool(config.certspath)
 			if err != nil {
 				config.logger.Println("error occurred couldn't fetch certs")
 				return nil, err
@@ -536,7 +550,7 @@ func (r *realisClient) GetInstanceIds(key *aurora.JobKey, states []aurora.Schedu
 		Statuses: states,
 	}
 
-	r.logger.DebugPrintf("GetTasksWithoutConfigs Thrift Payload: %+v\n", taskQ)
+	r.logger.debugPrintf("GetTasksWithoutConfigs Thrift Payload: %+v\n", taskQ)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -561,7 +575,7 @@ func (r *realisClient) GetInstanceIds(key *aurora.JobKey, states []aurora.Schedu
 
 func (r *realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQuery) (*aurora.Response, error) {
 
-	r.logger.DebugPrintf("GetJobUpdateSummaries Thrift Payload: %+v\n", jobUpdateQuery)
+	r.logger.debugPrintf("GetJobUpdateSummaries Thrift Payload: %+v\n", jobUpdateQuery)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -599,7 +613,7 @@ func (r *realisClient) GetJobs(role string) (*aurora.Response, *aurora.GetJobsRe
 
 // Kill specific instances of a job.
 func (r *realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error) {
-	r.logger.DebugPrintf("KillTasks Thrift Payload: %+v %v\n", key, instances)
+	r.logger.debugPrintf("KillTasks Thrift Payload: %+v %v\n", key, instances)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -613,14 +627,14 @@ func (r *realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*a
 	return resp, nil
 }
 
-func (r *realisClient) RealisConfig() *RealisConfig {
+func (r *realisClient) RealisConfig() *config {
 	return r.config
 }
 
 // Sends a kill message to the scheduler for all active tasks under a job.
 func (r *realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 
-	r.logger.DebugPrintf("KillTasks Thrift Payload: %+v\n", key)
+	r.logger.debugPrintf("KillTasks Thrift Payload: %+v\n", key)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -641,7 +655,7 @@ func (r *realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 // Use this API to create ad-hoc jobs.
 func (r *realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 
-	r.logger.DebugPrintf("CreateJob Thrift Payload: %+v\n", auroraJob.JobConfig())
+	r.logger.debugPrintf("CreateJob Thrift Payload: %+v\n", auroraJob.JobConfig())
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -680,7 +694,7 @@ func (r *realisClient) CreateService(
 }
 
 func (r *realisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) {
-	r.logger.DebugPrintf("ScheduleCronJob Thrift Payload: %+v\n", auroraJob.JobConfig())
+	r.logger.debugPrintf("ScheduleCronJob Thrift Payload: %+v\n", auroraJob.JobConfig())
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -696,7 +710,7 @@ func (r *realisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) 
 
 func (r *realisClient) DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, error) {
 
-	r.logger.DebugPrintf("DescheduleCronJob Thrift Payload: %+v\n", key)
+	r.logger.debugPrintf("DescheduleCronJob Thrift Payload: %+v\n", key)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -714,7 +728,7 @@ func (r *realisClient) DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, 
 
 func (r *realisClient) StartCronJob(key *aurora.JobKey) (*aurora.Response, error) {
 
-	r.logger.DebugPrintf("StartCronJob Thrift Payload: %+v\n", key)
+	r.logger.debugPrintf("StartCronJob Thrift Payload: %+v\n", key)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -731,7 +745,7 @@ func (r *realisClient) StartCronJob(key *aurora.JobKey) (*aurora.Response, error
 
 // Restarts specific instances specified
 func (r *realisClient) RestartInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error) {
-	r.logger.DebugPrintf("RestartShards Thrift Payload: %+v %v\n", key, instances)
+	r.logger.debugPrintf("RestartShards Thrift Payload: %+v %v\n", key, instances)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -753,7 +767,7 @@ func (r *realisClient) RestartJob(key *aurora.JobKey) (*aurora.Response, error) 
 		return nil, errors.Wrap(err1, "Could not retrieve relevant task instance IDs")
 	}
 
-	r.logger.DebugPrintf("RestartShards Thrift Payload: %+v %v\n", key, instanceIds)
+	r.logger.debugPrintf("RestartShards Thrift Payload: %+v %v\n", key, instanceIds)
 
 	if len(instanceIds) > 0 {
 		resp, retryErr := r.thriftCallWithRetries(
@@ -767,15 +781,15 @@ func (r *realisClient) RestartJob(key *aurora.JobKey) (*aurora.Response, error) 
 		}
 
 		return resp, nil
-	} else {
-		return nil, errors.New("No tasks in the Active state")
 	}
+
+	return nil, errors.New("No tasks in the Active state")
 }
 
 // Update all tasks under a job configuration. Currently gorealis doesn't support for canary deployments.
 func (r *realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*aurora.Response, error) {
 
-	r.logger.DebugPrintf("StartJobUpdate Thrift Payload: %+v %v\n", updateJob, message)
+	r.logger.debugPrintf("StartJobUpdate Thrift Payload: %+v %v\n", updateJob, message)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		true,
@@ -787,9 +801,9 @@ func (r *realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*au
 		// A timeout took place when attempting this call, attempt to recover
 		if IsTimeout(retryErr) {
 			return resp, retryErr
-		} else {
-			return resp, errors.Wrap(retryErr, "error sending StartJobUpdate command to Aurora Scheduler")
 		}
+
+		return resp, errors.Wrap(retryErr, "error sending StartJobUpdate command to Aurora Scheduler")
 	}
 	return resp, nil
 }
@@ -799,7 +813,7 @@ func (r *realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*au
 // However, if the job update does not transition to the ABORT state an error will be returned.
 func (r *realisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message string) (*aurora.Response, error) {
 
-	r.logger.DebugPrintf("AbortJobUpdate Thrift Payload: %+v %v\n", updateKey, message)
+	r.logger.debugPrintf("AbortJobUpdate Thrift Payload: %+v %v\n", updateKey, message)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -825,7 +839,7 @@ func (r *realisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message str
 // Pause Job Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.
 func (r *realisClient) PauseJobUpdate(updateKey *aurora.JobUpdateKey, message string) (*aurora.Response, error) {
 
-	r.logger.DebugPrintf("PauseJobUpdate Thrift Payload: %+v %v\n", updateKey, message)
+	r.logger.debugPrintf("PauseJobUpdate Thrift Payload: %+v %v\n", updateKey, message)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -843,7 +857,7 @@ func (r *realisClient) PauseJobUpdate(updateKey *aurora.JobUpdateKey, message st
 // Resume Paused Job Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.
 func (r *realisClient) ResumeJobUpdate(updateKey *aurora.JobUpdateKey, message string) (*aurora.Response, error) {
 
-	r.logger.DebugPrintf("ResumeJobUpdate Thrift Payload: %+v %v\n", updateKey, message)
+	r.logger.debugPrintf("ResumeJobUpdate Thrift Payload: %+v %v\n", updateKey, message)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -861,7 +875,7 @@ func (r *realisClient) ResumeJobUpdate(updateKey *aurora.JobUpdateKey, message s
 // Pulse Job Update on Aurora. UpdateID is returned from StartJobUpdate or the Aurora web UI.
 func (r *realisClient) PulseJobUpdate(updateKey *aurora.JobUpdateKey) (*aurora.Response, error) {
 
-	r.logger.DebugPrintf("PulseJobUpdate Thrift Payload: %+v\n", updateKey)
+	r.logger.debugPrintf("PulseJobUpdate Thrift Payload: %+v\n", updateKey)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -880,7 +894,7 @@ func (r *realisClient) PulseJobUpdate(updateKey *aurora.JobUpdateKey) (*aurora.R
 // instance to scale up.
 func (r *realisClient) AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error) {
 
-	r.logger.DebugPrintf("AddInstances Thrift Payload: %+v %v\n", instKey, count)
+	r.logger.debugPrintf("AddInstances Thrift Payload: %+v %v\n", instKey, count)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -919,7 +933,7 @@ func (r *realisClient) RemoveInstances(key *aurora.JobKey, count int32) (*aurora
 // Get information about task including a fully hydrated task configuration object
 func (r *realisClient) GetTaskStatus(query *aurora.TaskQuery) ([]*aurora.ScheduledTask, error) {
 
-	r.logger.DebugPrintf("GetTasksStatus Thrift Payload: %+v\n", query)
+	r.logger.debugPrintf("GetTasksStatus Thrift Payload: %+v\n", query)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -937,7 +951,7 @@ func (r *realisClient) GetTaskStatus(query *aurora.TaskQuery) ([]*aurora.Schedul
 // Get pending reason
 func (r *realisClient) GetPendingReason(query *aurora.TaskQuery) ([]*aurora.PendingReason, error) {
 
-	r.logger.DebugPrintf("GetPendingReason Thrift Payload: %+v\n", query)
+	r.logger.debugPrintf("GetPendingReason Thrift Payload: %+v\n", query)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -961,7 +975,7 @@ func (r *realisClient) GetPendingReason(query *aurora.TaskQuery) ([]*aurora.Pend
 // Get information about task including without a task configuration object
 func (r *realisClient) GetTasksWithoutConfigs(query *aurora.TaskQuery) ([]*aurora.ScheduledTask, error) {
 
-	r.logger.DebugPrintf("GetTasksWithoutConfigs Thrift Payload: %+v\n", query)
+	r.logger.debugPrintf("GetTasksWithoutConfigs Thrift Payload: %+v\n", query)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -987,7 +1001,7 @@ func (r *realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.Task
 		Statuses:    aurora.ACTIVE_STATES,
 	}
 
-	r.logger.DebugPrintf("GetTasksStatus Thrift Payload: %+v\n", taskQ)
+	r.logger.debugPrintf("GetTasksStatus Thrift Payload: %+v\n", taskQ)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -1015,7 +1029,7 @@ func (r *realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.Task
 
 func (r *realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aurora.Response, error) {
 
-	r.logger.DebugPrintf("GetJobUpdateDetails Thrift Payload: %+v\n", updateQuery)
+	r.logger.debugPrintf("GetJobUpdateDetails Thrift Payload: %+v\n", updateQuery)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
@@ -1032,7 +1046,7 @@ func (r *realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aur
 
 func (r *realisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string) (*aurora.Response, error) {
 
-	r.logger.DebugPrintf("RollbackJobUpdate Thrift Payload: %+v %v\n", key, message)
+	r.logger.debugPrintf("RollbackJobUpdate Thrift Payload: %+v %v\n", key, message)
 
 	resp, retryErr := r.thriftCallWithRetries(
 		false,

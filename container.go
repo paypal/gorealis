@@ -18,31 +18,40 @@ import (
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 )
 
+// Container is an interface that defines a single function needed to create
+// an  Aurora container type. It exists because the code must support both Mesos
+// and Docker containers.
 type Container interface {
 	Build() *aurora.Container
 }
 
+// MesosContainer is a Mesos style container that can be used by Aurora Jobs.
 type MesosContainer struct {
 	container *aurora.MesosContainer
 }
 
+// DockerContainer is a vanilla Docker style container that can be used by Aurora Jobs.
 type DockerContainer struct {
 	container *aurora.DockerContainer
 }
 
+// NewDockerContainer creates a new  Aurora compatible Docker container configuration.
 func NewDockerContainer() DockerContainer {
 	return DockerContainer{container: aurora.NewDockerContainer()}
 }
 
+// Build creates an Aurora container based upon the configuration provided.
 func (c DockerContainer) Build() *aurora.Container {
 	return &aurora.Container{Docker: c.container}
 }
 
+// Image adds the name of a Docker image to be used by the Job when running.
 func (c DockerContainer) Image(image string) DockerContainer {
 	c.container.Image = image
 	return c
 }
 
+// AddParameter adds a parameter to be passed to Docker when the container is run.
 func (c DockerContainer) AddParameter(name, value string) DockerContainer {
 	c.container.Parameters = append(c.container.Parameters, &aurora.DockerParameter{
 		Name:  name,
@@ -51,14 +60,17 @@ func (c DockerContainer) AddParameter(name, value string) DockerContainer {
 	return c
 }
 
+// NewMesosContainer creates a Mesos style container to be configured and built for use by an Aurora Job.
 func NewMesosContainer() MesosContainer {
 	return MesosContainer{container: aurora.NewMesosContainer()}
 }
 
+// Build creates a Mesos style Aurora container configuration to be passed on to the Aurora Job.
 func (c MesosContainer) Build() *aurora.Container {
 	return &aurora.Container{Mesos: c.container}
 }
 
+// DockerImage configures the Mesos container to use a specific Docker image when being run.
 func (c MesosContainer) DockerImage(name, tag string) MesosContainer {
 	if c.container.Image == nil {
 		c.container.Image = aurora.NewImage()
@@ -68,11 +80,12 @@ func (c MesosContainer) DockerImage(name, tag string) MesosContainer {
 	return c
 }
 
-func (c MesosContainer) AppcImage(name, imageId string) MesosContainer {
+// AppcImage configures the Mesos container to use an image in the Appc format to run the container.
+func (c MesosContainer) AppcImage(name, imageID string) MesosContainer {
 	if c.container.Image == nil {
 		c.container.Image = aurora.NewImage()
 	}
 
-	c.container.Image.Appc = &aurora.AppcImage{Name: name, ImageId: imageId}
+	c.container.Image.Appc = &aurora.AppcImage{Name: name, ImageId: imageID}
 	return c
 }

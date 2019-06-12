@@ -10,11 +10,22 @@ import (
 
 const apiPath = "/api"
 
+// ActiveStates - States a task may be in when active.
 var ActiveStates = make(map[aurora.ScheduleStatus]bool)
+
+// SlaveAssignedStates - States a task may be in when it has already been assigned to a Mesos agent.
 var SlaveAssignedStates = make(map[aurora.ScheduleStatus]bool)
+
+// LiveStates - States a task may be in when it is live (e.g. able to take traffic)
 var LiveStates = make(map[aurora.ScheduleStatus]bool)
+
+// TerminalStates - Set of states a task may not transition away from.
 var TerminalStates = make(map[aurora.ScheduleStatus]bool)
+
+// ActiveJobUpdateStates - States a Job Update may be in where it is considered active.
 var ActiveJobUpdateStates = make(map[aurora.JobUpdateStatus]bool)
+
+// AwaitingPulseJobUpdateStates - States a job update may be in where it is waiting for a pulse.
 var AwaitingPulseJobUpdateStates = make(map[aurora.JobUpdateStatus]bool)
 
 func init() {

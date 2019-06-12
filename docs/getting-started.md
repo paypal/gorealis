@@ -88,12 +88,6 @@ On Ubuntu, restarting the aurora-scheduler can be achieved by running the follow
 $ sudo service aurora-scheduler restart
 ```
 
-### Using a custom client
-Pystachio does not yet support launching tasks using custom executors. Therefore, a custom
-client must be used in order to launch tasks using a custom executor. In this case,
-we will be using [gorealis](https://github.com/paypal/gorealis) to launch a task with
-the compose executor on Aurora.
-
 ## Using [dce-go](https://github.com/paypal/dce-go)
 Instead of manually configuring Aurora to run the docker-compose executor, one can follow the instructions provided [here](https://github.com/paypal/dce-go/blob/develop/docs/environment.md) to quickly create a DCE environment that would include mesos, aurora, golang1.7, docker, docker-compose and DCE installed.
 
@@ -107,80 +101,12 @@ Mesos endpoint --> http://192.168.33.8:5050
 
 ### Installing Go
 
-#### Linux
+Follow the instructions at the official golang website: [golang.org/doc/install](https://golang.org/doc/install)
 
-##### Ubuntu
+### Installing docker-compose
 
-###### Adding a PPA and install via apt-get
-```
-$ sudo add-apt-repository ppa:ubuntu-lxc/lxd-stable
-$ sudo apt-get update
-$ sudo apt-get install golang
-```
-
-###### Configuring the GOPATH
-
-Configure the environment to be able to compile and run Go code.
-```
-$ mkdir $HOME/go
-$ echo export GOPATH=$HOME/go >> $HOME/.bashrc
-$ echo export GOROOT=/usr/lib/go >> $HOME/.bashrc
-$ echo export PATH=$PATH:$GOPATH/bin >> $HOME/.bashrc
-$ echo export PATH=$PATH:$GOROOT/bin >> $HOME/.bashrc
-```
-
-Finally we must reload the .bashrc configuration:
-```
-$ source $HOME/.bashrc
-```
-
-#### OS X
-
-One way to install go on OS X is by using [Homebrew](http://brew.sh/)
-
-##### Installing Homebrew
-Run the following command from the terminal to install Hombrew:
-```
-$ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-```
-
-##### Installing Go using Hombrew
-
-Run the following command from the terminal to install Go:
-```
-$ brew install go
-```
-
-##### Configuring the GOPATH
-
-Configure the environment to be able to compile and run Go code.
-```
-$ mkdir $HOME/go
-$ echo export GOPATH=$HOME/go >> $HOME/.profile
-$ echo export GOROOT=/usr/local/opt/go/libexec >> $HOME/.profile
-$ echo export PATH=$PATH:$GOPATH/bin >> $HOME/.profile
-$ echo export PATH=$PATH:$GOROOT/bin >> $HOME/.profile
-```
-
-Finally we must reload the .profile configuration:
-```
-$ source $HOME/.profile
-```
-
-#### Windows
-
-Download and run the msi installer from https://golang.org/dl/
-
-## Installing Docker Compose (if manually configured Aurora)
-To show Aurora's new multi executor feature, we need to use at least one custom executor.
-In this case we will be using the [docker-compose-executor](https://github.com/mesos/docker-compose-executor).
-
-In order to run the docker-compose executor, each agent must have docker-compose installed on it.
-
-This can be done using pip:
-```
-$ sudo pip install docker-compose
-```
+Agents which will run dce-go will need docker-compose in order to sucessfully run the executor.
+Instructions for installing docker-compose on various platforms may be found on Docker's webiste: [docs.docker.com/compose/install/](https://docs.docker.com/compose/install/)
 
 ## Downloading gorealis
 Finally, we must get `gorealis` using the `go get` command:
@@ -192,7 +118,7 @@ go get github.com/paypal/gorealis
 # Creating Aurora Jobs
 
 ## Creating a thermos job
-To demonstrate that we are able to run jobs using different executors on the 
+To demonstrate that we are able to run jobs using different executors on the
 same scheduler, we'll first launch a thermos job using the default Aurora Client.
 
 We can use a sample job for this:
@@ -259,8 +185,8 @@ go run $GOPATH/src/github.com/paypal/gorealis/examples/client.go -executor=compo
 ```
 
 If everything went according to plan, a new job will be shown in the Aurora UI.
-We can further investigate inside the Mesos task sandbox. Inside the sandbox, under 
-the sample-app folder, we can find a docker-compose.yml-generated.yml. If we inspect this file, 
+We can further investigate inside the Mesos task sandbox. Inside the sandbox, under
+the sample-app folder, we can find a docker-compose.yml-generated.yml. If we inspect this file,
 we can find the port at which we can find the web server we launched.
 
 Under Web->Ports, we find the port Mesos allocated. We can then navigate to:
@@ -269,10 +195,10 @@ Under Web->Ports, we find the port Mesos allocated. We can then navigate to:
 A message from the executor should greet us.
 
 ## Creating a Thermos job using gorealis
-It is also possible to create a thermos job using gorealis. To do this, however, 
+It is also possible to create a thermos job using gorealis. To do this, however,
 a thermos payload is required. A thermos payload consists of a JSON blob that details
 the entire task as it exists inside the Aurora Scheduler. *Creating the blob is unfortunately
-out of the scope of what gorealis does*, so a thermos payload must be generated beforehand or 
+out of the scope of what gorealis does*, so a thermos payload must be generated beforehand or
 retrieved from the structdump of an existing task for testing purposes.
 
 A sample thermos JSON payload may be found [here](../examples/thermos_payload.json) in the examples folder.

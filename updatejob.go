@@ -18,13 +18,13 @@ import (
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
 )
 
-// Structure to collect all information required to create job update
+// UpdateJob is a structure to collect all information required to create job update.
 type UpdateJob struct {
 	Job // SetInstanceCount for job is hidden, access via full qualifier
 	req *aurora.JobUpdateRequest
 }
 
-// Create a default UpdateJob object.
+// NewDefaultUpdateJob creates an UpdateJob object with opinionated default settings.
 func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 
 	req := aurora.NewJobUpdateRequest()
@@ -74,6 +74,7 @@ func NewDefaultUpdateJob(config *aurora.TaskConfig) *UpdateJob {
 	return &UpdateJob{Job: job, req: req}
 }
 
+// NewUpdateJob creates an UpdateJob object wihtout default settings.
 func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings) *UpdateJob {
 
 	req := aurora.NewJobUpdateRequest()
@@ -115,50 +116,50 @@ func NewUpdateJob(config *aurora.TaskConfig, settings *aurora.JobUpdateSettings)
 	return &UpdateJob{Job: job, req: req}
 }
 
-// Set instance count the job will have after the update.
+// InstanceCount sets instance count the job will have after the update.
 func (u *UpdateJob) InstanceCount(inst int32) *UpdateJob {
 	u.req.InstanceCount = inst
 	return u
 }
 
-// Max number of instances being updated at any given moment.
+// BatchSize sets the max number of instances being updated at any given moment.
 func (u *UpdateJob) BatchSize(size int32) *UpdateJob {
 	u.req.Settings.UpdateGroupSize = size
 	return u
 }
 
-// Minimum number of seconds a shard must remain in RUNNING state before considered a success.
+// WatchTime sets the minimum number of seconds a shard must remain in RUNNING state before considered a success.
 func (u *UpdateJob) WatchTime(ms int32) *UpdateJob {
 	u.req.Settings.MinWaitInInstanceRunningMs = ms
 	return u
 }
 
-// Wait for all instances in a group to be done before moving on.
+// WaitForBatchCompletion configures the job update to wait for all instances in a group to be done before moving on.
 func (u *UpdateJob) WaitForBatchCompletion(batchWait bool) *UpdateJob {
 	u.req.Settings.WaitForBatchCompletion = batchWait
 	return u
 }
 
-// Max number of instance failures to tolerate before marking instance as FAILED.
+// MaxPerInstanceFailures sets the max number of instance failures to tolerate before marking instance as FAILED.
 func (u *UpdateJob) MaxPerInstanceFailures(inst int32) *UpdateJob {
 	u.req.Settings.MaxPerInstanceFailures = inst
 	return u
 }
 
-// Max number of FAILED instances to tolerate before terminating the update.
+// MaxFailedInstances sets the max number of FAILED instances to tolerate before terminating the update.
 func (u *UpdateJob) MaxFailedInstances(inst int32) *UpdateJob {
 	u.req.Settings.MaxFailedInstances = inst
 	return u
 }
 
-// When False, prevents auto rollback of a failed update.
+// RollbackOnFail configure the job to rollback automatically after a job update fails.
 func (u *UpdateJob) RollbackOnFail(rollback bool) *UpdateJob {
 	u.req.Settings.RollbackOnFailure = rollback
 	return u
 }
 
+// NewUpdateSettings return an opinionated set of job update settings.
 func NewUpdateSettings() *aurora.JobUpdateSettings {
-
 	us := new(aurora.JobUpdateSettings)
 	// Mirrors defaults set by Pystachio
 	us.UpdateGroupSize = 1
