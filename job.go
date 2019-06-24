@@ -51,6 +51,7 @@ type Job interface {
 	// will allow any owner to elect for a job to run on the host(s)
 	AddDedicatedConstraint(role, name string) Job
 	AddURIs(extract bool, cache bool, values ...string) Job
+	AddURI(extract bool, cache bool, outputFilename, value string) Job
 	JobKey() *aurora.JobKey
 	JobConfig() *aurora.JobConfiguration
 	TaskConfig() *aurora.TaskConfig
@@ -252,6 +253,25 @@ func (j *AuroraJob) AddURIs(extract bool, cache bool, values ...string) Job {
 		j.jobConfig.TaskConfig.MesosFetcherUris = append(j.jobConfig.TaskConfig.MesosFetcherUris,
 			&aurora.MesosFetcherURI{Value: value, Extract: &extract, Cache: &cache})
 	}
+	return j
+}
+
+// AddURI adds a single URI to to fetch while the task is bootstrapping. Unlike AddURIs, this function allows
+// the user to specify an outputFilename. If outputFilename is anything other than the empty string, the artifact
+// downloaded will be renamed to the value provided by this string.
+// --enable_mesos_fetcher flag enabled. There is currently no duplicate detection.
+func (j *AuroraJob) AddURI(extract bool, cache bool, outputFilename, value string) Job {
+	resource := &aurora.MesosFetcherURI{
+		Value:      value,
+		Extract:    &extract,
+		Cache:      &cache,
+	}
+
+	if outputFilename != "" {
+		resource.OutputFile = &outputFilename
+	}
+
+	j.jobConfig.TaskConfig.MesosFetcherUris = append(j.jobConfig.TaskConfig.MesosFetcherUris, resource)
 	return j
 }
 

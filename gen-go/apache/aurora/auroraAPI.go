@@ -2564,10 +2564,12 @@ func (p *InstanceKey) String() string {
 //  - Value: Where to get the resource from
 //  - Extract: Extract compressed archive after downloading
 //  - Cache: Cache value using Mesos Fetcher caching mechanism *
+//  - OutputFile: Filename for the resource that is downloaded *
 type MesosFetcherURI struct {
   Value string `thrift:"value,1" db:"value" json:"value"`
   Extract *bool `thrift:"extract,2" db:"extract" json:"extract,omitempty"`
   Cache *bool `thrift:"cache,3" db:"cache" json:"cache,omitempty"`
+  OutputFile *string `thrift:"outputFile,4" db:"outputFile" json:"outputFile,omitempty"`
 }
 
 func NewMesosFetcherURI() *MesosFetcherURI {
@@ -2592,12 +2594,23 @@ func (p *MesosFetcherURI) GetCache() bool {
   }
 return *p.Cache
 }
+var MesosFetcherURI_OutputFile_DEFAULT string
+func (p *MesosFetcherURI) GetOutputFile() string {
+  if !p.IsSetOutputFile() {
+    return MesosFetcherURI_OutputFile_DEFAULT
+  }
+return *p.OutputFile
+}
 func (p *MesosFetcherURI) IsSetExtract() bool {
   return p.Extract != nil
 }
 
 func (p *MesosFetcherURI) IsSetCache() bool {
   return p.Cache != nil
+}
+
+func (p *MesosFetcherURI) IsSetOutputFile() bool {
+  return p.OutputFile != nil
 }
 
 func (p *MesosFetcherURI) Read(iprot thrift.TProtocol) error {
@@ -2636,6 +2649,16 @@ func (p *MesosFetcherURI) Read(iprot thrift.TProtocol) error {
     case 3:
       if fieldTypeId == thrift.BOOL {
         if err := p.ReadField3(iprot); err != nil {
+          return err
+        }
+      } else {
+        if err := iprot.Skip(fieldTypeId); err != nil {
+          return err
+        }
+      }
+    case 4:
+      if fieldTypeId == thrift.STRING {
+        if err := p.ReadField4(iprot); err != nil {
           return err
         }
       } else {
@@ -2685,6 +2708,15 @@ func (p *MesosFetcherURI)  ReadField3(iprot thrift.TProtocol) error {
   return nil
 }
 
+func (p *MesosFetcherURI)  ReadField4(iprot thrift.TProtocol) error {
+  if v, err := iprot.ReadString(); err != nil {
+  return thrift.PrependError("error reading field 4: ", err)
+} else {
+  p.OutputFile = &v
+}
+  return nil
+}
+
 func (p *MesosFetcherURI) Write(oprot thrift.TProtocol) error {
   if err := oprot.WriteStructBegin("MesosFetcherURI"); err != nil {
     return thrift.PrependError(fmt.Sprintf("%T write struct begin error: ", p), err) }
@@ -2692,6 +2724,7 @@ func (p *MesosFetcherURI) Write(oprot thrift.TProtocol) error {
     if err := p.writeField1(oprot); err != nil { return err }
     if err := p.writeField2(oprot); err != nil { return err }
     if err := p.writeField3(oprot); err != nil { return err }
+    if err := p.writeField4(oprot); err != nil { return err }
   }
   if err := oprot.WriteFieldStop(); err != nil {
     return thrift.PrependError("write field stop error: ", err) }
@@ -2730,6 +2763,18 @@ func (p *MesosFetcherURI) writeField3(oprot thrift.TProtocol) (err error) {
     return thrift.PrependError(fmt.Sprintf("%T.cache (3) field write error: ", p), err) }
     if err := oprot.WriteFieldEnd(); err != nil {
       return thrift.PrependError(fmt.Sprintf("%T write field end error 3:cache: ", p), err) }
+  }
+  return err
+}
+
+func (p *MesosFetcherURI) writeField4(oprot thrift.TProtocol) (err error) {
+  if p.IsSetOutputFile() {
+    if err := oprot.WriteFieldBegin("outputFile", thrift.STRING, 4); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field begin error 4:outputFile: ", p), err) }
+    if err := oprot.WriteString(string(*p.OutputFile)); err != nil {
+    return thrift.PrependError(fmt.Sprintf("%T.outputFile (4) field write error: ", p), err) }
+    if err := oprot.WriteFieldEnd(); err != nil {
+      return thrift.PrependError(fmt.Sprintf("%T write field end error 4:outputFile: ", p), err) }
   }
   return err
 }

@@ -209,7 +209,8 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		Disk(50).
 		IsService(true).
 		InstanceCount(2).
-		AddPorts(1)
+		AddPorts(1).
+		AddURI(false, false, "test.version", "https://raw.githubusercontent.com/paypal/gorealis/master/.auroraversion")
 
 	_, err := r.CreateJob(job)
 	require.NoError(t, err)
