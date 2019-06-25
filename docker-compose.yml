@@ -80,7 +80,7 @@ services:
       - zk
 
   aurora-one:
-    image: rdelvalle/aurora:0.22.0-07c1dee796e553540a025d3ef5e126cfaf14620d
+    image: rdelvalle/apache-aurora:0.22.3
     pid: host
     ports:
     - "8081:8081"
@@ -89,7 +89,9 @@ services:
       CLUSTER_NAME: test-cluster
       ZK_ENDPOINTS: "192.168.33.2:2181"
       MESOS_MASTER: "zk://192.168.33.2:2181/mesos"
-      EXTRA_SCHEDULER_ARGS: "-min_required_instances_for_sla_check=1"
+      EXTRA_SCHEDULER_ARGS: |
+        -min_required_instances_for_sla_check=2
+        -enable_mesos_fetcher=true
     networks:
       aurora_cluster:
         ipv4_address: 192.168.33.7
