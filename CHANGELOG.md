@@ -2,6 +2,8 @@
 
 * Changing compose environment to Aurora snapshot in order to support staggered update.
 * Adding staggered updates API.
+* Added outputFile field to URI fetcher. Allows user to set a value for which an artifact will be renamed to after
+  the artifact is fetched.
 
 1.21.1
 
