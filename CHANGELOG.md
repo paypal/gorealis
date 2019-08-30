@@ -3,6 +3,10 @@
 * CreateService and StartJobUpdate do not continue retrying if a timeout has been encountered
 by the HTTP client. Instead they now return an error that conforms to the Timedout interface.
 Users can check for a Timedout error by using `realis.IsTimeout(err)`.
+* New API function VariableBatchStep has been added which returns the current batch at which
+a Variable Batch Update configured Update is currently in.
+* Added new PauseUpdateMonitor which monitors an update until it is an `ROLL_FORWARD_PAUSED` state.
+* Added variableBatchStep command to sample client to be used for testing new VariableBatchStep api.
 
 1.21.0
 
