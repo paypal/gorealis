@@ -451,6 +451,13 @@ func main() {
 		}
 		fmt.Println(resp.String())
 
+	case "variableBatchStep":
+		step, err := r.VariableBatchStep(aurora.JobUpdateKey{Job: job.JobKey(), ID: updateId})
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(step)
+
 	case "taskConfig":
 		fmt.Println("Getting job info")
 		live, err := r.GetInstanceIds(job.JobKey(), aurora.ACTIVE_STATES)
