@@ -129,11 +129,26 @@ func (m *Monitor) JobUpdateQuery(
 	}
 }
 
-// Instances will monitor a Job until all instances enter one of the LIVE_STATES
-func (m *Monitor) Instances(
-	key *aurora.JobKey,
-	instances int32,
-	interval, timeout int) (bool, error) {
+// PausedUpdateMonitor polls Aurora for information about a job update until the job update has entered into
+// a ROLL_FORWARD_PAUSED state.
+func (m *Monitor) PausedUpdateMonitor(key aurora.JobUpdateKey, interval, timeout time.Duration) (bool, error) {
+	_, err := m.JobUpdateQuery(aurora.JobUpdateQuery{
+		UpdateStatuses: []aurora.JobUpdateStatus{aurora.JobUpdateStatus_ROLL_FORWARD_PAUSED},
+		Key:            &key,
+		Limit:          1,
+	},
+		interval,
+		timeout)
+
+	if err != nil {
+		return false, errors.Wrap(err, "update has not entered paused state")
+	}
+
+	return true, err
+}
+
+// Monitor a Job until all instances enter one of the LIVE_STATES
+func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval, timeout int) (bool, error) {
 	return m.ScheduleStatus(key, instances, LiveStates, interval, timeout)
 }
 
