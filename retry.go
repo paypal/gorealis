@@ -151,7 +151,7 @@ func (c *Client) thriftCallWithRetries(thriftCall auroraThriftCall) (*aurora.Res
 
 			resp, clientErr = thriftCall()
 
-			c.logger.DebugPrintf("Aurora Thrift Call ended resp: %v clientErr: %v\n", resp, clientErr)
+			c.logger.TracePrintf("Aurora Thrift Call ended resp: %v clientErr: %v\n", resp, clientErr)
 		}()
 
 		// Check if our thrift call is returning an error. This is a retriable event as we don't know
