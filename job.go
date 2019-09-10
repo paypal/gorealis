@@ -136,6 +136,11 @@ func (j *AuroraJob) Disk(disk int64) *AuroraJob {
 	return j
 }
 
+func (j *AuroraJob) GPU(gpu int64) *AuroraJob {
+	j.task.GPU(gpu)
+	return j
+}
+
 func (j *AuroraJob) Tier(tier string) *AuroraJob {
 	j.task.Tier(tier)
 	return j
