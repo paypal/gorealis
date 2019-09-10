@@ -65,6 +65,7 @@ type clientConfig struct {
 	clientKey, clientCert       string
 	options                     []ClientOption
 	debug                       bool
+	trace                       bool
 	zkOptions                   []ZKOpt
 }
 
@@ -163,7 +164,7 @@ func ZookeeperOptions(opts ...ZKOpt) ClientOption {
 // Using the word set to avoid name collision with Interface.
 func SetLogger(l Logger) ClientOption {
 	return func(config *clientConfig) {
-		config.logger = &LevelLogger{l, false}
+		config.logger = &LevelLogger{Logger: l}
 	}
 }
 
@@ -171,6 +172,13 @@ func SetLogger(l Logger) ClientOption {
 func Debug() ClientOption {
 	return func(config *clientConfig) {
 		config.debug = true
+	}
+}
+
+// Enable trace statements.
+func Trace() ClientOption {
+	return func(config *clientConfig) {
+		config.trace = true
 	}
 }
 
@@ -209,7 +217,7 @@ func NewClient(options ...ClientOption) (*Client, error) {
 	// Default configs
 	config.timeout = 10 * time.Second
 	config.backoff = defaultBackoff
-	config.logger = &LevelLogger{log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC), false}
+	config.logger = &LevelLogger{Logger: log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC)}
 
 	// Save options to recreate client if a connection error happens
 	config.options = options
@@ -221,18 +229,18 @@ func NewClient(options ...ClientOption) (*Client, error) {
 
 	// TODO(rdelvalle): Move this logic to it's own function to make initialization code easier to read.
 
-	// Turn off all logging (including debug)
+	// Set a sane logger based upon configuration passed by the user
 	if config.logger == nil {
-		config.logger = &LevelLogger{NoopLogger{}, false}
-	}
-
-	// Set a logger if debug has been set to true but no logger has been set
-	if config.logger == nil && config.debug {
-		config.logger = &LevelLogger{log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC), true}
+		if config.debug || config.trace {
+			config.logger = &LevelLogger{Logger: log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC)}
+		} else {
+			config.logger = &LevelLogger{Logger: NoopLogger{}}
+		}
 	}
 
 	// Note, by this point, a LevelLogger should have been created.
 	config.logger.EnableDebug(config.debug)
+	config.logger.EnableTrace(config.trace)
 
 	config.logger.DebugPrintln("Number of options applied to clientConfig: ", len(options))
 
@@ -302,9 +310,10 @@ func NewClient(options ...ClientOption) (*Client, error) {
 		client:         aurora.NewAuroraSchedulerManagerClientFactory(config.transport, config.protoFactory),
 		readonlyClient: aurora.NewReadOnlySchedulerClientFactory(config.transport, config.protoFactory),
 		adminClient:    aurora.NewAuroraAdminClientFactory(config.transport, config.protoFactory),
-		logger:         LevelLogger{config.logger, config.debug},
-		lock:           &sync.Mutex{},
-		transport:      config.transport,
+		// We initialize logger this way to allow any logger which satisfies the Logger interface
+		logger:    LevelLogger{Logger: config.logger, debug: config.debug, trace: config.trace},
+		lock:      &sync.Mutex{},
+		transport: config.transport,
 	}, nil
 }
 

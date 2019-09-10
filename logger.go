@@ -31,29 +31,49 @@ func (NoopLogger) Println(a ...interface{}) {}
 type LevelLogger struct {
 	Logger
 	debug bool
+	trace bool
 }
 
 func (l *LevelLogger) EnableDebug(enable bool) {
 	l.debug = enable
 }
 
+func (l *LevelLogger) EnableTrace(enable bool) {
+	l.trace = enable
+}
+
 func (l LevelLogger) DebugPrintf(format string, a ...interface{}) {
 	if l.debug {
-		l.Print("[DEBUG] ")
-		l.Printf(format, a...)
+		l.Printf("[DEBUG] "+format, a...)
 	}
 }
 
 func (l LevelLogger) DebugPrint(a ...interface{}) {
 	if l.debug {
-		l.Print("[DEBUG] ")
-		l.Print(a...)
+		l.Print(append([]interface{}{"[DEBUG] "}, a...)...)
 	}
 }
 
 func (l LevelLogger) DebugPrintln(a ...interface{}) {
 	if l.debug {
-		l.Print("[DEBUG] ")
-		l.Println(a...)
+		l.Println(append([]interface{}{"[DEBUG] "}, a...)...)
+	}
+}
+
+func (l LevelLogger) TracePrintf(format string, a ...interface{}) {
+	if l.trace {
+		l.Printf("[TRACE] "+format, a...)
+	}
+}
+
+func (l LevelLogger) TracePrint(a ...interface{}) {
+	if l.trace {
+		l.Print(append([]interface{}{"[TRACE] "}, a...)...)
+	}
+}
+
+func (l LevelLogger) TracePrintln(a ...interface{}) {
+	if l.trace {
+		l.Println(append([]interface{}{"[TRACE] "}, a...)...)
 	}
 }
