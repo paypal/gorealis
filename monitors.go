@@ -29,7 +29,7 @@ const (
 )
 
 // Polls the scheduler every certain amount of time to see if the update has succeeded
-func (c *Client) JobUpdateMonitor(updateKey aurora.JobUpdateKey, interval, timeout time.Duration) (bool, error) {
+func (c *Client) MonitorJobUpdate(updateKey aurora.JobUpdateKey, interval, timeout time.Duration) (bool, error) {
 	if interval < 1*time.Second {
 		interval = interval * time.Second
 	}
@@ -87,15 +87,55 @@ func (c *Client) JobUpdateMonitor(updateKey aurora.JobUpdateKey, interval, timeo
 	}
 }
 
+func (c *Client) MonitorJobUpdateStatus(updateKey aurora.JobUpdateKey,
+	desiredStatuses map[aurora.JobUpdateStatus]bool,
+	interval, timeout time.Duration) (aurora.JobUpdateStatus, error) {
+
+	updateQ := aurora.JobUpdateQuery{
+		Key:   &updateKey,
+		Limit: 1,
+	}
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			updateDetails, cliErr := c.JobUpdateDetails(updateQ)
+			if cliErr != nil {
+				return aurora.JobUpdateStatus(-1), cliErr
+			}
+
+			if len(updateDetails) == 0 {
+				c.RealisConfig().logger.Println("No update found")
+				return aurora.JobUpdateStatus(-1), errors.New("No update found for " + updateKey.String())
+			}
+			status := updateDetails[0].Update.Summary.State.Status
+
+			if _, ok := desiredStatuses[status]; ok {
+				return status, nil
+			}
+
+		case <-timer.C:
+			return aurora.JobUpdateStatus(-1), newTimedoutError(errors.New("job update monitor timed out"))
+		}
+	}
+}
+
 // Monitor a AuroraJob until all instances enter one of the LiveStates
-func (c *Client) InstancesMonitor(key aurora.JobKey, instances int32, interval, timeout time.Duration) (bool, error) {
-	return c.ScheduleStatusMonitor(key, instances, aurora.LIVE_STATES, interval, timeout)
+func (c *Client) MonitorInstances(key aurora.JobKey, instances int32, interval, timeout time.Duration) (bool, error) {
+	return c.MonitorScheduleStatus(key, instances, aurora.LIVE_STATES, interval, timeout)
 }
 
 // Monitor a AuroraJob until all instances enter a desired status.
 // Defaults sets of desired statuses provided by the thrift API include:
 // ActiveStates, SlaveAssignedStates, LiveStates, and TerminalStates
-func (c *Client) ScheduleStatusMonitor(key aurora.JobKey, instanceCount int32, desiredStatuses []aurora.ScheduleStatus, interval, timeout time.Duration) (bool, error) {
+func (c *Client) MonitorScheduleStatus(key aurora.JobKey,
+	instanceCount int32,
+	desiredStatuses []aurora.ScheduleStatus,
+	interval, timeout time.Duration) (bool, error) {
 	if interval < 1*time.Second {
 		interval = interval * time.Second
 	}
@@ -131,7 +171,9 @@ func (c *Client) ScheduleStatusMonitor(key aurora.JobKey, instanceCount int32, d
 
 // Monitor host status until all hosts match the status provided. Returns a map where the value is true if the host
 // is in one of the desired mode(s) or false if it is not as of the time when the monitor exited.
-func (c *Client) HostMaintenanceMonitor(hosts []string, modes []aurora.MaintenanceMode, interval, timeout time.Duration) (map[string]bool, error) {
+func (c *Client) MonitorHostMaintenance(hosts []string,
+	modes []aurora.MaintenanceMode,
+	interval, timeout time.Duration) (map[string]bool, error) {
 	if interval < 1*time.Second {
 		interval = interval * time.Second
 	}

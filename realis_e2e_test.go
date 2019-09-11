@@ -238,7 +238,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Test Instances Monitor
-	success, err := r.InstancesMonitor(job.JobKey(), job.GetInstanceCount(), 1*time.Second, 50*time.Second)
+	success, err := r.MonitorInstances(job.JobKey(), job.GetInstanceCount(), 1*time.Second, 50*time.Second)
 	assert.True(t, success)
 	assert.NoError(t, err)
 
@@ -265,7 +265,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		err := r.KillJob(job.JobKey())
 		assert.NoError(t, err)
 
-		success, err := r.InstancesMonitor(job.JobKey(), 0, 1*time.Second, 60*time.Second)
+		success, err := r.MonitorInstances(job.JobKey(), 0, 1*time.Second, 60*time.Second)
 		assert.True(t, success)
 		assert.NoError(t, err)
 	})
@@ -429,7 +429,7 @@ func TestRealisClient_CreateService(t *testing.T) {
 	var ok bool
 	var mErr error
 
-	if ok, mErr = r.JobUpdateMonitor(*result.GetKey(), 5*time.Second, 4*time.Minute); !ok || mErr != nil {
+	if ok, mErr = r.MonitorJobUpdate(*result.GetKey(), 5*time.Second, 4*time.Minute); !ok || mErr != nil {
 		// Update may already be in a terminal state so don't check for error
 		err := r.AbortJobUpdate(*result.GetKey(), "Monitor timed out.")
 
@@ -507,7 +507,7 @@ func TestRealisClient_StartMaintenance(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Monitor change to DRAINING and DRAINED mode
-	hostResults, err := r.HostMaintenanceMonitor(
+	hostResults, err := r.MonitorHostMaintenance(
 		hosts,
 		[]aurora.MaintenanceMode{aurora.MaintenanceMode_SCHEDULED},
 		1*time.Second,
@@ -519,7 +519,7 @@ func TestRealisClient_StartMaintenance(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Monitor change to DRAINING and DRAINED mode
-	_, err = r.HostMaintenanceMonitor(
+	_, err = r.MonitorHostMaintenance(
 		hosts,
 		[]aurora.MaintenanceMode{aurora.MaintenanceMode_NONE},
 		5*time.Second,
@@ -533,7 +533,7 @@ func TestRealisClient_DrainHosts(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Monitor change to DRAINING and DRAINED mode
-	hostResults, err := r.HostMaintenanceMonitor(
+	hostResults, err := r.MonitorHostMaintenance(
 		hosts,
 		[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
 		1*time.Second,
@@ -543,7 +543,7 @@ func TestRealisClient_DrainHosts(t *testing.T) {
 
 	t.Run("TestRealisClient_MonitorNontransitioned", func(t *testing.T) {
 		// Monitor change to DRAINING and DRAINED mode
-		hostResults, err := r.HostMaintenanceMonitor(
+		hostResults, err := r.MonitorHostMaintenance(
 			append(hosts, "IMAGINARY_HOST"),
 			[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
 			1*time.Second,
@@ -559,7 +559,7 @@ func TestRealisClient_DrainHosts(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Monitor change to DRAINING and DRAINED mode
-		_, err = r.HostMaintenanceMonitor(
+		_, err = r.MonitorHostMaintenance(
 			hosts,
 			[]aurora.MaintenanceMode{aurora.MaintenanceMode_NONE},
 			5*time.Second,
@@ -580,7 +580,7 @@ func TestRealisClient_SLADrainHosts(t *testing.T) {
 	}
 
 	// Monitor change to DRAINING and DRAINED mode
-	hostResults, err := r.HostMaintenanceMonitor(
+	hostResults, err := r.MonitorHostMaintenance(
 		hosts,
 		[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
 		1*time.Second,
@@ -592,7 +592,7 @@ func TestRealisClient_SLADrainHosts(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Monitor change to DRAINING and DRAINED mode
-	_, err = r.HostMaintenanceMonitor(
+	_, err = r.MonitorHostMaintenance(
 		hosts,
 		[]aurora.MaintenanceMode{aurora.MaintenanceMode_NONE},
 		5*time.Second,
@@ -627,7 +627,7 @@ func TestRealisClient_SessionThreadSafety(t *testing.T) {
 			defer wg.Done()
 
 			// Test Schedule status monitor for terminal state and timing out after 30 seconds
-			success, err := r.ScheduleStatusMonitor(job.JobKey(), job.GetInstanceCount(), aurora.LIVE_STATES, 1, 30)
+			success, err := r.MonitorScheduleStatus(job.JobKey(), job.GetInstanceCount(), aurora.LIVE_STATES, 1, 30)
 			assert.False(t, success)
 			assert.Error(t, err)
 
@@ -710,7 +710,7 @@ func TestRealisClient_PartitionPolicy(t *testing.T) {
 	var ok bool
 	var mErr error
 
-	if ok, mErr = r.JobUpdateMonitor(*result.GetKey(), 5*time.Second, 4*time.Minute); !ok || mErr != nil {
+	if ok, mErr = r.MonitorJobUpdate(*result.GetKey(), 5*time.Second, 4*time.Minute); !ok || mErr != nil {
 		// Update may already be in a terminal state so don't check for error
 		err := r.AbortJobUpdate(*result.GetKey(), "Monitor timed out.")
 		err = r.KillJob(job.JobKey())
