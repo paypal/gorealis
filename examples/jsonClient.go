@@ -208,7 +208,7 @@ func main() {
 			fmt.Println("Error creating Aurora job: ", jobCreationErr)
 			os.Exit(1)
 		} else {
-			if ok, monitorErr := r.InstancesMonitor(auroraJob.JobKey(), auroraJob.GetInstanceCount(), 5, 50); !ok || monitorErr != nil {
+			if ok, monitorErr := r.MonitorInstances(auroraJob.JobKey(), auroraJob.GetInstanceCount(), 5, 50); !ok || monitorErr != nil {
 				if jobErr := r.KillJob(auroraJob.JobKey()); jobErr !=
 					nil {
 					fmt.Println(jobErr)
