@@ -70,8 +70,18 @@ func (c *Client) MonitorJobUpdateStatus(updateKey aurora.JobUpdateKey,
 	desiredStatuses map[aurora.JobUpdateStatus]bool,
 	interval, timeout time.Duration) (aurora.JobUpdateStatus, error) {
 
+	// Make deep local copy to avoid side effects from job key being manipulated externally.
+	updateKeyLocal := &aurora.JobUpdateKey{
+		Job: &aurora.JobKey{
+			Role:        updateKey.Job.GetRole(),
+			Environment: updateKey.Job.GetEnvironment(),
+			Name:        updateKey.Job.GetName(),
+		},
+		ID: updateKey.GetID(),
+	}
+
 	updateQ := aurora.JobUpdateQuery{
-		Key:   &updateKey,
+		Key:   updateKeyLocal,
 		Limit: 1,
 	}
 	ticker := time.NewTicker(interval)
@@ -89,7 +99,7 @@ func (c *Client) MonitorJobUpdateStatus(updateKey aurora.JobUpdateKey,
 
 			if len(updateDetails) == 0 {
 				c.RealisConfig().logger.Println("No update found")
-				return aurora.JobUpdateStatus(-1), errors.New("no update found for " + updateKey.String())
+				return aurora.JobUpdateStatus(-1), errors.New("no update found for " + updateKeyLocal.String())
 			}
 			status := updateDetails[0].Update.Summary.State.Status
 

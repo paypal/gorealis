@@ -738,16 +738,34 @@ func (c *Client) AbortJobUpdate(updateKey aurora.JobUpdateKey, message string) e
 func (c *Client) PauseJobUpdate(updateKey *aurora.JobUpdateKey, message string) error {
 
 	c.logger.DebugPrintf("PauseJobUpdate Thrift Payload: %+v %v\n", updateKey, message)
+	// Thrift uses pointers for optional fields when generating Go code. To guarantee
+	// immutability of the JobUpdateKey, perform a deep copy and store it locally.
+	updateKeyLocal := &aurora.JobUpdateKey{
+		Job: &aurora.JobKey{
+			Role:        updateKey.Job.GetRole(),
+			Environment: updateKey.Job.GetEnvironment(),
+			Name:        updateKey.Job.GetName(),
+		},
+		ID: updateKey.GetID(),
+	}
 
 	_, retryErr := c.thriftCallWithRetries(func() (*aurora.Response, error) {
-		return c.client.PauseJobUpdate(nil, updateKey, message)
+		return c.client.PauseJobUpdate(nil, updateKeyLocal, message)
 	})
 
 	if retryErr != nil {
 		return errors.Wrap(retryErr, "error sending PauseJobUpdate command to Aurora Scheduler")
 	}
 
-	return nil
+	// Make this call synchronous by  blocking until it job has successfully transitioned to aborted
+	_, err := c.MonitorJobUpdateStatus(*updateKeyLocal,
+		map[aurora.JobUpdateStatus]bool{
+			aurora.JobUpdateStatus_ABORTED: true,
+		},
+		time.Second*5,
+		time.Minute)
+
+	return err
 }
 
 // Resume Paused AuroraJob Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.
