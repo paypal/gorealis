@@ -759,9 +759,7 @@ func (c *Client) PauseJobUpdate(updateKey *aurora.JobUpdateKey, message string) 
 
 	// Make this call synchronous by  blocking until it job has successfully transitioned to aborted
 	_, err := c.MonitorJobUpdateStatus(*updateKeyLocal,
-		map[aurora.JobUpdateStatus]bool{
-			aurora.JobUpdateStatus_ABORTED: true,
-		},
+		[]aurora.JobUpdateStatus{aurora.JobUpdateStatus_ABORTED},
 		time.Second*5,
 		time.Minute)
 
