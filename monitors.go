@@ -22,13 +22,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	UpdateFailed = "update failed"
-	RolledBack   = "update rolled back"
-	Timedout     = "timeout"
-)
-
-// Polls the scheduler every certain amount of time to see if the update has succeeded
+// MonitorJobUpdate polls the scheduler every certain amount of time to see if the update has succeeded.
+// If the update entered a terminal update state but it is not ROLLED_FORWARD, this function will return an error.
 func (c *Client) MonitorJobUpdate(updateKey aurora.JobUpdateKey, interval, timeout time.Duration) (bool, error) {
 	if interval < 1*time.Second {
 		interval = interval * time.Second
@@ -37,56 +32,40 @@ func (c *Client) MonitorJobUpdate(updateKey aurora.JobUpdateKey, interval, timeo
 	if timeout < 1*time.Second {
 		timeout = timeout * time.Second
 	}
+	status, err := c.MonitorJobUpdateStatus(updateKey,
+		map[aurora.JobUpdateStatus]bool{
+			aurora.JobUpdateStatus_ROLLED_FORWARD: true,
+			aurora.JobUpdateStatus_ROLLED_BACK:    true,
+			aurora.JobUpdateStatus_ABORTED:        true,
+			aurora.JobUpdateStatus_ERROR:          true,
+			aurora.JobUpdateStatus_FAILED:         true,
+		},
+		interval,
+		timeout)
 
-	updateQ := aurora.JobUpdateQuery{
-		Key:   &updateKey,
-		Limit: 1,
+	if err != nil {
+		return false, err
 	}
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-	timer := time.NewTimer(timeout)
-	defer timer.Stop()
 
-	for {
-		select {
-		case <-ticker.C:
-			updateDetail, cliErr := c.JobUpdateDetails(updateQ)
-			if cliErr != nil {
-				return false, cliErr
-			}
+	c.RealisConfig().logger.Printf("job update status: %v\n", status)
 
-			if len(updateDetail) == 0 {
-				c.RealisConfig().logger.Println("No update found")
-				return false, errors.New("No update found for " + updateKey.String())
-			}
-
-			status := updateDetail[0].Update.Summary.State.Status
-
-			// Convert Thrift Set to Golang map for quick lookup
-			if _, ok := ActiveJobUpdateStates[status]; !ok {
-
-				// Rolled forward is the only state in which an update has been successfully updated
-				// if we encounter an inactive state and it is not at rolled forward, update failed
-				switch status {
-				case aurora.JobUpdateStatus_ROLLED_FORWARD:
-					c.RealisConfig().logger.Println("Update succeeded")
-					return true, nil
-				case aurora.JobUpdateStatus_FAILED:
-					c.RealisConfig().logger.Println("Update failed")
-					return false, errors.New(UpdateFailed)
-				case aurora.JobUpdateStatus_ROLLED_BACK:
-					c.RealisConfig().logger.Println("rolled back")
-					return false, errors.New(RolledBack)
-				default:
-					return false, nil
-				}
-			}
-		case <-timer.C:
-			return false, errors.New(Timedout)
-		}
+	// Rolled forward is the only state in which an update has been successfully updated
+	// if we encounter an inactive state and it is not at rolled forward, update failed
+	switch status {
+	case aurora.JobUpdateStatus_ROLLED_FORWARD:
+		return true, nil
+	case aurora.JobUpdateStatus_ROLLED_BACK,
+		aurora.JobUpdateStatus_ABORTED,
+		aurora.JobUpdateStatus_ERROR,
+		aurora.JobUpdateStatus_FAILED:
+		return false, errors.Errorf("bad terminal state for update: %v", status)
+	default:
+		return false, errors.Errorf("unexpected update state: %v", status)
 	}
 }
 
+// MonitorJobUpdateStatus polls the scheduler for information about an update until the update enters one of the
+// desired states or until the function times out.
 func (c *Client) MonitorJobUpdateStatus(updateKey aurora.JobUpdateKey,
 	desiredStatuses map[aurora.JobUpdateStatus]bool,
 	interval, timeout time.Duration) (aurora.JobUpdateStatus, error) {
@@ -110,7 +89,7 @@ func (c *Client) MonitorJobUpdateStatus(updateKey aurora.JobUpdateKey,
 
 			if len(updateDetails) == 0 {
 				c.RealisConfig().logger.Println("No update found")
-				return aurora.JobUpdateStatus(-1), errors.New("No update found for " + updateKey.String())
+				return aurora.JobUpdateStatus(-1), errors.New("no update found for " + updateKey.String())
 			}
 			status := updateDetails[0].Update.Summary.State.Status
 
@@ -164,7 +143,7 @@ func (c *Client) MonitorScheduleStatus(key aurora.JobKey,
 		case <-timer.C:
 
 			// If the timer runs out, return a timeout error to user
-			return false, errors.New(Timedout)
+			return false, newTimedoutError(errors.New("schedule status monitor timedout"))
 		}
 	}
 }
@@ -233,7 +212,7 @@ func (c *Client) MonitorHostMaintenance(hosts []string,
 				hostResult[host] = false
 			}
 
-			return hostResult, errors.New(Timedout)
+			return hostResult, newTimedoutError(errors.New("host maintenance monitor timedout"))
 		}
 	}
 }
