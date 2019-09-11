@@ -28,6 +28,19 @@ func IsTimeout(err error) bool {
 	return ok && temp.Timedout()
 }
 
+type timeoutErr struct {
+	error
+	timedout bool
+}
+
+func (r *timeoutErr) Timedout() bool {
+	return r.timedout
+}
+
+func newTimedoutError(err error) *timeoutErr {
+	return &timeoutErr{error: err, timedout: true}
+}
+
 // retryErr is a superset of timeout which includes extra context
 // with regards to our retry mechanism. This is done in order to make sure
 // that our retry mechanism works as expected through our tests and should
