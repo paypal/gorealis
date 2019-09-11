@@ -256,7 +256,7 @@ func NewClient(options ...ClientOption) (*Client, error) {
 	if config.zkOptions != nil {
 		url, err = LeaderFromZKOpts(config.zkOptions...)
 		if err != nil {
-			return nil, NewTemporaryError(errors.Wrap(err, "LeaderFromZK error"))
+			return nil, NewTemporaryError(errors.Wrap(err, "leaderFromZK error"))
 		}
 		config.logger.Println("Scheduler URL from ZK: ", url)
 	} else if config.cluster != nil {
@@ -272,7 +272,7 @@ func NewClient(options ...ClientOption) (*Client, error) {
 		url = config.url
 		config.logger.Println("Scheduler URL: ", url)
 	} else {
-		return nil, errors.New("Incomplete Options -- url, cluster.json, or Zookeeper address required")
+		return nil, errors.New("incomplete Options -- url, cluster.json, or Zookeeper address required")
 	}
 
 	url, err = validateAndPopulateAuroraURL(url)
@@ -283,7 +283,7 @@ func NewClient(options ...ClientOption) (*Client, error) {
 	if config.jsonTransport {
 		trans, err := newTJSONTransport(url, config.timeout, config)
 		if err != nil {
-			return nil, NewTemporaryError(errors.Wrap(err, "Error creating realis"))
+			return nil, NewTemporaryError(errors.Wrap(err, "error creating realis"))
 		}
 		config.transport = trans
 		config.protoFactory = thrift.NewTJSONProtocolFactory()
@@ -291,7 +291,7 @@ func NewClient(options ...ClientOption) (*Client, error) {
 	} else if config.binTransport {
 		trans, err := newTBinTransport(url, config.timeout, config)
 		if err != nil {
-			return nil, NewTemporaryError(errors.Wrap(err, "Error creating realis"))
+			return nil, NewTemporaryError(errors.Wrap(err, "error creating realis"))
 		}
 		config.transport = trans
 		config.protoFactory = thrift.NewTBinaryProtocolFactoryDefault()
@@ -340,7 +340,7 @@ func defaultTTransport(url string, timeout time.Duration, config *clientConfig) 
 
 	jar, err := cookiejar.New(nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating Cookie Jar")
+		return nil, errors.Wrap(err, "error creating Cookie Jar")
 	}
 
 	if config != nil {
@@ -377,11 +377,11 @@ func defaultTTransport(url string, timeout time.Duration, config *clientConfig) 
 		thrift.THttpClientOptions{Client: &http.Client{Timeout: timeout, Transport: &transport, Jar: jar}})
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating transport")
+		return nil, errors.Wrap(err, "error creating transport")
 	}
 
 	if err := trans.Open(); err != nil {
-		return nil, errors.Wrapf(err, "Error opening connection to %s", url)
+		return nil, errors.Wrapf(err, "error opening connection to %s", url)
 	}
 
 	return trans, nil
@@ -397,7 +397,7 @@ func newDefaultConfig(url string, timeout time.Duration, config *clientConfig) (
 func newTJSONConfig(url string, timeout time.Duration, config *clientConfig) (*clientConfig, error) {
 	trans, err := defaultTTransport(url, timeout, config)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating realis clientConfig")
+		return nil, errors.Wrap(err, "error creating realis clientConfig")
 	}
 
 	httpTrans := (trans).(*thrift.THttpClient)
@@ -411,7 +411,7 @@ func newTJSONConfig(url string, timeout time.Duration, config *clientConfig) (*c
 func newTBinaryConfig(url string, timeout time.Duration, config *clientConfig) (*clientConfig, error) {
 	trans, err := defaultTTransport(url, timeout, config)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating realis clientConfig")
+		return nil, errors.Wrap(err, "error creating realis clientConfig")
 	}
 
 	httpTrans := (trans).(*thrift.THttpClient)
@@ -482,7 +482,7 @@ func (c *Client) GetInstanceIds(key aurora.JobKey, states []aurora.ScheduleStatu
 
 	// If we encountered an error we couldn't recover from by retrying, return an error to the user
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Error querying Aurora Scheduler for active IDs")
+		return nil, errors.Wrap(retryErr, "error querying Aurora Scheduler for active IDs")
 	}
 
 	// Construct instance id map to stay in line with thrift's representation of sets
@@ -503,7 +503,7 @@ func (c *Client) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQuery) (*
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Error getting job update summaries from Aurora Scheduler")
+		return nil, errors.Wrap(retryErr, "error getting job update summaries from Aurora Scheduler")
 	}
 
 	return resp.GetResult_().GetGetJobUpdateSummariesResult_(), nil
@@ -518,7 +518,7 @@ func (c *Client) GetJobs(role string) (*aurora.GetJobsResult_, error) {
 	})
 
 	if retryErr != nil {
-		return result, errors.Wrap(retryErr, "Error getting Jobs from Aurora Scheduler")
+		return result, errors.Wrap(retryErr, "error getting Jobs from Aurora Scheduler")
 	}
 
 	if resp.GetResult_() != nil {
@@ -538,7 +538,7 @@ func (c *Client) KillInstances(key aurora.JobKey, instances ...int32) (bool, err
 	})
 
 	if retryErr != nil {
-		return false, errors.Wrap(retryErr, "Error sending Kill command to Aurora Scheduler")
+		return false, errors.Wrap(retryErr, "error sending Kill command to Aurora Scheduler")
 	}
 
 	if len(resp.GetDetails()) > 0 {
@@ -565,7 +565,7 @@ func (c *Client) KillJob(key aurora.JobKey) error {
 	})
 
 	if retryErr != nil {
-		return errors.Wrap(retryErr, "Error sending Kill command to Aurora Scheduler")
+		return errors.Wrap(retryErr, "error sending Kill command to Aurora Scheduler")
 	}
 	return nil
 }
@@ -581,7 +581,7 @@ func (c *Client) CreateJob(auroraJob *AuroraJob) error {
 	c.logger.DebugPrintf("CreateJob Thrift Payload: %+v\n", auroraJob.JobConfig())
 
 	if err != nil {
-		return errors.Wrap(err, "Unable to create Thermos payload")
+		return errors.Wrap(err, "unable to create Thermos payload")
 	}
 
 	_, retryErr := c.thriftCallWithRetries(func() (*aurora.Response, error) {
@@ -589,7 +589,7 @@ func (c *Client) CreateJob(auroraJob *AuroraJob) error {
 	})
 
 	if retryErr != nil {
-		return errors.Wrap(retryErr, "Error sending Create command to Aurora Scheduler")
+		return errors.Wrap(retryErr, "error sending Create command to Aurora Scheduler")
 	}
 
 	return nil
@@ -620,7 +620,7 @@ func (c *Client) ScheduleCronJob(auroraJob *AuroraJob) error {
 	})
 
 	if retryErr != nil {
-		return errors.Wrap(retryErr, "Error sending Cron AuroraJob Schedule message to Aurora Scheduler")
+		return errors.Wrap(retryErr, "error sending Cron AuroraJob Schedule message to Aurora Scheduler")
 	}
 	return nil
 }
@@ -634,7 +634,7 @@ func (c *Client) DescheduleCronJob(key aurora.JobKey) error {
 	})
 
 	if retryErr != nil {
-		return errors.Wrap(retryErr, "Error sending Cron AuroraJob De-schedule message to Aurora Scheduler")
+		return errors.Wrap(retryErr, "error sending Cron AuroraJob De-schedule message to Aurora Scheduler")
 
 	}
 	return nil
@@ -650,7 +650,7 @@ func (c *Client) StartCronJob(key aurora.JobKey) error {
 	})
 
 	if retryErr != nil {
-		return errors.Wrap(retryErr, "Error sending Start Cron AuroraJob  message to Aurora Scheduler")
+		return errors.Wrap(retryErr, "error sending Start Cron AuroraJob  message to Aurora Scheduler")
 	}
 	return nil
 
@@ -665,7 +665,7 @@ func (c *Client) RestartInstances(key aurora.JobKey, instances ...int32) error {
 	})
 
 	if retryErr != nil {
-		return errors.Wrap(retryErr, "Error sending Restart command to Aurora Scheduler")
+		return errors.Wrap(retryErr, "error sending Restart command to Aurora Scheduler")
 	}
 	return nil
 }
@@ -675,7 +675,7 @@ func (c *Client) RestartJob(key aurora.JobKey) error {
 
 	instanceIds, err1 := c.GetInstanceIds(key, aurora.ACTIVE_STATES)
 	if err1 != nil {
-		return errors.Wrap(err1, "Could not retrieve relevant task instance IDs")
+		return errors.Wrap(err1, "could not retrieve relevant task instance IDs")
 	}
 
 	c.logger.DebugPrintf("RestartShards Thrift Payload: %+v %v\n", key, instanceIds)
@@ -686,12 +686,12 @@ func (c *Client) RestartJob(key aurora.JobKey) error {
 		})
 
 		if retryErr != nil {
-			return errors.Wrap(retryErr, "Error sending Restart command to Aurora Scheduler")
+			return errors.Wrap(retryErr, "error sending Restart command to Aurora Scheduler")
 		}
 
 		return nil
 	} else {
-		return errors.New("No tasks in the Active state")
+		return errors.New("no tasks in the Active state")
 	}
 }
 
@@ -709,14 +709,14 @@ func (c *Client) StartJobUpdate(updateJob *JobUpdate, message string) (*aurora.S
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Error sending StartJobUpdate command to Aurora Scheduler")
+		return nil, errors.Wrap(retryErr, "error sending StartJobUpdate command to Aurora Scheduler")
 	}
 
 	if resp.GetResult_() != nil && resp.GetResult_().GetStartJobUpdateResult_() != nil {
 		return resp.GetResult_().GetStartJobUpdateResult_(), nil
 	}
 
-	return nil, errors.New("Thrift error: Field in response is nil unexpectedly.")
+	return nil, errors.New("thrift error: Field in response is nil unexpectedly.")
 }
 
 // Abort AuroraJob Update on Aurora. Requires the updateId which can be obtained on the Aurora web UI.
@@ -729,7 +729,7 @@ func (c *Client) AbortJobUpdate(updateKey aurora.JobUpdateKey, message string) e
 	})
 
 	if retryErr != nil {
-		return errors.Wrap(retryErr, "Error sending AbortJobUpdate command to Aurora Scheduler")
+		return errors.Wrap(retryErr, "error sending AbortJobUpdate command to Aurora Scheduler")
 	}
 	return nil
 }
@@ -744,7 +744,7 @@ func (c *Client) PauseJobUpdate(updateKey *aurora.JobUpdateKey, message string) 
 	})
 
 	if retryErr != nil {
-		return errors.Wrap(retryErr, "Error sending PauseJobUpdate command to Aurora Scheduler")
+		return errors.Wrap(retryErr, "error sending PauseJobUpdate command to Aurora Scheduler")
 	}
 
 	return nil
@@ -760,7 +760,7 @@ func (c *Client) ResumeJobUpdate(updateKey *aurora.JobUpdateKey, message string)
 	})
 
 	if retryErr != nil {
-		return errors.Wrap(retryErr, "Error sending ResumeJobUpdate command to Aurora Scheduler")
+		return errors.Wrap(retryErr, "error sending ResumeJobUpdate command to Aurora Scheduler")
 	}
 
 	return nil
@@ -776,13 +776,13 @@ func (c *Client) PulseJobUpdate(updateKey *aurora.JobUpdateKey) (aurora.JobUpdat
 	})
 
 	if retryErr != nil {
-		return aurora.JobUpdatePulseStatus(0), errors.Wrap(retryErr, "Error sending PulseJobUpdate command to Aurora Scheduler")
+		return aurora.JobUpdatePulseStatus(0), errors.Wrap(retryErr, "error sending PulseJobUpdate command to Aurora Scheduler")
 	}
 
 	if resp.GetResult_() != nil && resp.GetResult_().GetPulseJobUpdateResult_() != nil {
 		return resp.GetResult_().GetPulseJobUpdateResult_().GetStatus(), nil
 	} else {
-		return aurora.JobUpdatePulseStatus(0), errors.New("Thrift error, field was nil unexpectedly")
+		return aurora.JobUpdatePulseStatus(0), errors.New("thrift error, field was nil unexpectedly")
 	}
 
 }
@@ -798,7 +798,7 @@ func (c *Client) AddInstances(instKey aurora.InstanceKey, count int32) error {
 	})
 
 	if retryErr != nil {
-		return errors.Wrap(retryErr, "Error sending AddInstances command to Aurora Scheduler")
+		return errors.Wrap(retryErr, "error sending AddInstances command to Aurora Scheduler")
 	}
 	return nil
 
@@ -810,10 +810,10 @@ func (c *Client) AddInstances(instKey aurora.InstanceKey, count int32) error {
 func (c *Client) RemoveInstances(key aurora.JobKey, count int) error {
 	instanceIds, err := c.GetInstanceIds(key, aurora.ACTIVE_STATES)
 	if err != nil {
-		return errors.Wrap(err, "RemoveInstances: Could not retrieve relevant instance IDs")
+		return errors.Wrap(err, "removeInstances: Could not retrieve relevant instance IDs")
 	}
 	if len(instanceIds) < count {
-		return errors.Errorf("Insufficient active instances available for killing: "+
+		return errors.Errorf("insufficient active instances available for killing: "+
 			" Instances to be killed %d Active instances %d", count, len(instanceIds))
 	}
 
@@ -827,7 +827,7 @@ func (c *Client) RemoveInstances(key aurora.JobKey, count int) error {
 	killed, err := c.KillInstances(key, instanceIds...)
 
 	if !killed {
-		return errors.New("Flex down was not able to reduce the number of instances running.")
+		return errors.New("flex down was not able to reduce the number of instances running.")
 	}
 
 	return nil
@@ -843,7 +843,7 @@ func (c *Client) GetTaskStatus(query *aurora.TaskQuery) ([]*aurora.ScheduledTask
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Error querying Aurora Scheduler for task status")
+		return nil, errors.Wrap(retryErr, "error querying Aurora Scheduler for task status")
 	}
 
 	return response.ScheduleStatusResult(resp).GetTasks(), nil
@@ -859,7 +859,7 @@ func (c *Client) GetPendingReason(query *aurora.TaskQuery) ([]*aurora.PendingRea
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Error querying Aurora Scheduler for pending Reasons")
+		return nil, errors.Wrap(retryErr, "error querying Aurora Scheduler for pending Reasons")
 	}
 
 	var result []*aurora.PendingReason
@@ -881,7 +881,7 @@ func (c *Client) GetTasksWithoutConfigs(query *aurora.TaskQuery) ([]*aurora.Sche
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Error querying Aurora Scheduler for task status without configs")
+		return nil, errors.Wrap(retryErr, "error querying Aurora Scheduler for task status without configs")
 	}
 
 	return response.ScheduleStatusResult(resp).GetTasks(), nil
@@ -908,13 +908,13 @@ func (c *Client) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Error querying Aurora Scheduler for task configuration")
+		return nil, errors.Wrap(retryErr, "error querying Aurora Scheduler for task configuration")
 	}
 
 	tasks := response.ScheduleStatusResult(resp).GetTasks()
 
 	if len(tasks) == 0 {
-		return nil, errors.Errorf("Instance %d for jobkey %s/%s/%s doesn't exist",
+		return nil, errors.Errorf("instance %d for jobkey %s/%s/%s doesn't exist",
 			instKey.InstanceId,
 			instKey.JobKey.Environment,
 			instKey.JobKey.Role,
@@ -934,13 +934,13 @@ func (c *Client) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) ([]*aurora.
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Unable to get job update details")
+		return nil, errors.Wrap(retryErr, "unable to get job update details")
 	}
 
 	if resp.GetResult_() != nil && resp.GetResult_().GetGetJobUpdateDetailsResult_() != nil {
 		return resp.GetResult_().GetGetJobUpdateDetailsResult_().GetDetailsList(), nil
 	} else {
-		return nil, errors.New("Unknown Thrift error, field is nil.")
+		return nil, errors.New("unknown Thrift error, field is nil.")
 	}
 }
 
@@ -953,7 +953,7 @@ func (c *Client) RollbackJobUpdate(key aurora.JobUpdateKey, message string) erro
 	})
 
 	if retryErr != nil {
-		return errors.Wrap(retryErr, "Unable to roll back job update")
+		return errors.Wrap(retryErr, "unable to roll back job update")
 	}
 	return nil
 }
@@ -981,13 +981,13 @@ func (c *Client) DrainHosts(hosts ...string) ([]*aurora.HostStatus, error) {
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Unable to recover connection")
+		return nil, errors.Wrap(retryErr, "unable to recover connection")
 	}
 
 	if resp.GetResult_() != nil && resp.GetResult_().GetDrainHostsResult_() != nil {
 		return resp.GetResult_().GetDrainHostsResult_().GetStatuses(), nil
 	} else {
-		return nil, errors.New("Thrift error: Field in response is nil unexpectedly.")
+		return nil, errors.New("thrift error: Field in response is nil unexpectedly.")
 	}
 }
 
@@ -1010,13 +1010,13 @@ func (c *Client) SLADrainHosts(policy *aurora.SlaPolicy, timeout int64, hosts ..
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Unable to recover connection")
+		return nil, errors.Wrap(retryErr, "unable to recover connection")
 	}
 
 	if resp.GetResult_() != nil && resp.GetResult_().GetDrainHostsResult_() != nil {
 		return resp.GetResult_().GetDrainHostsResult_().GetStatuses(), nil
 	} else {
-		return nil, errors.New("Thrift error: Field in response is nil unexpectedly.")
+		return nil, errors.New("thrift error: Field in response is nil unexpectedly.")
 	}
 }
 
@@ -1036,13 +1036,13 @@ func (c *Client) StartMaintenance(hosts ...string) ([]*aurora.HostStatus, error)
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Unable to recover connection")
+		return nil, errors.Wrap(retryErr, "unable to recover connection")
 	}
 
 	if resp.GetResult_() != nil && resp.GetResult_().GetStartMaintenanceResult_() != nil {
 		return resp.GetResult_().GetStartMaintenanceResult_().GetStatuses(), nil
 	} else {
-		return nil, errors.New("Thrift error: Field in response is nil unexpectedly.")
+		return nil, errors.New("thrift error: Field in response is nil unexpectedly.")
 	}
 }
 
@@ -1062,13 +1062,13 @@ func (c *Client) EndMaintenance(hosts ...string) ([]*aurora.HostStatus, error) {
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Unable to recover connection")
+		return nil, errors.Wrap(retryErr, "unable to recover connection")
 	}
 
 	if resp.GetResult_() != nil && resp.GetResult_().GetEndMaintenanceResult_() != nil {
 		return resp.GetResult_().GetEndMaintenanceResult_().GetStatuses(), nil
 	} else {
-		return nil, errors.New("Thrift error: Field in response is nil unexpectedly.")
+		return nil, errors.New("thrift error: Field in response is nil unexpectedly.")
 	}
 
 }
@@ -1093,7 +1093,7 @@ func (c *Client) MaintenanceStatus(hosts ...string) (*aurora.MaintenanceStatusRe
 	})
 
 	if retryErr != nil {
-		return result, errors.Wrap(retryErr, "Unable to recover connection")
+		return result, errors.Wrap(retryErr, "unable to recover connection")
 	}
 
 	if resp.GetResult_() != nil {
@@ -1121,7 +1121,7 @@ func (c *Client) SetQuota(role string, cpu *float64, ramMb *int64, diskMb *int64
 	})
 
 	if retryErr != nil {
-		return errors.Wrap(retryErr, "Unable to set role quota")
+		return errors.Wrap(retryErr, "unable to set role quota")
 	}
 	return retryErr
 
@@ -1135,13 +1135,13 @@ func (c *Client) GetQuota(role string) (*aurora.GetQuotaResult_, error) {
 	})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Unable to get role quota")
+		return nil, errors.Wrap(retryErr, "unable to get role quota")
 	}
 
 	if resp.GetResult_() != nil {
 		return resp.GetResult_().GetGetQuotaResult_(), nil
 	} else {
-		return nil, errors.New("Thrift error: Field in response is nil unexpectedly.")
+		return nil, errors.New("thrift error: Field in response is nil unexpectedly.")
 	}
 }
 
@@ -1153,7 +1153,7 @@ func (c *Client) Snapshot() error {
 	})
 
 	if retryErr != nil {
-		return errors.Wrap(retryErr, "Unable to recover connection")
+		return errors.Wrap(retryErr, "unable to recover connection")
 	}
 
 	return nil
@@ -1167,7 +1167,7 @@ func (c *Client) PerformBackup() error {
 	})
 
 	if retryErr != nil {
-		return errors.Wrap(retryErr, "Unable to recover connection")
+		return errors.Wrap(retryErr, "unable to recover connection")
 	}
 
 	return nil
@@ -1181,7 +1181,7 @@ func (c *Client) ForceImplicitTaskReconciliation() error {
 	})
 
 	if retryErr != nil {
-		return errors.Wrap(retryErr, "Unable to recover connection")
+		return errors.Wrap(retryErr, "unable to recover connection")
 	}
 
 	return nil
@@ -1191,7 +1191,7 @@ func (c *Client) ForceImplicitTaskReconciliation() error {
 func (c *Client) ForceExplicitTaskReconciliation(batchSize *int32) error {
 
 	if batchSize != nil && *batchSize < 1 {
-		return errors.New("Invalid batch size.")
+		return errors.New("invalid batch size.")
 	}
 	settings := aurora.NewExplicitReconciliationSettings()
 
@@ -1202,7 +1202,7 @@ func (c *Client) ForceExplicitTaskReconciliation(batchSize *int32) error {
 	})
 
 	if retryErr != nil {
-		return errors.Wrap(retryErr, "Unable to recover connection")
+		return errors.Wrap(retryErr, "unable to recover connection")
 	}
 
 	return nil
