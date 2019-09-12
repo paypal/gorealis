@@ -23,7 +23,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/http/cookiejar"
 	"os"
 	"path/filepath"
 	"sort"
@@ -337,11 +336,6 @@ func GetCerts(certPath string) (*x509.CertPool, error) {
 // Creates a default Thrift Transport object for communications in gorealis using an HTTP Post Client
 func defaultTTransport(url string, timeout time.Duration, config *clientConfig) (thrift.TTransport, error) {
 	var transport http.Transport
-
-	jar, err := cookiejar.New(nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "error creating Cookie Jar")
-	}
 
 	if config != nil {
 		tlsConfig := &tls.Config{}
