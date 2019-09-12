@@ -117,7 +117,8 @@ func LeaderFromZKOpts(options ...ZKOpt) (string, error) {
 				return false, errors.Wrapf(err, "path %s is an invalid Zookeeper path", config.path)
 			}
 
-			return false, NewTemporaryError(errors.Wrapf(err, "Path %s doesn't exist on Zookeeper ", config.path))
+			return false,
+				NewTemporaryError(errors.Wrapf(err, "path %s doesn't exist on Zookeeper ", config.path))
 		}
 
 		// Search for the leader through all the children in the given path
@@ -134,19 +135,22 @@ func LeaderFromZKOpts(options ...ZKOpt) (string, error) {
 						return false, errors.Wrapf(err, "path %s is an invalid Zookeeper path", childPath)
 					}
 
-					return false, NewTemporaryError(errors.Wrap(err, "Error fetching contents of leader"))
+					return false, NewTemporaryError(errors.Wrap(err, "error fetching contents of leader"))
 				}
 
 				err = json.Unmarshal([]byte(data), serviceInst)
 				if err != nil {
-					return false, NewTemporaryError(errors.Wrap(err, "Unable to unmarshall contents of leader"))
+					return false,
+						NewTemporaryError(errors.Wrap(err, "unable to unmarshal contents of leader"))
 				}
 
 				// Should only be one endpoint.
 				// This should never be encountered as it would indicate Aurora
 				// writing bad info into Zookeeper but is kept here as a safety net.
 				if len(serviceInst.AdditionalEndpoints) > 1 {
-					return false, NewTemporaryError(errors.New("ambiguous endpoints in json blob, Aurora wrote bad info to ZK"))
+					return false,
+						NewTemporaryError(
+							errors.New("ambiguous endpoints in json blob, Aurora wrote bad info to ZK"))
 				}
 
 				var scheme, host, port string
@@ -162,7 +166,7 @@ func LeaderFromZKOpts(options ...ZKOpt) (string, error) {
 		}
 
 		// Leader data might not be available yet, try to fetch again.
-		return false, NewTemporaryError(errors.New("No leader found"))
+		return false, NewTemporaryError(errors.New("no leader found"))
 	})
 
 	if retryErr != nil {

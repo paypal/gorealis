@@ -89,7 +89,6 @@ func main() {
 		realis.Debug(),
 	}
 
-	// Check if zkUrl is available.
 	if zkUrl != "" {
 		fmt.Println("zkUrl: ", zkUrl)
 		clientOptions = append(clientOptions, realis.ZKUrl(zkUrl))
