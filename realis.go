@@ -80,9 +80,9 @@ var defaultBackoff = Backoff{
 type TransportProtocol int
 
 const (
-	unset TransportProtocol = iota
-	json
-	binary
+	unsetProtocol TransportProtocol = iota
+	jsonProtocol
+	binaryProtocol
 )
 
 type ClientOption func(*clientConfig)
@@ -128,13 +128,13 @@ func ZKUrl(url string) ClientOption {
 
 func ThriftJSON() ClientOption {
 	return func(config *clientConfig) {
-		config.transportProtocol = json
+		config.transportProtocol = jsonProtocol
 	}
 }
 
 func ThriftBinary() ClientOption {
 	return func(config *clientConfig) {
-		config.transportProtocol = binary
+		config.transportProtocol = binaryProtocol
 	}
 }
 
@@ -293,14 +293,14 @@ func NewClient(options ...ClientOption) (*Client, error) {
 	}
 
 	switch config.transportProtocol {
-	case binary:
+	case binaryProtocol:
 		trans, err := newTBinTransport(url, config.timeout, config)
 		if err != nil {
 			return nil, NewTemporaryError(errors.Wrap(err, "error creating realis"))
 		}
 		config.transport = trans
 		config.protoFactory = thrift.NewTBinaryProtocolFactoryDefault()
-	case json:
+	case jsonProtocol:
 		fallthrough
 	default:
 		trans, err := newTJSONTransport(url, config.timeout, config)
