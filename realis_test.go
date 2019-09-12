@@ -26,3 +26,47 @@ func TestGetCACerts(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, len(certs.Subjects()), 2)
 }
+
+func TestAuroraURLValidator(t *testing.T) {
+	t.Run("badURL", func(t *testing.T) {
+		url, err := validateAuroraAddress("http://badurl.com/badpath")
+		assert.Empty(t, url)
+		assert.Error(t, err)
+	})
+
+	t.Run("URLHttp", func(t *testing.T) {
+		url, err := validateAuroraAddress("http://goodurl.com:8081/api")
+		assert.Equal(t, "http://goodurl.com:8081/api", url)
+		assert.NoError(t, err)
+	})
+
+	t.Run("URLHttps", func(t *testing.T) {
+		url, err := validateAuroraAddress("https://goodurl.com:8081/api")
+		assert.Equal(t, "https://goodurl.com:8081/api", url)
+		assert.NoError(t, err)
+	})
+
+	t.Run("URLNoPath", func(t *testing.T) {
+		url, err := validateAuroraAddress("http://goodurl.com:8081")
+		assert.Equal(t, "http://goodurl.com:8081/api", url)
+		assert.NoError(t, err)
+	})
+
+	t.Run("ipAddrNoPath", func(t *testing.T) {
+		url, err := validateAuroraAddress("http://192.168.1.33:8081")
+		assert.Equal(t, "http://192.168.1.33:8081/api", url)
+		assert.NoError(t, err)
+	})
+
+	t.Run("URLNoProtocol", func(t *testing.T) {
+		url, err := validateAuroraAddress("goodurl.com:8081/api")
+		assert.Equal(t, "http://goodurl.com:8081/api", url)
+		assert.NoError(t, err)
+	})
+
+	t.Run("URLNoProtocolNoPathNoPort", func(t *testing.T) {
+		url, err := validateAuroraAddress("goodurl.com")
+		assert.Equal(t, "http://goodurl.com:8081/api", url)
+		assert.NoError(t, err)
+	})
+}
