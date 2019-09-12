@@ -830,7 +830,7 @@ func (r *realisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message str
 	m := Monitor{Client: r}
 	_, err := m.JobUpdateStatus(
 		updateKey,
-		map[aurora.JobUpdateStatus]bool{aurora.JobUpdateStatus_ABORTED: true},
+		[]aurora.JobUpdateStatus{aurora.JobUpdateStatus_ABORTED},
 		time.Second*5,
 		time.Minute)
 
@@ -1063,7 +1063,6 @@ func (r *realisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string
 
 // VariableBatchStep returns the current batch the update is in during a variable batch update.
 func (r *realisClient) VariableBatchStep(key aurora.JobUpdateKey) (int, error) {
-
 	// Query Aurora for an Update that is either paused or rolling forward
 	resp, err := r.JobUpdateDetails(aurora.JobUpdateQuery{
 		UpdateStatuses: []aurora.JobUpdateStatus{

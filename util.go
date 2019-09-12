@@ -25,6 +25,18 @@ var TerminalStates = make(map[aurora.ScheduleStatus]bool)
 // ActiveJobUpdateStates - States a Job Update may be in where it is considered active.
 var ActiveJobUpdateStates = make(map[aurora.JobUpdateStatus]bool)
 
+// TerminalJobUpdateStates returns a slice containing all the terminal states an update may end up in.
+// This is a function in order to avoid having a slice that can be accidentally mutated.
+func TerminalUpdateStates() []aurora.JobUpdateStatus {
+	return []aurora.JobUpdateStatus{
+		aurora.JobUpdateStatus_ROLLED_FORWARD,
+		aurora.JobUpdateStatus_ROLLED_BACK,
+		aurora.JobUpdateStatus_ABORTED,
+		aurora.JobUpdateStatus_ERROR,
+		aurora.JobUpdateStatus_FAILED,
+	}
+}
+
 // AwaitingPulseJobUpdateStates - States a job update may be in where it is waiting for a pulse.
 var AwaitingPulseJobUpdateStates = make(map[aurora.JobUpdateStatus]bool)
 

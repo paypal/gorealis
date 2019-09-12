@@ -36,15 +36,9 @@ func (m *Monitor) JobUpdate(
 	timeout int) (bool, error) {
 
 	updateQ := aurora.JobUpdateQuery{
-		Key:   &updateKey,
-		Limit: 1,
-		UpdateStatuses: []aurora.JobUpdateStatus{
-			aurora.JobUpdateStatus_ROLLED_FORWARD,
-			aurora.JobUpdateStatus_ROLLED_BACK,
-			aurora.JobUpdateStatus_ABORTED,
-			aurora.JobUpdateStatus_ERROR,
-			aurora.JobUpdateStatus_FAILED,
-		},
+		Key:            &updateKey,
+		Limit:          1,
+		UpdateStatuses: TerminalUpdateStates(),
 	}
 	updateSummaries, err := m.JobUpdateQuery(
 		updateQ,
@@ -75,22 +69,13 @@ func (m *Monitor) JobUpdate(
 }
 
 // JobUpdateStatus polls the scheduler every certain amount of time to see if the update has entered a specified state.
-func (m *Monitor) JobUpdateStatus(
-	updateKey aurora.JobUpdateKey,
-	desiredStatuses map[aurora.JobUpdateStatus]bool,
-	interval time.Duration,
-	timeout time.Duration) (aurora.JobUpdateStatus, error) {
-
-	desiredStatusesSlice := make([]aurora.JobUpdateStatus, 0)
-
-	for k := range desiredStatuses {
-		desiredStatusesSlice = append(desiredStatusesSlice, k)
-	}
-
+func (m *Monitor) JobUpdateStatus(updateKey aurora.JobUpdateKey,
+	desiredStatuses []aurora.JobUpdateStatus,
+	interval, timeout time.Duration) (aurora.JobUpdateStatus, error) {
 	updateQ := aurora.JobUpdateQuery{
 		Key:            &updateKey,
 		Limit:          1,
-		UpdateStatuses: desiredStatusesSlice,
+		UpdateStatuses: desiredStatuses,
 	}
 	summary, err := m.JobUpdateQuery(updateQ, interval, timeout)
 
