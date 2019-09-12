@@ -50,22 +50,22 @@ type Client struct {
 }
 
 type clientConfig struct {
-	username, password          string
-	url                         string
-	timeout                     time.Duration
-	binTransport, jsonTransport bool
-	cluster                     *Cluster
-	backoff                     Backoff
-	transport                   thrift.TTransport
-	protoFactory                thrift.TProtocolFactory
-	logger                      *LevelLogger
-	InsecureSkipVerify          bool
-	certsPath                   string
-	clientKey, clientCert       string
-	options                     []ClientOption
-	debug                       bool
-	trace                       bool
-	zkOptions                   []ZKOpt
+	username, password    string
+	url                   string
+	timeout               time.Duration
+	transportProtocol     TransportProtocol
+	cluster               *Cluster
+	backoff               Backoff
+	transport             thrift.TTransport
+	protoFactory          thrift.TProtocolFactory
+	logger                *LevelLogger
+	InsecureSkipVerify    bool
+	certsPath             string
+	clientKey, clientCert string
+	options               []ClientOption
+	debug                 bool
+	trace                 bool
+	zkOptions             []ZKOpt
 }
 
 var defaultBackoff = Backoff{
@@ -74,6 +74,14 @@ var defaultBackoff = Backoff{
 	Factor:   5.0,
 	Jitter:   0.1,
 }
+
+type TransportProtocol int
+
+const (
+	unset TransportProtocol = iota
+	json
+	binary
+)
 
 type ClientOption func(*clientConfig)
 
@@ -118,13 +126,13 @@ func ZKUrl(url string) ClientOption {
 
 func ThriftJSON() ClientOption {
 	return func(config *clientConfig) {
-		config.jsonTransport = true
+		config.transportProtocol = json
 	}
 }
 
 func ThriftBinary() ClientOption {
 	return func(config *clientConfig) {
-		config.binTransport = true
+		config.transportProtocol = binary
 	}
 }
 
@@ -243,11 +251,6 @@ func NewClient(options ...ClientOption) (*Client, error) {
 
 	config.logger.DebugPrintln("Number of options applied to clientConfig: ", len(options))
 
-	// Set default Transport to JSON if needed.
-	if !config.jsonTransport && !config.binTransport {
-		config.jsonTransport = true
-	}
-
 	var url string
 	var err error
 
@@ -279,21 +282,23 @@ func NewClient(options ...ClientOption) (*Client, error) {
 		return nil, errors.Wrap(err, "unable to create realis object, invalid url")
 	}
 
-	if config.jsonTransport {
-		trans, err := newTJSONTransport(url, config.timeout, config)
-		if err != nil {
-			return nil, NewTemporaryError(errors.Wrap(err, "error creating realis"))
-		}
-		config.transport = trans
-		config.protoFactory = thrift.NewTJSONProtocolFactory()
-
-	} else if config.binTransport {
+	switch config.transportProtocol {
+	case binary:
 		trans, err := newTBinTransport(url, config.timeout, config)
 		if err != nil {
 			return nil, NewTemporaryError(errors.Wrap(err, "error creating realis"))
 		}
 		config.transport = trans
 		config.protoFactory = thrift.NewTBinaryProtocolFactoryDefault()
+	case json:
+		fallthrough
+	default:
+		trans, err := newTJSONTransport(url, config.timeout, config)
+		if err != nil {
+			return nil, NewTemporaryError(errors.Wrap(err, "error creating realis"))
+		}
+		config.transport = trans
+		config.protoFactory = thrift.NewTJSONProtocolFactory()
 	}
 
 	config.logger.Printf("gorealis clientConfig url: %+v\n", url)
@@ -368,7 +373,12 @@ func defaultTTransport(url string, timeout time.Duration, config *clientConfig) 
 	}
 
 	trans, err := thrift.NewTHttpClientWithOptions(url,
-		thrift.THttpClientOptions{Client: &http.Client{Timeout: timeout, Transport: &transport, Jar: jar}})
+		thrift.THttpClientOptions{
+			Client: &http.Client{
+				Timeout:   timeout,
+				Transport: &transport,
+			},
+		})
 
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating transport")
@@ -379,44 +389,6 @@ func defaultTTransport(url string, timeout time.Duration, config *clientConfig) 
 	}
 
 	return trans, nil
-}
-
-// Create a default configuration of the transport layer, requires a URL to test connection with.
-// Uses HTTP Post as transport layer and Thrift JSON as the wire protocol by default.
-func newDefaultConfig(url string, timeout time.Duration, config *clientConfig) (*clientConfig, error) {
-	return newTJSONConfig(url, timeout, config)
-}
-
-// Creates a realis clientConfig object using HTTP Post and Thrift JSON protocol to communicate with Aurora.
-func newTJSONConfig(url string, timeout time.Duration, config *clientConfig) (*clientConfig, error) {
-	trans, err := defaultTTransport(url, timeout, config)
-	if err != nil {
-		return nil, errors.Wrap(err, "error creating realis clientConfig")
-	}
-
-	httpTrans := (trans).(*thrift.THttpClient)
-	httpTrans.SetHeader("Content-Type", "application/x-thrift")
-	httpTrans.SetHeader("User-Agent", "gorealis v"+VERSION)
-
-	return &clientConfig{transport: trans, protoFactory: thrift.NewTJSONProtocolFactory()}, nil
-}
-
-// Creates a realis clientConfig clientConfig using HTTP Post and Thrift Binary protocol to communicate with Aurora.
-func newTBinaryConfig(url string, timeout time.Duration, config *clientConfig) (*clientConfig, error) {
-	trans, err := defaultTTransport(url, timeout, config)
-	if err != nil {
-		return nil, errors.Wrap(err, "error creating realis clientConfig")
-	}
-
-	httpTrans := (trans).(*thrift.THttpClient)
-	httpTrans.DelHeader("Content-Type") // Workaround for using thrift HttpPostClient
-
-	httpTrans.SetHeader("Accept", "application/vnd.apache.thrift.binary")
-	httpTrans.SetHeader("Content-Type", "application/vnd.apache.thrift.binary")
-	httpTrans.SetHeader("User-Agent", "gorealis v"+VERSION)
-
-	return &clientConfig{transport: trans, protoFactory: thrift.NewTBinaryProtocolFactoryDefault()}, nil
-
 }
 
 func basicAuth(username, password string) string {
