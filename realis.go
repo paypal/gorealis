@@ -606,12 +606,17 @@ func (c *Client) PauseJobUpdate(updateKey *aurora.JobUpdateKey, message string) 
 }
 
 // Resume Paused AuroraJob Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.
-func (c *Client) ResumeJobUpdate(updateKey *aurora.JobUpdateKey, message string) error {
+func (c *Client) ResumeJobUpdate(updateKey aurora.JobUpdateKey, message string) error {
 
 	c.logger.DebugPrintf("ResumeJobUpdate Thrift Payload: %+v %v\n", updateKey, message)
+	updateKey.Job = &aurora.JobKey{
+		Role:        updateKey.Job.Role,
+		Environment: updateKey.Job.Environment,
+		Name:        updateKey.Job.Name,
+	}
 
 	_, retryErr := c.thriftCallWithRetries(false, func() (*aurora.Response, error) {
-		return c.client.ResumeJobUpdate(context.TODO(), updateKey, message)
+		return c.client.ResumeJobUpdate(context.TODO(), &updateKey, message)
 	})
 
 	if retryErr != nil {
@@ -622,12 +627,17 @@ func (c *Client) ResumeJobUpdate(updateKey *aurora.JobUpdateKey, message string)
 }
 
 // Pulse AuroraJob Update on Aurora. UpdateID is returned from StartJobUpdate or the Aurora web UI.
-func (c *Client) PulseJobUpdate(updateKey *aurora.JobUpdateKey) (aurora.JobUpdatePulseStatus, error) {
+func (c *Client) PulseJobUpdate(updateKey aurora.JobUpdateKey) (aurora.JobUpdatePulseStatus, error) {
 
 	c.logger.DebugPrintf("PulseJobUpdate Thrift Payload: %+v\n", updateKey)
+	updateKey.Job = &aurora.JobKey{
+		Role:        updateKey.Job.Role,
+		Environment: updateKey.Job.Environment,
+		Name:        updateKey.Job.Name,
+	}
 
 	resp, retryErr := c.thriftCallWithRetries(false, func() (*aurora.Response, error) {
-		return c.client.PulseJobUpdate(context.TODO(), updateKey)
+		return c.client.PulseJobUpdate(context.TODO(), &updateKey)
 	})
 
 	if retryErr != nil {
@@ -647,6 +657,12 @@ func (c *Client) PulseJobUpdate(updateKey *aurora.JobUpdateKey) (aurora.JobUpdat
 func (c *Client) AddInstances(instKey aurora.InstanceKey, count int32) error {
 
 	c.logger.DebugPrintf("AddInstances Thrift Payload: %+v %v\n", instKey, count)
+
+	instKey.JobKey = &aurora.JobKey{
+		Role:        instKey.JobKey.Name,
+		Environment: instKey.JobKey.Environment,
+		Name:        instKey.JobKey.Name,
+	}
 
 	_, retryErr := c.thriftCallWithRetries(false, func() (*aurora.Response, error) {
 		return c.client.AddInstances(context.TODO(), &instKey, count)
