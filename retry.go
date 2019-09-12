@@ -69,6 +69,7 @@ func ExponentialBackoff(backoff Backoff, logger Logger, condition ConditionFunc)
 	var err error
 	var ok bool
 	var curStep int
+
 	duration := backoff.Duration
 
 	for curStep = 0; curStep < backoff.Steps; curStep++ {
@@ -80,7 +81,7 @@ func ExponentialBackoff(backoff Backoff, logger Logger, condition ConditionFunc)
 				adjusted = Jitter(duration, backoff.Jitter)
 			}
 
-			logger.Printf("A retriable error occurred during function call, backing off for %v before retrying\n", adjusted)
+			logger.Printf("A retryable error occurred during function call, backing off for %v before retrying\n", adjusted)
 			time.Sleep(adjusted)
 			duration = time.Duration(float64(duration) * backoff.Factor)
 		}
@@ -119,10 +120,11 @@ func ExponentialBackoff(backoff Backoff, logger Logger, condition ConditionFunc)
 type auroraThriftCall func() (resp *aurora.Response, err error)
 
 // Duplicates the functionality of ExponentialBackoff but is specifically targeted towards ThriftCalls.
-func (c *Client) thriftCallWithRetries(thriftCall auroraThriftCall) (*aurora.Response, error) {
+func (c *Client) thriftCallWithRetries(returnOnTimeout bool, thriftCall auroraThriftCall) (*aurora.Response, error) {
 	var resp *aurora.Response
 	var clientErr error
 	var curStep int
+	var timeouts int
 
 	backoff := c.config.backoff
 	duration := backoff.Duration
@@ -136,7 +138,7 @@ func (c *Client) thriftCallWithRetries(thriftCall auroraThriftCall) (*aurora.Res
 				adjusted = Jitter(duration, backoff.Jitter)
 			}
 
-			c.logger.Printf("A retriable error occurred during thrift call, backing off for %v before retry %v\n", adjusted, curStep)
+			c.logger.Printf("A retryable error occurred during thrift call, backing off for %v before retry %v\n", adjusted, curStep)
 
 			time.Sleep(adjusted)
 			duration = time.Duration(float64(duration) * backoff.Factor)
@@ -154,7 +156,7 @@ func (c *Client) thriftCallWithRetries(thriftCall auroraThriftCall) (*aurora.Res
 			c.logger.TracePrintf("Aurora Thrift Call ended resp: %v clientErr: %v\n", resp, clientErr)
 		}()
 
-		// Check if our thrift call is returning an error. This is a retriable event as we don't know
+		// Check if our thrift call is returning an error. This is a retryable event as we don't know
 		// if it was caused by network issues.
 		if clientErr != nil {
 
@@ -177,22 +179,37 @@ func (c *Client) thriftCallWithRetries(thriftCall auroraThriftCall) (*aurora.Res
 					// EOF error occurs when the server closes the read buffer of the client. This is common
 					// when the server is overloaded and should be retried. All other errors that are permanent
 					// will not be retried.
-					if e.Err != io.EOF && !e.Temporary() {
-						return nil, errors.Wrap(clientErr, "Permanent connection error")
+					if e.Err != io.EOF && !e.Temporary() && c.RealisConfig().failOnPermanentErrors {
+						return nil, errors.Wrap(clientErr, "permanent connection error")
+					}
+					// Corner case where thrift payload was received by Aurora but connection timedout before Aurora was
+					// able to reply. In this case we will return whatever response was received and a TimedOut behaving
+					// error. Users can take special action on a timeout by using IsTimedout and reacting accordingly.
+					if e.Timeout() {
+						timeouts++
+						c.logger.DebugPrintf(
+							"Client closed connection (timedout) %d times before server responded,"+
+								" consider increasing connection timeout",
+							timeouts)
+						if returnOnTimeout {
+							return resp,
+								newTimedoutError(errors.New("client connection closed before server answer"))
+						}
 					}
 				}
 			}
 
 			// In the future, reestablish connection should be able to check if it is actually possible
 			// to make a thrift call to Aurora. For now, a reconnect should always lead to a retry.
-			c.ReestablishConn()
+			// Ignoring error due to the fact that an error should be retried regardless
+			_ = c.ReestablishConn()
 
 		} else {
 
 			// If there was no client error, but the response is nil, something went wrong.
 			// Ideally, we'll never encounter this but we're placing a safeguard here.
 			if resp == nil {
-				return nil, errors.New("Response from aurora is nil")
+				return nil, errors.New("response from aurora is nil")
 			}
 
 			// Check Response Code from thrift and make a decision to continue retrying or not.
@@ -219,7 +236,7 @@ func (c *Client) thriftCallWithRetries(thriftCall auroraThriftCall) (*aurora.Res
 				// It is currently not used as a response in the scheduler so it is unknown how to handle it.
 			default:
 				c.logger.DebugPrintf("unhandled response code %v received from Aurora\n", responseCode)
-				return nil, errors.Errorf("unhandled response code from Aurora %v\n", responseCode.String())
+				return nil, errors.Errorf("unhandled response code from Aurora %v", responseCode.String())
 			}
 		}
 
