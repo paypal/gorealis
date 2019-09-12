@@ -192,7 +192,7 @@ func Trace() ClientOption {
 func newTJSONTransport(url string, timeout time.Duration, config *clientConfig) (thrift.TTransport, error) {
 	trans, err := defaultTTransport(url, timeout, config)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating realis")
+		return nil, errors.Wrap(err, "error creating realis")
 	}
 	httpTrans := (trans).(*thrift.THttpClient)
 	httpTrans.SetHeader("Content-Type", "application/x-thrift")
@@ -203,7 +203,7 @@ func newTJSONTransport(url string, timeout time.Duration, config *clientConfig) 
 func newTBinTransport(url string, timeout time.Duration, config *clientConfig) (thrift.TTransport, error) {
 	trans, err := defaultTTransport(url, timeout, config)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating realis")
+		return nil, errors.Wrap(err, "error creating realis")
 	}
 	httpTrans := (trans).(*thrift.THttpClient)
 	httpTrans.DelHeader("Content-Type") // Workaround for using thrift HttpPostClient
@@ -258,7 +258,7 @@ func NewClient(options ...ClientOption) (*Client, error) {
 	if config.zkOptions != nil {
 		url, err = LeaderFromZKOpts(config.zkOptions...)
 		if err != nil {
-			return nil, NewTemporaryError(errors.Wrap(err, "leaderFromZK error"))
+			return nil, NewTemporaryError(errors.Wrap(err, "unable to determine leader from zookeeper"))
 		}
 		config.logger.Println("Scheduler URL from ZK: ", url)
 	} else if config.cluster != nil {
@@ -267,7 +267,7 @@ func NewClient(options ...ClientOption) (*Client, error) {
 		url, err = LeaderFromZK(*config.cluster)
 		// If ZK is configured, throw an error if the leader is unable to be determined
 		if err != nil {
-			return nil, NewTemporaryError(errors.Wrap(err, "LeaderFromZK error"))
+			return nil, NewTemporaryError(errors.Wrap(err, "unable to determine leader from zookeeper"))
 		}
 		config.logger.Println("Scheduler URL from ZK: ", url)
 	} else if config.url != "" {
