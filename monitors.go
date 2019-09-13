@@ -117,19 +117,21 @@ func (m *Monitor) JobUpdateQuery(
 // PausedUpdateMonitor polls Aurora for information about a job update until the job update has entered into
 // a ROLL_FORWARD_PAUSED state.
 func (m *Monitor) PausedUpdateMonitor(key aurora.JobUpdateKey, interval, timeout time.Duration) (bool, error) {
-	_, err := m.JobUpdateQuery(aurora.JobUpdateQuery{
-		UpdateStatuses: []aurora.JobUpdateStatus{aurora.JobUpdateStatus_ROLL_FORWARD_PAUSED},
-		Key:            &key,
-		Limit:          1,
-	},
+	status, err := m.JobUpdateStatus(
+		key,
+		append(TerminalUpdateStates(), aurora.JobUpdateStatus_ROLL_FORWARD_PAUSED),
 		interval,
 		timeout)
 
 	if err != nil {
-		return false, errors.Wrap(err, "update has not entered paused state")
+		return false, err
 	}
 
-	return true, err
+	if status != aurora.JobUpdateStatus_ROLL_FORWARD_PAUSED {
+		return false, errors.Errorf("update is in a terminal state %v", status)
+	}
+
+	return true, nil
 }
 
 // Monitor a Job until all instances enter one of the LIVE_STATES
