@@ -99,3 +99,22 @@ func validateAuroraURL(location string) (string, error) {
 
 	return u.String(), nil
 }
+
+func calculateCurrentBatch(updatingInstances int32, batchSizes []int32) int {
+	for i, size := range batchSizes {
+		updatingInstances -= size
+		if updatingInstances <= 0 {
+			return i
+		}
+	}
+
+	// Overflow batches
+	batchCount := len(batchSizes) - 1
+	lastBatchIndex := len(batchSizes) - 1
+	batchCount += int(updatingInstances / batchSizes[lastBatchIndex])
+
+	if updatingInstances%batchSizes[lastBatchIndex] != 0 {
+		batchCount++
+	}
+	return batchCount
+}
