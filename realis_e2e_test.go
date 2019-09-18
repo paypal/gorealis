@@ -1013,19 +1013,16 @@ func TestRealisClient_BatchAwareAutoPause(t *testing.T) {
 	require.NotNil(t, resp.GetResult_().GetStartJobUpdateResult_())
 	require.NotNil(t, resp.GetResult_().GetStartJobUpdateResult_().GetKey())
 
-	var ok bool
-	var mErr error
 	key := *resp.GetResult_().GetStartJobUpdateResult_().GetKey()
 
 	for i := range updateGroups {
-		if ok, mErr = monitor.PausedUpdateMonitor(key, time.Second*5, time.Second*240); !ok || mErr != nil {
+		curStep, mErr := monitor.AutoPausedUpdateMonitor(key, time.Second*5, time.Second*240)
+		if mErr != nil {
 			// Update may already be in a terminal state so don't check for error
 			_, err := r.AbortJobUpdate(key, "Monitor timed out.")
 			assert.NoError(t, err)
 		}
 
-		curStep, err := r.VariableBatchStep(key)
-		assert.NoError(t, err)
 		assert.Equal(t, i, curStep)
 
 		_, err = r.ResumeJobUpdate(&key, "auto resuming test")
