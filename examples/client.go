@@ -377,7 +377,7 @@ func main() {
 
 	case "resumeJobUpdate":
 		key := job.JobKey()
-		err := r.ResumeJobUpdate(&aurora.JobUpdateKey{
+		err := r.ResumeJobUpdate(aurora.JobUpdateKey{
 			Job: &key,
 			ID:  updateId,
 		}, "")
@@ -388,7 +388,7 @@ func main() {
 
 	case "pulseJobUpdate":
 		key := job.JobKey()
-		resp, err := r.PulseJobUpdate(&aurora.JobUpdateKey{
+		resp, err := r.PulseJobUpdate(aurora.JobUpdateKey{
 			Job: &key,
 			ID:  updateId,
 		})
