@@ -365,7 +365,11 @@ pulseLoop:
 	for {
 		select {
 		case <-ticker.C:
-			pulseStatus, err := r.PulseJobUpdate(result.GetKey())
+			if result.GetKey() == nil {
+				continue
+			}
+
+			pulseStatus, err := r.PulseJobUpdate(*result.GetKey())
 
 			assert.Nil(t, err)
 			if pulseStatus != aurora.JobUpdatePulseStatus_OK && pulseStatus != aurora.JobUpdatePulseStatus_FINISHED {
