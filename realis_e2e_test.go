@@ -983,3 +983,52 @@ func TestRealisClient_UpdateStrategies(t *testing.T) {
 		})
 	}
 }
+
+func TestRealisClient_BatchAwareAutoPause(t *testing.T) {
+	// Create a single job
+	job := realis.NewJob().
+		Environment("prod").
+		Role("vagrant").
+		Name("BatchAwareAutoPauseTest").
+		ExecutorName(aurora.AURORA_EXECUTOR_NAME).
+		ExecutorData(string(thermosPayload)).
+		CPU(.01).
+		RAM(4).
+		Disk(10).
+		InstanceCount(6).
+		IsService(true)
+	updateGroups := []int32{1, 2, 3}
+	strategy := realis.NewDefaultUpdateJob(job.TaskConfig()).
+		VariableBatchStrategy(aurora.VariableBatchJobUpdateStrategy{
+			GroupSizes:          updateGroups,
+			AutopauseAfterBatch: true,
+		}).
+		InstanceCount(6).
+		WatchTime(1000)
+
+	resp, err := r.StartJobUpdate(strategy, "")
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.NotNil(t, resp.GetResult_())
+	require.NotNil(t, resp.GetResult_().GetStartJobUpdateResult_())
+	require.NotNil(t, resp.GetResult_().GetStartJobUpdateResult_().GetKey())
+
+	key := *resp.GetResult_().GetStartJobUpdateResult_().GetKey()
+
+	for i := range updateGroups {
+		curStep, mErr := monitor.AutoPausedUpdateMonitor(key, time.Second*5, time.Second*240)
+		if mErr != nil {
+			// Update may already be in a terminal state so don't check for error
+			_, err := r.AbortJobUpdate(key, "Monitor timed out.")
+			assert.NoError(t, err)
+		}
+
+		assert.Equal(t, i, curStep)
+
+		_, err = r.ResumeJobUpdate(&key, "auto resuming test")
+		require.NoError(t, err)
+	}
+
+	_, err = r.KillJob(job.JobKey())
+	assert.NoError(t, err)
+}

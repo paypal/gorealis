@@ -63,3 +63,40 @@ func TestAuroraURLValidator(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
+func TestCurrentBatchCalculator(t *testing.T) {
+	t.Run("singleBatchOverflow", func(t *testing.T) {
+		curBatch := calculateCurrentBatch(10, []int32{2})
+		assert.Equal(t, 4, curBatch)
+	})
+
+	t.Run("noInstancesUpdating", func(t *testing.T) {
+		curBatch := calculateCurrentBatch(0, []int32{2})
+		assert.Equal(t, 0, curBatch)
+	})
+
+	t.Run("evenMatchSingleBatch", func(t *testing.T) {
+		curBatch := calculateCurrentBatch(2, []int32{2})
+		assert.Equal(t, 0, curBatch)
+	})
+
+	t.Run("moreInstancesThanBatches", func(t *testing.T) {
+		curBatch := calculateCurrentBatch(5, []int32{1, 2})
+		assert.Equal(t, 2, curBatch)
+	})
+
+	t.Run("moreInstancesThanBatchesDecreasing", func(t *testing.T) {
+		curBatch := calculateCurrentBatch(5, []int32{2, 1})
+		assert.Equal(t, 3, curBatch)
+	})
+
+	t.Run("unevenFit", func(t *testing.T) {
+		curBatch := calculateCurrentBatch(2, []int32{1, 2})
+		assert.Equal(t, 1, curBatch)
+	})
+
+	t.Run("halfWay", func(t *testing.T) {
+		curBatch := calculateCurrentBatch(1, []int32{1, 2})
+		assert.Equal(t, 0, curBatch)
+	})
+}
