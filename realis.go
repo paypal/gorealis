@@ -829,7 +829,7 @@ func (r *realisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message str
 	m := Monitor{Client: r}
 	_, err := m.JobUpdateStatus(
 		updateKey,
-		map[aurora.JobUpdateStatus]bool{aurora.JobUpdateStatus_ABORTED: true},
+		[]aurora.JobUpdateStatus{aurora.JobUpdateStatus_ABORTED},
 		time.Second*5,
 		time.Minute)
 

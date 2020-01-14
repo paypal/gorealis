@@ -36,15 +36,9 @@ func (m *Monitor) JobUpdate(
 	timeout int) (bool, error) {
 
 	updateQ := aurora.JobUpdateQuery{
-		Key:   &updateKey,
-		Limit: 1,
-		UpdateStatuses: []aurora.JobUpdateStatus{
-			aurora.JobUpdateStatus_ROLLED_FORWARD,
-			aurora.JobUpdateStatus_ROLLED_BACK,
-			aurora.JobUpdateStatus_ABORTED,
-			aurora.JobUpdateStatus_ERROR,
-			aurora.JobUpdateStatus_FAILED,
-		},
+		Key:            &updateKey,
+		Limit:          1,
+		UpdateStatuses: TerminalUpdateStates(),
 	}
 	updateSummaries, err := m.JobUpdateQuery(
 		updateQ,
@@ -75,22 +69,13 @@ func (m *Monitor) JobUpdate(
 }
 
 // JobUpdateStatus polls the scheduler every certain amount of time to see if the update has entered a specified state.
-func (m *Monitor) JobUpdateStatus(
-	updateKey aurora.JobUpdateKey,
-	desiredStatuses map[aurora.JobUpdateStatus]bool,
-	interval time.Duration,
-	timeout time.Duration) (aurora.JobUpdateStatus, error) {
-
-	desiredStatusesSlice := make([]aurora.JobUpdateStatus, 0)
-
-	for k := range desiredStatuses {
-		desiredStatusesSlice = append(desiredStatusesSlice, k)
-	}
-
+func (m *Monitor) JobUpdateStatus(updateKey aurora.JobUpdateKey,
+	desiredStatuses []aurora.JobUpdateStatus,
+	interval, timeout time.Duration) (aurora.JobUpdateStatus, error) {
 	updateQ := aurora.JobUpdateQuery{
 		Key:            &updateKey,
 		Limit:          1,
-		UpdateStatuses: desiredStatusesSlice,
+		UpdateStatuses: desiredStatuses,
 	}
 	summary, err := m.JobUpdateQuery(updateQ, interval, timeout)
 
@@ -129,11 +114,74 @@ func (m *Monitor) JobUpdateQuery(
 	}
 }
 
-// Instances will monitor a Job until all instances enter one of the LIVE_STATES
-func (m *Monitor) Instances(
-	key *aurora.JobKey,
-	instances int32,
-	interval, timeout int) (bool, error) {
+// AutoPaused monitor is a special monitor for auto pause enabled batch updates. This monitor ensures that the update
+// being monitored is capable of auto pausing and has auto pausing enabled. After verifying this information,
+// the monitor watches for the job to enter the ROLL_FORWARD_PAUSED state and calculates the current batch
+// the update is in using information from the update configuration.
+func (m *Monitor) AutoPausedUpdateMonitor(key aurora.JobUpdateKey, interval, timeout time.Duration) (int, error) {
+	key.Job = &aurora.JobKey{
+		Role:        key.Job.Role,
+		Environment: key.Job.Environment,
+		Name:        key.Job.Name,
+	}
+	query := aurora.JobUpdateQuery{
+		UpdateStatuses: aurora.ACTIVE_JOB_UPDATE_STATES,
+		Limit:          1,
+		Key:            &key,
+	}
+
+	response, err := m.Client.JobUpdateDetails(query)
+	if err != nil {
+		return -1, errors.Wrap(err, "unable to get information about update")
+	}
+
+	// TODO (rdelvalle): check for possible nil values when going down the list of structs
+	updateDetails := response.Result_.GetJobUpdateDetailsResult_.DetailsList
+	if len(updateDetails) == 0 {
+		return -1, errors.Errorf("details for update could not be found")
+	}
+
+	updateStrategy := updateDetails[0].Update.Instructions.Settings.UpdateStrategy
+
+	var batchSizes []int32
+	switch {
+	case updateStrategy.IsSetVarBatchStrategy():
+		batchSizes = updateStrategy.VarBatchStrategy.GroupSizes
+		if !updateStrategy.VarBatchStrategy.AutopauseAfterBatch {
+			return -1, errors.Errorf("update does not have auto pause enabled")
+		}
+	case updateStrategy.IsSetBatchStrategy():
+		batchSizes = []int32{updateStrategy.BatchStrategy.GroupSize}
+		if !updateStrategy.BatchStrategy.AutopauseAfterBatch {
+			return -1, errors.Errorf("update does not have auto pause enabled")
+		}
+	default:
+		return -1, errors.Errorf("update is not using a batch update strategy")
+	}
+
+	query.UpdateStatuses = append(TerminalUpdateStates(), aurora.JobUpdateStatus_ROLL_FORWARD_PAUSED)
+	summary, err := m.JobUpdateQuery(query, interval, timeout)
+	if err != nil {
+		return -1, err
+	}
+
+	if summary[0].State.Status != aurora.JobUpdateStatus_ROLL_FORWARD_PAUSED {
+		return -1, errors.Errorf("update is in a terminal state %v", summary[0].State.Status)
+	}
+
+	updatingInstances := make(map[int32]struct{})
+	for _, e := range updateDetails[0].InstanceEvents {
+		// We only care about INSTANCE_UPDATING actions because we only care that they've been attempted
+		if e != nil && e.GetAction() == aurora.JobUpdateAction_INSTANCE_UPDATING {
+			updatingInstances[e.GetInstanceId()] = struct{}{}
+		}
+	}
+
+	return calculateCurrentBatch(int32(len(updatingInstances)), batchSizes), nil
+}
+
+// Monitor a Job until all instances enter one of the LIVE_STATES
+func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval, timeout int) (bool, error) {
 	return m.ScheduleStatus(key, instances, LiveStates, interval, timeout)
 }
 
