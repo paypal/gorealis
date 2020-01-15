@@ -306,6 +306,40 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		_, err = r.KillJob(job.JobKey())
 		assert.NoError(t, err)
 	})
+
+	t.Run("Duplicate_constraints", func(t *testing.T) {
+		job.Name("thermos_duplicate_constraints").
+			AddValueConstraint("hostname", false, "localhost").
+			AddValueConstraint("hostname", false, "localhost1").
+			AddValueConstraint("hostname", true, "west")
+
+		_, err := r.CreateJob(job)
+		require.NoError(t, err)
+
+		success, err := monitor.Instances(job.JobKey(), 2, 1, 50)
+		assert.True(t, success)
+		assert.NoError(t, err)
+
+		_, err = r.KillJob(job.JobKey())
+		assert.NoError(t, err)
+	})
+
+	t.Run("Overwrite_constraints", func(t *testing.T) {
+		job.Name("thermos_overwrite_constraints").
+			AddLimitConstraint("hostname", 1).
+			AddValueConstraint("hostname", true, "west").
+			AddLimitConstraint("hostname", 1)
+
+		_, err := r.CreateJob(job)
+		require.NoError(t, err)
+
+		success, err := monitor.Instances(job.JobKey(), 2, 1, 50)
+		assert.True(t, success)
+		assert.NoError(t, err)
+
+		_, err = r.KillJob(job.JobKey())
+		assert.NoError(t, err)
+	})
 }
 
 // Test configuring an executor that doesn't exist for CreateJob API
