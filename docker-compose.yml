@@ -38,6 +38,7 @@ services:
     ports:
     - "5051:5051"
     environment:
+      MESOS_ATTRIBUTES: 'zone:west'
       MESOS_MASTER: zk://192.168.33.2:2181/mesos
       MESOS_CONTAINERIZERS: docker,mesos
       MESOS_PORT: 5051
@@ -62,6 +63,7 @@ services:
     ports:
       - "5061:5061"
     environment:
+      MESOS_ATTRIBUTES: 'zone:east'
       MESOS_MASTER: zk://192.168.33.2:2181/mesos
       MESOS_CONTAINERIZERS: docker,mesos
       MESOS_HOSTNAME: localhost

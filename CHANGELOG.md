@@ -1,4 +1,8 @@
-1.22.0 (unreleased)
+1.22.1 (unreleased)
+
+* Adding safeguards against setting multiple constraints with the same name for a single task.
+
+1.22.0
 
 * CreateService and StartJobUpdate do not continue retrying if a timeout has been encountered
 by the HTTP client. Instead they now return an error that conforms to the Timedout interface.
