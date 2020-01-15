@@ -328,7 +328,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		job.Name("thermos_overwrite_constraints").
 			AddLimitConstraint("zone", 1).
 			AddValueConstraint("zone", true, "west", "east").
-			AddLimitConstraint("zone", 1)
+			AddLimitConstraint("zone", 2)
 
 		_, err := r.CreateJob(job)
 		require.NoError(t, err)
