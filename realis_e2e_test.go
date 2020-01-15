@@ -333,7 +333,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		_, err := r.CreateJob(job)
 		require.NoError(t, err)
 
-		success, err := monitor.Instances(job.JobKey(), 2, 1, 50)
+		success, err := monitor.Instances(job.JobKey(), 1, 1, 50)
 		assert.True(t, success)
 		assert.NoError(t, err)
 
