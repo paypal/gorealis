@@ -539,7 +539,7 @@ func TestRealisClient_CreateService(t *testing.T) {
 	timeoutClient, err := realis.NewRealisClient(
 		realis.SchedulerUrl(auroraURL),
 		realis.BasicAuth("aurora", "secret"),
-		realis.TimeoutMS(10),
+		realis.TimeoutMS(5),
 	)
 	require.NoError(t, err)
 	defer timeoutClient.Close()
