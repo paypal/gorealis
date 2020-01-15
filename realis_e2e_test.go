@@ -309,9 +309,9 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 
 	t.Run("Duplicate_constraints", func(t *testing.T) {
 		job.Name("thermos_duplicate_constraints").
-			AddValueConstraint("hostname", false, "localhost").
-			AddValueConstraint("hostname", false, "localhost1").
-			AddValueConstraint("hostname", true, "west")
+			AddValueConstraint("zone", false, "east", "west").
+			AddValueConstraint("zone", false, "east").
+			AddValueConstraint("zone", true, "west")
 
 		_, err := r.CreateJob(job)
 		require.NoError(t, err)
@@ -326,14 +326,14 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 
 	t.Run("Overwrite_constraints", func(t *testing.T) {
 		job.Name("thermos_overwrite_constraints").
-			AddLimitConstraint("hostname", 1).
-			AddValueConstraint("hostname", true, "west").
-			AddLimitConstraint("hostname", 1)
+			AddLimitConstraint("zone", 1).
+			AddValueConstraint("zone", true, "west", "east").
+			AddLimitConstraint("zone", 1)
 
 		_, err := r.CreateJob(job)
 		require.NoError(t, err)
 
-		success, err := monitor.Instances(job.JobKey(), 1, 1, 50)
+		success, err := monitor.Instances(job.JobKey(), 2, 1, 50)
 		assert.True(t, success)
 		assert.NoError(t, err)
 
