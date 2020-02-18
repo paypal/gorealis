@@ -8,3 +8,5 @@ require (
 	github.com/samuel/go-zookeeper v0.0.0-20171117190445-471cd4e61d7a
 	github.com/stretchr/testify v1.2.0
 )
+
+replace github.com/apache/thrift v0.12.0 => github.com/ridv/thrift v0.12.2
