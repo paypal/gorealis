@@ -321,7 +321,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 	config.timeoutms = 10000
 	config.backoff = defaultBackoff
 	config.logger = &LevelLogger{logger: log.New(os.Stdout, "realis: ", log.Ltime|log.Ldate|log.LUTC)}
-	config.certExtensions = map[string]struct{}{"crt": {}, "pem": {}, "key": {}}
+	config.certExtensions = map[string]struct{}{".crt": {}, ".pem": {}, ".key": {}}
 
 	// Save options to recreate client if a connection error happens
 	config.options = options

@@ -102,7 +102,7 @@ func TestCurrentBatchCalculator(t *testing.T) {
 }
 
 func TestCertPoolCreator(t *testing.T) {
-	extensions := map[string]struct{}{"key": {}, "pem": {}, "crt": {}}
+	extensions := map[string]struct{}{".pem": {}}
 
 	_, err := createCertPool("examples/certs", extensions)
 	assert.NoError(t, err)
