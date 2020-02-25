@@ -68,12 +68,15 @@ func init() {
 		AwaitingPulseJobUpdateStates[status] = true
 	}
 }
-func createCertPool(path string, extensions map[string]struct{}) (*x509.CertPool, error) {
-	certPool := x509.NewCertPool()
 
+// createCertPool will attempt to load certificates into a certificate pool from a given directory.
+// Only files with an extension contained in the extension map are considered.
+// This function ignores any files that cannot be read successfully or cannot be added to the certPool
+// successfully.
+func createCertPool(path string, extensions map[string]struct{}) (*x509.CertPool, error) {
 	_, err := os.Stat(path)
 	if err != nil {
-		return nil, errors.New("given certs path doesn't exist")
+		return nil, errors.Wrap(err, "unable to load certificates")
 	}
 
 	caFiles, err := ioutil.ReadDir(path)
@@ -81,10 +84,8 @@ func createCertPool(path string, extensions map[string]struct{}) (*x509.CertPool
 		return nil, err
 	}
 
-	if len(caFiles) == 0 {
-		return nil, errors.New("no possible certs found in " + path)
-	}
-
+	certPool := x509.NewCertPool()
+	loadedCerts := 0
 	for _, cert := range caFiles {
 		// Skip directories
 		if cert.IsDir() {
@@ -96,11 +97,17 @@ func createCertPool(path string, extensions map[string]struct{}) (*x509.CertPool
 			continue
 		}
 
-		caCert, err := ioutil.ReadFile(filepath.Join(path, cert.Name()))
+		pem, err := ioutil.ReadFile(filepath.Join(path, cert.Name()))
 		if err != nil {
-			return nil, err
+			continue
 		}
-		certPool.AppendCertsFromPEM(caCert)
+
+		if certPool.AppendCertsFromPEM(pem) {
+			loadedCerts++
+		}
+	}
+	if loadedCerts == 0 {
+		return nil, errors.New("no certificates were able to be successfully loaded")
 	}
 	return certPool, nil
 }
@@ -132,7 +139,7 @@ func validateAuroraURL(location string) (string, error) {
 		return "", errors.Errorf("only protocols http and https are supported %v\n", u.Scheme)
 	}
 
-	// This could theoretically be elsewhwere but we'll be strict for the sake of simplicty
+	// This could theoretically be elsewhere but we'll be strict for the sake of simplicity
 	if u.Path != apiPath {
 		return "", errors.Errorf("expected /api path %v\n", u.Path)
 	}
