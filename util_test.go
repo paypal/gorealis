@@ -100,3 +100,15 @@ func TestCurrentBatchCalculator(t *testing.T) {
 		assert.Equal(t, 0, curBatch)
 	})
 }
+
+func TestCertPoolCreator(t *testing.T) {
+	extensions := map[string]struct{}{"key": {}, "pem": {}, "crt": {}}
+
+	_, err := createCertPool("examples/certs", extensions)
+	assert.NoError(t, err)
+
+	t.Run("badDir", func(t *testing.T) {
+		_, err := createCertPool("idontexist", extensions)
+		assert.Error(t, err)
+	})
+}

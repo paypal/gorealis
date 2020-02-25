@@ -1,7 +1,11 @@
 package realis
 
 import (
+	"crypto/x509"
+	"io/ioutil"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/paypal/gorealis/gen-go/apache/aurora"
@@ -63,6 +67,42 @@ func init() {
 	for _, status := range aurora.AWAITNG_PULSE_JOB_UPDATE_STATES {
 		AwaitingPulseJobUpdateStates[status] = true
 	}
+}
+func createCertPool(path string, extensions map[string]struct{}) (*x509.CertPool, error) {
+	certPool := x509.NewCertPool()
+
+	_, err := os.Stat(path)
+	if err != nil {
+		return nil, errors.New("given certs path doesn't exist")
+	}
+
+	caFiles, err := ioutil.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(caFiles) == 0 {
+		return nil, errors.New("no possible certs found in " + path)
+	}
+
+	for _, cert := range caFiles {
+		// Skip directories
+		if cert.IsDir() {
+			continue
+		}
+
+		// Skip any files that do not contain the right extension
+		if _, ok := extensions[filepath.Ext(cert.Name())]; !ok {
+			continue
+		}
+
+		caCert, err := ioutil.ReadFile(filepath.Join(path, cert.Name()))
+		if err != nil {
+			return nil, err
+		}
+		certPool.AppendCertsFromPEM(caCert)
+	}
+	return certPool, nil
 }
 
 func validateAuroraURL(location string) (string, error) {
