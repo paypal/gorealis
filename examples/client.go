@@ -111,7 +111,7 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	monitor = &realis.Monitor{r}
+	monitor = &realis.Monitor{Client: r}
 	defer r.Close()
 
 	switch executor {
