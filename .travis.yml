@@ -1,5 +1,5 @@
-sudo: required
 
+os: linux
 dist: xenial
 language: go
 
@@ -10,7 +10,7 @@ branches:
   - future
 
 go:
-  - "1.10.x"
+  - "1.14.x"
 
 env:
   global:
@@ -24,10 +24,11 @@ before_install:
   - test -z "`for d in $GO_USR_DIRS; do goimports -d $d/*.go | tee /dev/stderr; done`"
 
 install:
+  - go mod download
   - docker-compose up -d
 
 script:
-  - go test -race -coverprofile=coverage.txt -covermode=atomic -v github.com/paypal/gorealis
+  - go test -timeout 30m -race -coverprofile=coverage.txt -covermode=atomic -v github.com/paypal/gorealis
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
