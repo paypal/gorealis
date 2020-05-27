@@ -503,10 +503,11 @@ func basicAuth(username, password string) string {
 func (r *realisClient) ReestablishConn() error {
 	// Close existing connection
 	r.logger.Println("Re-establishing Connection to Aurora")
-	r.Close()
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
+
+	r.Close()
 
 	// Recreate connection from scratch using original options
 	newRealis, err := NewRealisClient(r.config.options...)

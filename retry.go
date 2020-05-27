@@ -137,7 +137,7 @@ func (r *realisClient) thriftCallWithRetries(
 			}
 
 			r.logger.Printf(
-				"A retryable error occurred during thrift call, backing off for %v before retry %v\n",
+				"A retryable error occurred during thrift call, backing off for %v before retry %v",
 				adjusted,
 				curStep)
 
@@ -154,7 +154,7 @@ func (r *realisClient) thriftCallWithRetries(
 
 			resp, clientErr = thriftCall()
 
-			r.logger.tracePrintf("Aurora Thrift Call ended resp: %v clientErr: %v\n", resp, clientErr)
+			r.logger.tracePrintf("Aurora Thrift Call ended resp: %v clientErr: %v", resp, clientErr)
 		}()
 
 		// Check if our thrift call is returning an error. This is a retryable event as we don't know
@@ -162,7 +162,7 @@ func (r *realisClient) thriftCallWithRetries(
 		if clientErr != nil {
 
 			// Print out the error to the user
-			r.logger.Printf("Client Error: %v\n", clientErr)
+			r.logger.Printf("Client Error: %v", clientErr)
 
 			// Determine if error is a temporary URL error by going up the stack
 			e, ok := clientErr.(thrift.TTransportException)
