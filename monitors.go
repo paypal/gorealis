@@ -78,8 +78,11 @@ func (m *Monitor) JobUpdateStatus(updateKey aurora.JobUpdateKey,
 		UpdateStatuses: desiredStatuses,
 	}
 	summary, err := m.JobUpdateQuery(updateQ, interval, timeout)
+	if err != nil {
+		return 0, err
+	}
 
-	return summary[0].State.Status, err
+	return summary[0].State.Status, nil
 }
 
 // JobUpdateQuery polls the scheduler every certain amount of time to see if the query call returns any results.
