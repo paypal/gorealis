@@ -504,10 +504,13 @@ func (r *realisClient) ReestablishConn() error {
 	// Close existing connection
 	r.logger.Println("Re-establishing Connection to Aurora")
 
+	// This call must happen before we lock as it also uses
+	// the same lock from the client since close can be called
+	// by anyone from anywhere.
+	r.Close()
+
 	r.lock.Lock()
 	defer r.lock.Unlock()
-
-	r.Close()
 
 	// Recreate connection from scratch using original options
 	newRealis, err := NewRealisClient(r.config.options...)
