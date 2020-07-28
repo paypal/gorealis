@@ -688,7 +688,7 @@ func (r *realisClient) CreateService(
 		return resp, resp.GetResult_().GetStartJobUpdateResult_(), nil
 	}
 
-	return nil, nil, errors.New("results object is nil")
+	return nil, nil, errors.New("job is unchanged by proposed update")
 }
 
 func (r *realisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) {
