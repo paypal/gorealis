@@ -5,8 +5,8 @@ language: go
 
 branches:
   only:
-  - master
-  - master-v2.0
+  - main
+  - main-v2.0
   - future
 
 go:
