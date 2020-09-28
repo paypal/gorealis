@@ -2,6 +2,8 @@
 
 Version 1 of Go library for interacting with [Aurora Scheduler](https://github.com/aurora-scheduler/aurora).
 
+Version 2 of this library can be found [here](https://github.com/aurora-scheduler/gorealis).
+
 ### Aurora version compatibility
 Please see [.auroraversion](./.auroraversion) to see the latest Aurora version against which this
 library has been tested.
