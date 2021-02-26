@@ -35,7 +35,7 @@ import (
 	"github.com/paypal/gorealis/response"
 )
 
-const version = "1.21.1"
+const version = "1.22.5"
 
 // Realis is an interface that defines the various APIs that may be used to communicate with
 // the Apache Aurora scheduler.

@@ -1,4 +1,4 @@
-1.22.5 (unreleased)
+1.22.5
 
 * Upgrading to thrift 0.14.0
 
