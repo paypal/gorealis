@@ -1,4 +1,20 @@
-1.22.1 (unreleased)
+1.22.5 (unreleased)
+
+* Upgrading to thrift 0.14.0
+
+1.22.4
+
+* Updates which result in a no-op now return a response value so that the caller may analyze it to determine what happened
+
+1.22.3
+
+* Contains a monitor timeout fix. Previously an error was being left unchecked which made a specific monitor timining out not be handled properly.
+
+1.22.2
+
+* Bug fix: Change in retry mechanism created a deadlock. This release reverts that particular change.
+
+1.22.1
 
 * Adding safeguards against setting multiple constraints with the same name for a single task.
 
