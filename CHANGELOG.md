@@ -1,4 +1,6 @@
-1.23.0 (unreleased)
+1.23.0
+
+* First release tested against Aurora Scheduler 0.23.0
 
 1.22.5
 
