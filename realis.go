@@ -1037,9 +1037,7 @@ func (r *realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aur
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.GetJobUpdateDetails(context.TODO(), &updateQuery)
-		},
-		nil,
-	)
+		})
 
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "unable to get job update details")
