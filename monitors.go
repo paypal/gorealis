@@ -117,7 +117,7 @@ func (m *Monitor) JobUpdateQuery(
 	}
 }
 
-// AutoPaused monitor is a special monitor for auto pause enabled batch updates. This monitor ensures that the update
+// AutoPausedUpdateMonitor is a special monitor for auto pause enabled batch updates. This monitor ensures that the update
 // being monitored is capable of auto pausing and has auto pausing enabled. After verifying this information,
 // the monitor watches for the job to enter the ROLL_FORWARD_PAUSED state and calculates the current batch
 // the update is in using information from the update configuration.
@@ -183,7 +183,7 @@ func (m *Monitor) AutoPausedUpdateMonitor(key aurora.JobUpdateKey, interval, tim
 	return calculateCurrentBatch(int32(len(updatingInstances)), batchSizes), nil
 }
 
-// Monitor a Job until all instances enter one of the LIVE_STATES
+// Instances will monitor a Job until all instances enter one of the LIVE_STATES
 func (m *Monitor) Instances(key *aurora.JobKey, instances int32, interval, timeout int) (bool, error) {
 	return m.ScheduleStatus(key, instances, LiveStates, interval, timeout)
 }
