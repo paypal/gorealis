@@ -386,7 +386,7 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		return nil, errors.New("incomplete Options -- url, cluster.json, or Zookeeper address required")
 	}
 
-	config.logger.Println("Addresss obtained: ", url)
+	config.logger.Println("Address obtained: ", url)
 	url, err = validateAuroraURL(url)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid Aurora url")
@@ -428,7 +428,8 @@ func NewRealisClient(options ...ClientOption) (Realis, error) {
 		adminClient:    aurora.NewAuroraAdminClientFactory(config.transport, config.protoFactory),
 		logger:         LevelLogger{logger: config.logger, debug: config.debug, trace: config.trace},
 		lock:           &sync.Mutex{},
-		transport:      config.transport}, nil
+		transport:      config.transport,
+	}, nil
 }
 
 // GetDefaultClusterFromZKUrl creates a cluster object from a Zoookeper url. This is deprecated in favor of using
@@ -485,11 +486,11 @@ func defaultTTransport(url string, timeoutMs int, config *config) (thrift.TTrans
 		})
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating transport")
+		return nil, errors.Wrap(err, "error creating transport")
 	}
 
 	if err := trans.Open(); err != nil {
-		return nil, errors.Wrapf(err, "Error opening connection to %s", url)
+		return nil, errors.Wrapf(err, "error opening connection to %s", url)
 	}
 
 	return trans, nil
@@ -532,16 +533,17 @@ func (r *realisClient) ReestablishConn() error {
 	return nil
 }
 
-// Releases resources associated with the realis client.
+// Close releases resources associated with the realis client.
 func (r *realisClient) Close() {
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	r.transport.Close()
+	// The return value of Close here is ignored on purpose because there's nothing that can be done if it fails.
+	_ = r.transport.Close()
 }
 
-// Uses predefined set of states to retrieve a set of active jobs in Apache Aurora.
+// GetInstanceIds uses a predefined set of states to retrieve a set of active jobs in the Aurora Scheduler.
 func (r *realisClient) GetInstanceIds(key *aurora.JobKey, states []aurora.ScheduleStatus) ([]int32, error) {
 	taskQ := &aurora.TaskQuery{
 		JobKeys:  []*aurora.JobKey{{Environment: key.Environment, Role: key.Role, Name: key.Name}},
@@ -609,7 +611,7 @@ func (r *realisClient) GetJobs(role string) (*aurora.Response, *aurora.GetJobsRe
 	return resp, result, nil
 }
 
-// Kill specific instances of a job.
+// KillInstances kills specific instances of a job.
 func (r *realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error) {
 	r.logger.debugPrintf("KillTasks Thrift Payload: %+v %v\n", key, instances)
 
@@ -629,7 +631,7 @@ func (r *realisClient) RealisConfig() *config {
 	return r.config
 }
 
-// Sends a kill message to the scheduler for all active tasks under a job.
+// KillJob kills all instances of a job.
 func (r *realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 
 	r.logger.debugPrintf("KillTasks Thrift Payload: %+v\n", key)
@@ -647,7 +649,7 @@ func (r *realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 	return resp, nil
 }
 
-// Sends a create job message to the scheduler with a specific job configuration.
+// CreateJob sends a create job message to the scheduler with a specific job configuration.
 // Although this API is able to create service jobs, it is better to use CreateService instead
 // as that API uses the update thrift call which has a few extra features available.
 // Use this API to create ad-hoc jobs.
@@ -667,7 +669,7 @@ func (r *realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 	return resp, nil
 }
 
-// This API uses an update thrift call to create the services giving a few more robust features.
+// CreateService uses the scheduler's updating mechanism to create a job.
 func (r *realisClient) CreateService(
 	auroraJob Job,
 	settings *aurora.JobUpdateSettings) (*aurora.Response, *aurora.StartJobUpdateResult_, error) {
@@ -741,7 +743,7 @@ func (r *realisClient) StartCronJob(key *aurora.JobKey) (*aurora.Response, error
 
 }
 
-// Restarts specific instances specified
+// RestartInstances restarts the specified instances of a Job.
 func (r *realisClient) RestartInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error) {
 	r.logger.debugPrintf("RestartShards Thrift Payload: %+v %v\n", key, instances)
 
@@ -757,12 +759,12 @@ func (r *realisClient) RestartInstances(key *aurora.JobKey, instances ...int32) 
 	return resp, nil
 }
 
-// Restarts all active tasks under a job configuration.
+// RestartJob restarts all active instances of a Job.
 func (r *realisClient) RestartJob(key *aurora.JobKey) (*aurora.Response, error) {
 
 	instanceIds, err1 := r.GetInstanceIds(key, aurora.ACTIVE_STATES)
 	if err1 != nil {
-		return nil, errors.Wrap(err1, "Could not retrieve relevant task instance IDs")
+		return nil, errors.Wrap(err1, "could not retrieve relevant task instance IDs")
 	}
 
 	r.logger.debugPrintf("RestartShards Thrift Payload: %+v %v\n", key, instanceIds)
@@ -784,7 +786,7 @@ func (r *realisClient) RestartJob(key *aurora.JobKey) (*aurora.Response, error) 
 	return nil, errors.New("No tasks in the Active state")
 }
 
-// Update all tasks under a job configuration. Currently gorealis doesn't support for canary deployments.
+// StartJobUpdate updates all instances under a job configuration.
 func (r *realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*aurora.Response, error) {
 
 	r.logger.debugPrintf("StartJobUpdate Thrift Payload: %+v %v\n", updateJob, message)
@@ -806,7 +808,8 @@ func (r *realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*au
 	return resp, nil
 }
 
-// Abort Job Update on Aurora. Requires the updateId which can be obtained on the Aurora web UI.
+// AbortJobUpdate terminates a job update in the scheduler.
+// It requires the updateId which can be obtained on the Aurora web UI.
 // This API is meant to be synchronous. It will attempt to wait until the update transitions to the aborted state.
 // However, if the job update does not transition to the ABORT state an error will be returned.
 func (r *realisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message string) (*aurora.Response, error) {
@@ -834,7 +837,8 @@ func (r *realisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message str
 	return resp, err
 }
 
-// Pause Job Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.
+// PauseJobUpdate pauses the progress of an ongoing update.
+// The UpdateID value needed for this function is returned from StartJobUpdate or can be obtained from the Aurora web UI.
 func (r *realisClient) PauseJobUpdate(updateKey *aurora.JobUpdateKey, message string) (*aurora.Response, error) {
 
 	r.logger.debugPrintf("PauseJobUpdate Thrift Payload: %+v %v\n", updateKey, message)
@@ -852,7 +856,7 @@ func (r *realisClient) PauseJobUpdate(updateKey *aurora.JobUpdateKey, message st
 	return resp, nil
 }
 
-// Resume Paused Job Update. UpdateID is returned from StartJobUpdate or the Aurora web UI.
+// ResumeJobUpdate resumes a previously Paused Job update.
 func (r *realisClient) ResumeJobUpdate(updateKey *aurora.JobUpdateKey, message string) (*aurora.Response, error) {
 
 	r.logger.debugPrintf("ResumeJobUpdate Thrift Payload: %+v %v\n", updateKey, message)
@@ -870,7 +874,7 @@ func (r *realisClient) ResumeJobUpdate(updateKey *aurora.JobUpdateKey, message s
 	return resp, nil
 }
 
-// Pulse Job Update on Aurora. UpdateID is returned from StartJobUpdate or the Aurora web UI.
+// PulseJobUpdate sends a pulse to an ongoing Job update.
 func (r *realisClient) PulseJobUpdate(updateKey *aurora.JobUpdateKey) (*aurora.Response, error) {
 
 	r.logger.debugPrintf("PulseJobUpdate Thrift Payload: %+v\n", updateKey)
@@ -888,8 +892,7 @@ func (r *realisClient) PulseJobUpdate(updateKey *aurora.JobUpdateKey) (*aurora.R
 	return resp, nil
 }
 
-// Scale up the number of instances under a job configuration using the configuration for specific
-// instance to scale up.
+// AddInstances scales up the number of instances for a Job.
 func (r *realisClient) AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error) {
 
 	r.logger.debugPrintf("AddInstances Thrift Payload: %+v %v\n", instKey, count)
@@ -907,15 +910,15 @@ func (r *realisClient) AddInstances(instKey aurora.InstanceKey, count int32) (*a
 
 }
 
-// Scale down the number of instances under a job configuration using the configuration of a specific instance
+// RemoveInstances scales down the number of instances for a Job.
 func (r *realisClient) RemoveInstances(key *aurora.JobKey, count int32) (*aurora.Response, error) {
 	instanceIds, err := r.GetInstanceIds(key, aurora.ACTIVE_STATES)
 	if err != nil {
-		return nil, errors.Wrap(err, "RemoveInstances: Could not retrieve relevant instance IDs")
+		return nil, errors.Wrap(err, "could not retrieve relevant instance IDs")
 	}
 
 	if len(instanceIds) < int(count) {
-		return nil, errors.Errorf("Insufficient active instances available for killing: "+
+		return nil, errors.Errorf("insufficient active instances available for killing: "+
 			" Instances to be killed %d Active instances %d", count, len(instanceIds))
 	}
 
@@ -928,7 +931,7 @@ func (r *realisClient) RemoveInstances(key *aurora.JobKey, count int32) (*aurora
 	return r.KillInstances(key, instanceIds[:count]...)
 }
 
-// Get information about task including a fully hydrated task configuration object
+// GetTaskStatus gets information about task including a fully hydrated task configuration object.
 func (r *realisClient) GetTaskStatus(query *aurora.TaskQuery) ([]*aurora.ScheduledTask, error) {
 
 	r.logger.debugPrintf("GetTasksStatus Thrift Payload: %+v\n", query)
@@ -946,7 +949,7 @@ func (r *realisClient) GetTaskStatus(query *aurora.TaskQuery) ([]*aurora.Schedul
 	return response.ScheduleStatusResult(resp).GetTasks(), nil
 }
 
-// Get pending reason
+// GetPendingReason returns the reason why the an instance of a Job has not been scheduled.
 func (r *realisClient) GetPendingReason(query *aurora.TaskQuery) ([]*aurora.PendingReason, error) {
 
 	r.logger.debugPrintf("GetPendingReason Thrift Payload: %+v\n", query)
@@ -970,7 +973,8 @@ func (r *realisClient) GetPendingReason(query *aurora.TaskQuery) ([]*aurora.Pend
 	return pendingReasons, nil
 }
 
-// Get information about task including without a task configuration object
+// GetTasksWithoutConfigs gets information about task including without a task configuration object.
+// This is a more lightweight version of GetTaskStatus but contains less information as a result.
 func (r *realisClient) GetTasksWithoutConfigs(query *aurora.TaskQuery) ([]*aurora.ScheduledTask, error) {
 
 	r.logger.debugPrintf("GetTasksWithoutConfigs Thrift Payload: %+v\n", query)
@@ -989,7 +993,7 @@ func (r *realisClient) GetTasksWithoutConfigs(query *aurora.TaskQuery) ([]*auror
 
 }
 
-// Get the task configuration from the aurora scheduler for a job
+// FetchTaskConfig gets the task configuration from the aurora scheduler for a job.
 func (r *realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error) {
 	taskQ := &aurora.TaskQuery{
 		Role:        &instKey.JobKey.Role,
@@ -1014,7 +1018,7 @@ func (r *realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.Task
 	tasks := response.ScheduleStatusResult(resp).GetTasks()
 
 	if len(tasks) == 0 {
-		return nil, errors.Errorf("Instance %d for jobkey %s/%s/%s doesn't exist",
+		return nil, errors.Errorf("instance %d for jobkey %s/%s/%s doesn't exist",
 			instKey.InstanceId,
 			instKey.JobKey.Environment,
 			instKey.JobKey.Role,
@@ -1036,7 +1040,7 @@ func (r *realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aur
 		})
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "Unable to get job update details")
+		return nil, errors.Wrap(retryErr, "unable to get job update details")
 	}
 	return resp, nil
 

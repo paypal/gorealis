@@ -179,7 +179,7 @@ func (r *realisClient) thriftCallWithRetries(
 						return nil, errors.Wrap(clientErr, "permanent connection error")
 					}
 
-					// Corner case where thrift payload was received by Aurora but connection timedout before Aurora was
+					// Corner case where thrift payload was received by Aurora but connection timed out before Aurora was
 					// able to reply. In this case we will return whatever response was received and a TimedOut behaving
 					// error. Users can take special action on a timeout by using IsTimedout and reacting accordingly.
 					if e.Timeout() {
