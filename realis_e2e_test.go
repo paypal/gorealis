@@ -211,7 +211,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 		InstanceCount(2).
 		AddPorts(1)
 
-	_, err := r.CreateJob(job)
+	err := r.CreateJob(job)
 	require.NoError(t, err)
 
 	// Test Instances Monitor
@@ -296,7 +296,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 			AddLabel("hostname", "chips").
 			AddLabel("chips", "chips")
 
-		_, err := r.CreateJob(job)
+		err := r.CreateJob(job)
 		require.NoError(t, err)
 
 		success, err := monitor.Instances(job.JobKey(), 2, 1, 50)
@@ -313,7 +313,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 			AddValueConstraint("zone", false, "east").
 			AddValueConstraint("zone", true, "west")
 
-		_, err := r.CreateJob(job)
+		err := r.CreateJob(job)
 		require.NoError(t, err)
 
 		success, err := monitor.Instances(job.JobKey(), 2, 1, 50)
@@ -330,7 +330,7 @@ func TestRealisClient_CreateJob_Thermos(t *testing.T) {
 			AddValueConstraint("zone", true, "west", "east").
 			AddLimitConstraint("zone", 2)
 
-		_, err := r.CreateJob(job)
+		err := r.CreateJob(job)
 		require.NoError(t, err)
 
 		success, err := monitor.Instances(job.JobKey(), 2, 1, 50)
@@ -356,9 +356,8 @@ func TestRealisClient_CreateJob_ExecutorDoesNotExist(t *testing.T) {
 		Disk(10).
 		InstanceCount(1)
 
-	resp, err := r.CreateJob(job)
+	err := r.CreateJob(job)
 	assert.Error(t, err)
-	assert.Equal(t, aurora.ResponseCode_INVALID_REQUEST, resp.GetResponseCode())
 }
 
 // Test configuring an executor that doesn't exist for CreateJob API
@@ -380,9 +379,8 @@ func TestRealisClient_GetPendingReason(t *testing.T) {
 		Disk(100).
 		InstanceCount(1)
 
-	resp, err := r.CreateJob(job)
+	err := r.CreateJob(job)
 	require.NoError(t, err)
-	assert.Equal(t, aurora.ResponseCode_OK, resp.ResponseCode)
 
 	taskQ := &aurora.TaskQuery{
 		Role:        &role,
@@ -767,7 +765,7 @@ func TestRealisClient_SessionThreadSafety(t *testing.T) {
 		Disk(10).
 		InstanceCount(1000) // Impossible amount to go live in any sane machine
 
-	_, err := r.CreateJob(job)
+	err := r.CreateJob(job)
 	assert.NoError(t, err)
 
 	wg := sync.WaitGroup{}
