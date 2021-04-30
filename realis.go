@@ -672,7 +672,23 @@ func (r *realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 		func() (*aurora.Response, error) {
 			return r.client.CreateJob(context.TODO(), auroraJob.JobConfig())
 		},
-		nil,
+		func() (*aurora.Response, bool) {
+			getTaskResp, err := r.client.GetTasksStatus(
+				context.TODO(),
+				&aurora.TaskQuery{JobKeys: []*aurora.JobKey{auroraJob.JobKey()}},
+			)
+
+			if err != nil {
+				return nil, false
+			}
+
+			tasks := response.ScheduleStatusResult(getTaskResp).GetTasks()
+			if len(tasks) != int(auroraJob.GetInstanceCount()) {
+				return nil, false
+			}
+
+			return nil, true
+		},
 	)
 
 	if retryErr != nil {
