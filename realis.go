@@ -44,7 +44,7 @@ const version = "1.23.1"
 type Realis interface {
 	AbortJobUpdate(updateKey aurora.JobUpdateKey, message string) (*aurora.Response, error)
 	AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error)
-	CreateJob(auroraJob Job) (*aurora.Response, error)
+	CreateJob(auroraJob Job) error
 	CreateService(
 		auroraJob Job,
 		settings *aurora.JobUpdateSettings) (*aurora.Response, *aurora.StartJobUpdateResult_, error)
@@ -663,11 +663,12 @@ func (r *realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 // Although this API is able to create service jobs, it is better to use CreateService instead
 // as that API uses the update thrift call which has a few extra features available.
 // Use this API to create ad-hoc jobs.
-func (r *realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
+func (r *realisClient) CreateJob(auroraJob Job) error {
 
 	r.logger.debugPrintf("CreateJob Thrift Payload: %+v\n", auroraJob.JobConfig())
 
-	resp, retryErr := r.thriftCallWithRetries(
+	// Response is checked by the thrift retry code
+	_, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.CreateJob(context.TODO(), auroraJob.JobConfig())
@@ -692,9 +693,9 @@ func (r *realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 	)
 
 	if retryErr != nil {
-		return resp, errors.Wrap(retryErr, "error sending Create command to Aurora Scheduler")
+		return errors.Wrap(retryErr, "error sending Create command to Aurora Scheduler")
 	}
-	return resp, nil
+	return nil
 }
 
 // CreateService uses the scheduler's updating mechanism to create a job.

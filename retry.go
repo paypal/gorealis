@@ -167,7 +167,7 @@ func (r *realisClient) thriftCallWithRetries(
 			// Print out the error to the user
 			r.logger.Printf("Client Error: %v", clientErr)
 
-			temporary, timedout := processClientError(clientErr)
+			temporary, timedout := isConnectionError(clientErr)
 			if !temporary && r.RealisConfig().failOnPermanentErrors {
 				return nil, errors.Wrap(clientErr, "permanent connection error")
 			}
@@ -257,10 +257,10 @@ func (r *realisClient) thriftCallWithRetries(
 	return nil, newRetryError(errors.New("ran out of retries"), curStep)
 }
 
-// processClientError processes the error received by the client.
+// isConnectionError processes the error received by the client.
 // The return values indicate weather this was determined to be a temporary error
 // and weather it was determined to be a timeout error
-func processClientError(err error) (bool, bool) {
+func isConnectionError(err error) (bool, bool) {
 
 	// Determine if error is a temporary URL error by going up the stack
 	transportException, ok := err.(thrift.TTransportException)

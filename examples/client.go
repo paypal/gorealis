@@ -166,11 +166,10 @@ func main() {
 	switch cmd {
 	case "create":
 		fmt.Println("Creating job")
-		resp, err := r.CreateJob(job)
+		err := r.CreateJob(job)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		fmt.Println(resp.String())
 
 		if ok, mErr := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 5, 50); !ok || mErr != nil {
 			_, err := r.KillJob(job.JobKey())
@@ -205,11 +204,10 @@ func main() {
 		fmt.Println("Creating a docker based job")
 		container := realis.NewDockerContainer().Image("python:2.7").AddParameter("network", "host")
 		job.Container(container)
-		resp, err := r.CreateJob(job)
+		err := r.CreateJob(job)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(resp.String())
 
 		if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 10, 300); !ok || err != nil {
 			_, err := r.KillJob(job.JobKey())
@@ -222,11 +220,10 @@ func main() {
 		fmt.Println("Creating a docker based job")
 		container := realis.NewMesosContainer().DockerImage("python", "2.7")
 		job.Container(container)
-		resp, err := r.CreateJob(job)
+		err := r.CreateJob(job)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(resp.String())
 
 		if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 10, 300); !ok || err != nil {
 			_, err := r.KillJob(job.JobKey())
