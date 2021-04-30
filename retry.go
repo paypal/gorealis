@@ -113,11 +113,13 @@ func ExponentialBackoff(backoff Backoff, logger logger, condition ConditionFunc)
 }
 
 type auroraThriftCall func() (resp *aurora.Response, err error)
+type verifyOnTimeout func() (*aurora.Response, bool)
 
 // Duplicates the functionality of ExponentialBackoff but is specifically targeted towards ThriftCalls.
 func (r *realisClient) thriftCallWithRetries(
 	returnOnTimeout bool,
-	thriftCall auroraThriftCall) (*aurora.Response, error) {
+	thriftCall auroraThriftCall,
+	verifyOnTimeout verifyOnTimeout) (*aurora.Response, error) {
 
 	var resp *aurora.Response
 	var clientErr error
@@ -190,6 +192,15 @@ func (r *realisClient) thriftCallWithRetries(
 							timeouts)
 						if returnOnTimeout {
 							return resp, newTimedoutError(errors.New("client connection closed before server answer"))
+						}
+
+						// Allow caller to provide a function which checks if the original call was successful before
+						// it timed out.
+						if verifyOnTimeout != nil {
+							resp, ok := verifyOnTimeout()
+							if ok {
+								return resp, nil
+							}
 						}
 					}
 				}

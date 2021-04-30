@@ -30,7 +30,9 @@ func (r *realisClient) DrainHosts(hosts ...string) (*aurora.Response, *aurora.Dr
 		false,
 		func() (*aurora.Response, error) {
 			return r.adminClient.DrainHosts(context.TODO(), drainList)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return resp, result, errors.Wrap(retryErr, "Unable to recover connection")
@@ -65,7 +67,9 @@ func (r *realisClient) SLADrainHosts(
 		false,
 		func() (*aurora.Response, error) {
 			return r.adminClient.SlaDrainHosts(context.TODO(), drainList, policy, timeout)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return result, errors.Wrap(retryErr, "Unable to recover connection")
@@ -95,7 +99,9 @@ func (r *realisClient) StartMaintenance(hosts ...string) (*aurora.Response, *aur
 		false,
 		func() (*aurora.Response, error) {
 			return r.adminClient.StartMaintenance(context.TODO(), hostList)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return resp, result, errors.Wrap(retryErr, "Unable to recover connection")
@@ -125,7 +131,9 @@ func (r *realisClient) EndMaintenance(hosts ...string) (*aurora.Response, *auror
 		false,
 		func() (*aurora.Response, error) {
 			return r.adminClient.EndMaintenance(context.TODO(), hostList)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return resp, result, errors.Wrap(retryErr, "Unable to recover connection")
@@ -157,7 +165,9 @@ func (r *realisClient) MaintenanceStatus(hosts ...string) (*aurora.Response, *au
 		false,
 		func() (*aurora.Response, error) {
 			return r.adminClient.MaintenanceStatus(context.TODO(), hostList)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return resp, result, errors.Wrap(retryErr, "Unable to recover connection")
@@ -182,7 +192,9 @@ func (r *realisClient) SetQuota(role string, cpu *float64, ramMb *int64, diskMb 
 		false,
 		func() (*aurora.Response, error) {
 			return r.adminClient.SetQuota(context.TODO(), role, quota)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return resp, errors.Wrap(retryErr, "Unable to set role quota")
@@ -198,7 +210,9 @@ func (r *realisClient) GetQuota(role string) (*aurora.Response, error) {
 		false,
 		func() (*aurora.Response, error) {
 			return r.adminClient.GetQuota(context.TODO(), role)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return resp, errors.Wrap(retryErr, "Unable to get role quota")
@@ -213,7 +227,9 @@ func (r *realisClient) Snapshot() error {
 		false,
 		func() (*aurora.Response, error) {
 			return r.adminClient.Snapshot(context.TODO())
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return errors.Wrap(retryErr, "Unable to recover connection")
@@ -229,7 +245,9 @@ func (r *realisClient) PerformBackup() error {
 		false,
 		func() (*aurora.Response, error) {
 			return r.adminClient.PerformBackup(context.TODO())
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return errors.Wrap(retryErr, "Unable to recover connection")
@@ -244,7 +262,9 @@ func (r *realisClient) ForceImplicitTaskReconciliation() error {
 		false,
 		func() (*aurora.Response, error) {
 			return r.adminClient.TriggerImplicitTaskReconciliation(context.TODO())
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return errors.Wrap(retryErr, "Unable to recover connection")
@@ -265,7 +285,9 @@ func (r *realisClient) ForceExplicitTaskReconciliation(batchSize *int32) error {
 	_, retryErr := r.thriftCallWithRetries(false,
 		func() (*aurora.Response, error) {
 			return r.adminClient.TriggerExplicitTaskReconciliation(context.TODO(), settings)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return errors.Wrap(retryErr, "Unable to recover connection")
