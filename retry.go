@@ -161,8 +161,7 @@ func (r *realisClient) thriftCallWithRetries(
 			r.logger.tracePrintf("Aurora Thrift Call ended resp: %v clientErr: %v", resp, clientErr)
 		}()
 
-		// Check if our thrift call is returning an error. This is a retryable event as we don't know
-		// if it was caused by network issues.
+		// Check if our thrift call is returning an error.
 		if clientErr != nil {
 			// Print out the error to the user
 			r.logger.Printf("Client Error: %v", clientErr)
@@ -182,10 +181,12 @@ func (r *realisClient) thriftCallWithRetries(
 				// Allow caller to provide a function which checks if the original call was successful before
 				// it timed out.
 				if verifyOnTimeout != nil {
-
 					if verifyResp, ok := verifyOnTimeout(); ok {
 						r.logger.debugPrint("verified that the call went through successfully")
-						// Response here might be different than the original.
+						// Response here might be different than the original as it is no longer constructed
+						// by the scheduler but mimicked.
+						// This is OK since the scheduler is very unlikely to change responses at this point in its
+						// development cycle but we must be careful to not return an incorrectly constructed response.
 						return verifyResp, nil
 					}
 				}
