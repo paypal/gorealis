@@ -182,6 +182,7 @@ func (r *realisClient) thriftCallWithRetries(
 				// Allow caller to provide a function which checks if the original call was successful before
 				// it timed out.
 				if verifyOnTimeout != nil {
+
 					if verifyResp, ok := verifyOnTimeout(); ok {
 						r.logger.debugPrint("verified that the call went through successfully")
 						// Response here might be different than the original.

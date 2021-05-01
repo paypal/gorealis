@@ -96,17 +96,14 @@ func (m *Monitor) JobUpdateQuery(
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
 
-	var cliErr error
-	var respDetail *aurora.Response
 	for {
 		select {
 		case <-ticker.C:
-			respDetail, cliErr = m.Client.GetJobUpdateSummaries(&updateQuery)
+			updateSummaries, cliErr := m.Client.GetJobUpdateSummaries(&updateQuery)
 			if cliErr != nil {
 				return nil, cliErr
 			}
 
-			updateSummaries := respDetail.Result_.GetJobUpdateSummariesResult_.UpdateSummaries
 			if len(updateSummaries) >= 1 {
 				return updateSummaries, nil
 			}

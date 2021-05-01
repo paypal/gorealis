@@ -184,10 +184,9 @@ func main() {
 		fmt.Println("Creating service")
 		settings := realis.NewUpdateSettings()
 		job.InstanceCount(3)
-		resp, result, err := r.CreateService(job, settings)
+		result, err := r.CreateService(job, settings)
 		if err != nil {
 			log.Println("error: ", err)
-			log.Fatal("response: ", resp.String())
 		}
 		fmt.Println(result.String())
 
@@ -366,13 +365,12 @@ func main() {
 		updateJob := realis.NewDefaultUpdateJob(taskConfig)
 		updateJob.InstanceCount(5).RAM(128)
 
-		resp, err := r.StartJobUpdate(updateJob, "")
+		result, err := r.StartJobUpdate(updateJob, "")
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		jobUpdateKey := response.JobUpdateKey(resp)
-		monitor.JobUpdate(*jobUpdateKey, 5, 500)
+		_, _ = monitor.JobUpdate(*result.GetKey(), 5, 500)
 
 	case "pauseJobUpdate":
 		resp, err := r.PauseJobUpdate(&aurora.JobUpdateKey{

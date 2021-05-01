@@ -421,7 +421,7 @@ func TestRealisClient_CreateService_WithPulse_Thermos(t *testing.T) {
 	settings.WaitForBatchCompletion = true
 	job.InstanceCount(2)
 
-	_, result, err := r.CreateService(job, settings)
+	result, err := r.CreateService(job, settings)
 	require.NoError(t, err)
 
 	updateQ := aurora.JobUpdateQuery{
@@ -497,7 +497,7 @@ func TestRealisClient_CreateService(t *testing.T) {
 	settings.MinWaitInInstanceRunningMs = 5000
 	job.InstanceCount(3)
 
-	_, result, err := r.CreateService(job, settings)
+	result, err := r.CreateService(job, settings)
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -547,7 +547,7 @@ func TestRealisClient_CreateService(t *testing.T) {
 		job.Name("createService_timeout")
 
 		// Make sure a timedout error was returned
-		_, _, err = timeoutClient.CreateService(job, settings)
+		_, err = timeoutClient.CreateService(job, settings)
 		require.Error(t, err)
 		assert.True(t, realis.IsTimeout(err))
 
@@ -575,7 +575,7 @@ func TestRealisClient_CreateService(t *testing.T) {
 		job.Name("createService_timeout_bad_payload")
 
 		// Make sure a timedout error was returned
-		_, _, err = timeoutClient.CreateService(job, settings)
+		_, err = timeoutClient.CreateService(job, settings)
 		require.Error(t, err)
 		assert.True(t, realis.IsTimeout(err))
 
@@ -587,7 +587,7 @@ func TestRealisClient_CreateService(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Payload should have been rejected, no update should exist
-		require.Len(t, summary.GetResult_().GetGetJobUpdateSummariesResult_().GetUpdateSummaries(), 0)
+		require.Len(t, summary, 0)
 	})
 }
 
@@ -609,10 +609,9 @@ func TestRealisClient_CreateService_ExecutorDoesNotExist(t *testing.T) {
 	settings := realis.NewUpdateSettings()
 	job.InstanceCount(3)
 
-	resp, result, err := r.CreateService(job, settings)
+	result, err := r.CreateService(job, settings)
 	require.Error(t, err)
 	assert.Nil(t, result)
-	require.Equal(t, aurora.ResponseCode_INVALID_REQUEST, resp.GetResponseCode())
 }
 
 func TestRealisClient_ScheduleCronJob_Thermos(t *testing.T) {
@@ -860,7 +859,7 @@ func TestRealisClient_PartitionPolicy(t *testing.T) {
 	settings := realis.NewUpdateSettings()
 	settings.UpdateGroupSize = 2
 
-	_, result, err := r.CreateService(job, settings)
+	result, err := r.CreateService(job, settings)
 	assert.NoError(t, err)
 
 	var ok bool
@@ -923,7 +922,7 @@ func TestAuroraJob_UpdateSlaPolicy(t *testing.T) {
 			settings.UpdateGroupSize = 2
 			settings.MinWaitInInstanceRunningMs = 5 * 1000
 
-			_, result, err := r.CreateService(job, settings)
+			result, err := r.CreateService(job, settings)
 			require.NoError(t, err)
 			assert.NotNil(t, result)
 
@@ -993,17 +992,15 @@ func TestRealisClient_UpdateStrategies(t *testing.T) {
 	for _, strategy := range strategies {
 		t.Run("TestRealisClient_UpdateStrategies_"+strategy.Name, func(t *testing.T) {
 			job.Name("update_strategies_" + strategy.Name)
-			resp, err := r.StartJobUpdate(strategy.UpdateJob, "")
+			result, err := r.StartJobUpdate(strategy.UpdateJob, "")
 
 			assert.NoError(t, err)
-			assert.NotNil(t, resp)
-			assert.NotNil(t, resp.GetResult_())
-			assert.NotNil(t, resp.GetResult_().GetStartJobUpdateResult_())
-			assert.NotNil(t, resp.GetResult_().GetStartJobUpdateResult_().GetKey())
+			assert.NotNil(t, result)
+			assert.NotNil(t, result.GetKey())
 
 			var ok bool
 			var mErr error
-			key := *resp.GetResult_().GetStartJobUpdateResult_().GetKey()
+			key := *result.GetKey()
 
 			if ok, mErr = monitor.JobUpdate(key, 5, 240); !ok || mErr != nil {
 				// Update may already be in a terminal state so don't check for error
@@ -1038,14 +1035,12 @@ func TestRealisClient_BatchAwareAutoPause(t *testing.T) {
 		InstanceCount(6).
 		WatchTime(1000)
 
-	resp, err := r.StartJobUpdate(strategy, "")
+	result, err := r.StartJobUpdate(strategy, "")
 	require.NoError(t, err)
-	require.NotNil(t, resp)
-	require.NotNil(t, resp.GetResult_())
-	require.NotNil(t, resp.GetResult_().GetStartJobUpdateResult_())
-	require.NotNil(t, resp.GetResult_().GetStartJobUpdateResult_().GetKey())
+	require.NotNil(t, result)
+	require.NotNil(t, result.GetKey())
 
-	key := *resp.GetResult_().GetStartJobUpdateResult_().GetKey()
+	key := *result.GetKey()
 
 	for i := range updateGroups {
 		curStep, mErr := monitor.AutoPausedUpdateMonitor(key, time.Second*5, time.Second*240)
