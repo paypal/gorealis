@@ -678,23 +678,19 @@ func (r *realisClient) CreateJob(auroraJob Job) error {
 		func() (*aurora.Response, error) {
 			return r.client.CreateJob(context.TODO(), auroraJob.JobConfig())
 		},
-		// Verify by checking the number of tasks in an active state
-		// match the number of instances in the original job
+		// On a client timeout, attempt to verify that payload made to the Scheduler by
+		// trying to get the config summary for the job key
 		func() (*aurora.Response, bool) {
-			getTaskResp, err := r.client.GetTasksStatus(
-				context.TODO(),
-				&aurora.TaskQuery{
-					JobKeys:  []*aurora.JobKey{auroraJob.JobKey()},
-					Statuses: aurora.ACTIVE_STATES,
-				},
-			)
-
+			configResp, err := r.client.GetConfigSummary(context.TODO(), auroraJob.JobKey())
 			if err != nil {
 				return nil, false
 			}
 
-			tasks := response.ScheduleStatusResult(getTaskResp).GetTasks()
-			if len(tasks) != int(auroraJob.GetInstanceCount()) {
+			if configResp == nil ||
+				configResp.GetResult_() == nil ||
+				configResp.GetResult_().GetConfigSummaryResult_() == nil ||
+				configResp.GetResult_().GetConfigSummaryResult_().GetSummary() == nil ||
+				configResp.GetResponseCode() != aurora.ResponseCode_OK {
 				return nil, false
 			}
 
