@@ -166,10 +166,11 @@ func main() {
 	switch cmd {
 	case "create":
 		fmt.Println("Creating job")
-		err := r.CreateJob(job)
+		resp, err := r.CreateJob(job)
 		if err != nil {
 			log.Fatalln(err)
 		}
+		fmt.Println(resp.String())
 
 		if ok, mErr := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 5, 50); !ok || mErr != nil {
 			_, err := r.KillJob(job.JobKey())
@@ -184,9 +185,10 @@ func main() {
 		fmt.Println("Creating service")
 		settings := realis.NewUpdateSettings()
 		job.InstanceCount(3)
-		result, err := r.CreateService(job, settings)
+		resp, result, err := r.CreateService(job, settings)
 		if err != nil {
 			log.Println("error: ", err)
+			log.Fatal("response: ", resp.String())
 		}
 		fmt.Println(result.String())
 
@@ -203,10 +205,11 @@ func main() {
 		fmt.Println("Creating a docker based job")
 		container := realis.NewDockerContainer().Image("python:2.7").AddParameter("network", "host")
 		job.Container(container)
-		err := r.CreateJob(job)
+		resp, err := r.CreateJob(job)
 		if err != nil {
 			log.Fatal(err)
 		}
+		fmt.Println(resp.String())
 
 		if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 10, 300); !ok || err != nil {
 			_, err := r.KillJob(job.JobKey())
@@ -219,10 +222,11 @@ func main() {
 		fmt.Println("Creating a docker based job")
 		container := realis.NewMesosContainer().DockerImage("python", "2.7")
 		job.Container(container)
-		err := r.CreateJob(job)
+		resp, err := r.CreateJob(job)
 		if err != nil {
 			log.Fatal(err)
 		}
+		fmt.Println(resp.String())
 
 		if ok, err := monitor.Instances(job.JobKey(), job.GetInstanceCount(), 10, 300); !ok || err != nil {
 			_, err := r.KillJob(job.JobKey())
@@ -365,12 +369,13 @@ func main() {
 		updateJob := realis.NewDefaultUpdateJob(taskConfig)
 		updateJob.InstanceCount(5).RAM(128)
 
-		result, err := r.StartJobUpdate(updateJob, "")
+		resp, err := r.StartJobUpdate(updateJob, "")
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		_, _ = monitor.JobUpdate(*result.GetKey(), 5, 500)
+		jobUpdateKey := response.JobUpdateKey(resp)
+		monitor.JobUpdate(*jobUpdateKey, 5, 500)
 
 	case "pauseJobUpdate":
 		resp, err := r.PauseJobUpdate(&aurora.JobUpdateKey{
