@@ -51,7 +51,7 @@ type Realis interface {
 	DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, error)
 	FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error)
 	GetInstanceIds(key *aurora.JobKey, states []aurora.ScheduleStatus) ([]int32, error)
-	GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQuery) ([]*aurora.JobUpdateSummary, error)
+	GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQuery) (*aurora.Response, error)
 	GetTaskStatus(query *aurora.TaskQuery) ([]*aurora.ScheduledTask, error)
 	GetTasksWithoutConfigs(query *aurora.TaskQuery) ([]*aurora.ScheduledTask, error)
 	GetJobs(role string) (*aurora.Response, *aurora.GetJobsResult_, error)
@@ -574,7 +574,7 @@ func (r *realisClient) GetInstanceIds(key *aurora.JobKey, states []aurora.Schedu
 
 }
 
-func (r *realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQuery) ([]*aurora.JobUpdateSummary, error) {
+func (r *realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQuery) (*aurora.Response, error) {
 
 	r.logger.debugPrintf("GetJobUpdateSummaries Thrift Payload: %+v\n", jobUpdateQuery)
 
@@ -587,15 +587,14 @@ func (r *realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQue
 	)
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "error getting job update summaries from Aurora Scheduler")
+		return resp, errors.Wrap(retryErr, "error getting job update summaries from Aurora Scheduler")
 	}
 
 	if resp.GetResult_() == nil || resp.GetResult_().GetGetJobUpdateSummariesResult_() == nil {
 		return nil, errors.New("unexpected response from scheduler")
-
 	}
 
-	return resp.GetResult_().GetGetJobUpdateSummariesResult_().GetUpdateSummaries(), nil
+	return resp, nil
 }
 
 func (r *realisClient) GetJobs(role string) (*aurora.Response, *aurora.GetJobsResult_, error) {
