@@ -114,7 +114,12 @@ func ExponentialBackoff(backoff Backoff, logger logger, condition ConditionFunc)
 
 type auroraThriftCall func() (resp *aurora.Response, err error)
 
-// Verification functions should strive to keep the number of thrift calls to one wherever possible.
+// verifyOntimeout defines the type of function that will be used to verify whether a Thirft call to the Scheduler
+// made it to the scheduler or not. In general, these types of functions will have to interact with the scheduler
+// through the very same Thrift API which previously encountered a time out from the client.
+// This means that the functions themselves should be kept to a minimum number of Thrift calls.
+// It should also be noted that this is a best effort mechanism and
+// is likely to fail for the same reasons that the original call failed.
 type verifyOnTimeout func() (*aurora.Response, bool)
 
 // Duplicates the functionality of ExponentialBackoff but is specifically targeted towards ThriftCalls.
@@ -171,6 +176,24 @@ func (r *realisClient) thriftCallWithRetries(
 				return nil, errors.Wrap(clientErr, "permanent connection error")
 			}
 
+			// There exists a corner case where thrift payload was received by Aurora but
+			// connection timed out before Aurora was able to reply.
+			// Users can take special action on a timeout by using IsTimedout and reacting accordingly
+			// if they have configured the client to return on a timeout.
+			if timedout && returnOnTimeout {
+				return resp, newTimedoutError(errors.New("client connection closed before server answer"))
+			}
+
+			// In the future, reestablish connection should be able to check if it is actually possible
+			// to make a thrift call to Aurora. For now, a reconnect should always lead to a retry.
+			// Ignoring error due to the fact that an error should be retried regardless
+			reestablishErr := r.ReestablishConn()
+			if reestablishErr != nil {
+				r.logger.debugPrintf("error re-establishing connection ", reestablishErr)
+			}
+
+			// If users did not opt for a return on timeout in order to react to a timedout error,
+			// attempt to verify that the call made it to the scheduler after the connection was re-established.
 			if timedout {
 				timeouts++
 				r.logger.debugPrintf(
@@ -182,7 +205,7 @@ func (r *realisClient) thriftCallWithRetries(
 				// it timed out.
 				if verifyOnTimeout != nil {
 					if verifyResp, ok := verifyOnTimeout(); ok {
-						r.logger.debugPrint("verified that the call went through successfully")
+						r.logger.Print("verified that the call went through successfully after a client timeout")
 						// Response here might be different than the original as it is no longer constructed
 						// by the scheduler but mimicked.
 						// This is OK since the scheduler is very unlikely to change responses at this point in its
@@ -190,22 +213,6 @@ func (r *realisClient) thriftCallWithRetries(
 						return verifyResp, nil
 					}
 				}
-
-				if returnOnTimeout {
-					// There exists a corner case where thrift payload was received by Aurora but
-					// connection timed out before Aurora was able to reply.
-					// Users can take special action on a timeout by using IsTimedout and reacting accordingly
-					// if they have configured the client to return on a timeout.
-					return resp, newTimedoutError(errors.New("client connection closed before server answer"))
-				}
-			}
-
-			// In the future, reestablish connection should be able to check if it is actually possible
-			// to make a thrift call to Aurora. For now, a reconnect should always lead to a retry.
-			// Ignoring error due to the fact that an error should be retried regardless
-			reestablishErr := r.ReestablishConn()
-			if reestablishErr != nil {
-				r.logger.debugPrintf("error re-establishing connection ", reestablishErr)
 			}
 
 			// Retry the thrift payload

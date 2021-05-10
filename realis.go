@@ -679,7 +679,12 @@ func (r *realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 		// On a client timeout, attempt to verify that payload made to the Scheduler by
 		// trying to get the config summary for the job key
 		func() (*aurora.Response, bool) {
-			if r.jobExists(*auroraJob.JobKey()) {
+			exists, err := r.jobExists(*auroraJob.JobKey())
+			if err != nil {
+				r.logger.Print("verification failed ", err)
+			}
+
+			if exists {
 				return &aurora.Response{ResponseCode: aurora.ResponseCode_OK}, true
 			}
 
@@ -836,6 +841,7 @@ func (r *realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*au
 				})
 
 			if err != nil {
+				r.logger.Print("verification failed ", err)
 				return nil, false
 			}
 
