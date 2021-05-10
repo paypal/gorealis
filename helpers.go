@@ -12,13 +12,9 @@ func (r *realisClient) jobExists(key aurora.JobKey) bool {
 		return false
 	}
 
-	if resp == nil ||
+	return resp == nil ||
 		resp.GetResult_() == nil ||
 		resp.GetResult_().GetConfigSummaryResult_() == nil ||
 		resp.GetResult_().GetConfigSummaryResult_().GetSummary() == nil ||
-		resp.GetResponseCode() != aurora.ResponseCode_OK {
-		return false
-	}
-
-	return true
+		resp.GetResponseCode() != aurora.ResponseCode_OK
 }
