@@ -65,7 +65,6 @@ type Realis interface {
 	RollbackJobUpdate(key aurora.JobUpdateKey, message string) (*aurora.Response, error)
 	ScheduleCronJob(auroraJob Job) (*aurora.Response, error)
 	StartJobUpdate(updateJob *UpdateJob, message string) (*aurora.Response, error)
-
 	PauseJobUpdate(key *aurora.JobUpdateKey, message string) (*aurora.Response, error)
 	ResumeJobUpdate(key *aurora.JobUpdateKey, message string) (*aurora.Response, error)
 	PulseJobUpdate(key *aurora.JobUpdateKey) (*aurora.Response, error)
@@ -556,7 +555,9 @@ func (r *realisClient) GetInstanceIds(key *aurora.JobKey, states []aurora.Schedu
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.GetTasksWithoutConfigs(context.TODO(), taskQ)
-		})
+		},
+		nil,
+	)
 
 	// If we encountered an error we couldn't recover from by retrying, return an error to the user
 	if retryErr != nil {
@@ -581,10 +582,16 @@ func (r *realisClient) GetJobUpdateSummaries(jobUpdateQuery *aurora.JobUpdateQue
 		false,
 		func() (*aurora.Response, error) {
 			return r.readonlyClient.GetJobUpdateSummaries(context.TODO(), jobUpdateQuery)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
-		return nil, errors.Wrap(retryErr, "error getting job update summaries from Aurora Scheduler")
+		return resp, errors.Wrap(retryErr, "error getting job update summaries from Aurora Scheduler")
+	}
+
+	if resp.GetResult_() == nil || resp.GetResult_().GetGetJobUpdateSummariesResult_() == nil {
+		return nil, errors.New("unexpected response from scheduler")
 	}
 
 	return resp, nil
@@ -598,7 +605,9 @@ func (r *realisClient) GetJobs(role string) (*aurora.Response, *aurora.GetJobsRe
 		false,
 		func() (*aurora.Response, error) {
 			return r.readonlyClient.GetJobs(context.TODO(), role)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return nil, result, errors.Wrap(retryErr, "error getting Jobs from Aurora Scheduler")
@@ -619,7 +628,9 @@ func (r *realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*a
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.KillTasks(context.TODO(), key, instances, "")
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "error sending Kill command to Aurora Scheduler")
@@ -641,7 +652,9 @@ func (r *realisClient) KillJob(key *aurora.JobKey) (*aurora.Response, error) {
 		func() (*aurora.Response, error) {
 			// Giving the KillTasks thrift call an empty set tells the Aurora scheduler to kill all active shards
 			return r.client.KillTasks(context.TODO(), key, nil, "")
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "error sending Kill command to Aurora Scheduler")
@@ -657,15 +670,32 @@ func (r *realisClient) CreateJob(auroraJob Job) (*aurora.Response, error) {
 
 	r.logger.debugPrintf("CreateJob Thrift Payload: %+v\n", auroraJob.JobConfig())
 
+	// Response is checked by the thrift retry code
 	resp, retryErr := r.thriftCallWithRetries(
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.CreateJob(context.TODO(), auroraJob.JobConfig())
-		})
+		},
+		// On a client timeout, attempt to verify that payload made to the Scheduler by
+		// trying to get the config summary for the job key
+		func() (*aurora.Response, bool) {
+			exists, err := r.jobExists(*auroraJob.JobKey())
+			if err != nil {
+				r.logger.Print("verification failed ", err)
+			}
+
+			if exists {
+				return &aurora.Response{ResponseCode: aurora.ResponseCode_OK}, true
+			}
+
+			return nil, false
+		},
+	)
 
 	if retryErr != nil {
 		return resp, errors.Wrap(retryErr, "error sending Create command to Aurora Scheduler")
 	}
+
 	return resp, nil
 }
 
@@ -680,17 +710,12 @@ func (r *realisClient) CreateService(
 	resp, err := r.StartJobUpdate(update, "")
 	if err != nil {
 		if IsTimeout(err) {
-			return resp, nil, err
+			return nil, nil, err
 		}
-
 		return resp, nil, errors.Wrap(err, "unable to create service")
 	}
 
-	if resp.GetResult_() != nil {
-		return resp, resp.GetResult_().GetStartJobUpdateResult_(), nil
-	}
-
-	return resp, nil, errors.New("results object is nil")
+	return resp, resp.GetResult_().StartJobUpdateResult_, nil
 }
 
 func (r *realisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) {
@@ -700,7 +725,9 @@ func (r *realisClient) ScheduleCronJob(auroraJob Job) (*aurora.Response, error) 
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.ScheduleCronJob(context.TODO(), auroraJob.JobConfig())
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "error sending Cron Job Schedule message to Aurora Scheduler")
@@ -716,7 +743,9 @@ func (r *realisClient) DescheduleCronJob(key *aurora.JobKey) (*aurora.Response, 
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.DescheduleCronJob(context.TODO(), key)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "error sending Cron Job De-schedule message to Aurora Scheduler")
@@ -734,7 +763,9 @@ func (r *realisClient) StartCronJob(key *aurora.JobKey) (*aurora.Response, error
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.StartCronJob(context.TODO(), key)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "error sending Start Cron Job  message to Aurora Scheduler")
@@ -751,7 +782,9 @@ func (r *realisClient) RestartInstances(key *aurora.JobKey, instances ...int32) 
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.RestartShards(context.TODO(), key, instances)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "error sending Restart command to Aurora Scheduler")
@@ -774,7 +807,9 @@ func (r *realisClient) RestartJob(key *aurora.JobKey) (*aurora.Response, error) 
 			false,
 			func() (*aurora.Response, error) {
 				return r.client.RestartShards(context.TODO(), key, instanceIds)
-			})
+			},
+			nil,
+		)
 
 		if retryErr != nil {
 			return nil, errors.Wrap(retryErr, "error sending Restart command to Aurora Scheduler")
@@ -795,16 +830,51 @@ func (r *realisClient) StartJobUpdate(updateJob *UpdateJob, message string) (*au
 		true,
 		func() (*aurora.Response, error) {
 			return r.client.StartJobUpdate(context.TODO(), updateJob.req, message)
-		})
+		},
+		func() (*aurora.Response, bool) {
+			summariesResp, err := r.readonlyClient.GetJobUpdateSummaries(
+				context.TODO(),
+				&aurora.JobUpdateQuery{
+					JobKey:         updateJob.JobKey(),
+					UpdateStatuses: aurora.ACTIVE_JOB_UPDATE_STATES,
+					Limit:          1,
+				})
+
+			if err != nil {
+				r.logger.Print("verification failed ", err)
+				return nil, false
+			}
+
+			summaries := response.JobUpdateSummaries(summariesResp)
+			if len(summaries) == 0 {
+				return nil, false
+			}
+
+			return &aurora.Response{
+				ResponseCode: aurora.ResponseCode_OK,
+				Result_: &aurora.Result_{
+					StartJobUpdateResult_: &aurora.StartJobUpdateResult_{
+						UpdateSummary: summaries[0],
+						Key:           summaries[0].Key,
+					},
+				},
+			}, true
+		},
+	)
 
 	if retryErr != nil {
 		// A timeout took place when attempting this call, attempt to recover
 		if IsTimeout(retryErr) {
-			return resp, retryErr
+			return nil, retryErr
 		}
 
 		return resp, errors.Wrap(retryErr, "error sending StartJobUpdate command to Aurora Scheduler")
 	}
+
+	if resp.GetResult_() == nil {
+		return resp, errors.New("no result in response")
+	}
+
 	return resp, nil
 }
 
@@ -820,7 +890,9 @@ func (r *realisClient) AbortJobUpdate(updateKey aurora.JobUpdateKey, message str
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.AbortJobUpdate(context.TODO(), &updateKey, message)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "error sending AbortJobUpdate command to Aurora Scheduler")
@@ -847,7 +919,9 @@ func (r *realisClient) PauseJobUpdate(updateKey *aurora.JobUpdateKey, message st
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.PauseJobUpdate(context.TODO(), updateKey, message)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "error sending PauseJobUpdate command to Aurora Scheduler")
@@ -865,7 +939,9 @@ func (r *realisClient) ResumeJobUpdate(updateKey *aurora.JobUpdateKey, message s
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.ResumeJobUpdate(context.TODO(), updateKey, message)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "error sending ResumeJobUpdate command to Aurora Scheduler")
@@ -883,7 +959,9 @@ func (r *realisClient) PulseJobUpdate(updateKey *aurora.JobUpdateKey) (*aurora.R
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.PulseJobUpdate(context.TODO(), updateKey)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "error sending PulseJobUpdate command to Aurora Scheduler")
@@ -901,7 +979,9 @@ func (r *realisClient) AddInstances(instKey aurora.InstanceKey, count int32) (*a
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.AddInstances(context.TODO(), &instKey, count)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "error sending AddInstances command to Aurora Scheduler")
@@ -940,7 +1020,9 @@ func (r *realisClient) GetTaskStatus(query *aurora.TaskQuery) ([]*aurora.Schedul
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.GetTasksStatus(context.TODO(), query)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "error querying Aurora Scheduler for task status")
@@ -958,7 +1040,9 @@ func (r *realisClient) GetPendingReason(query *aurora.TaskQuery) ([]*aurora.Pend
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.GetPendingReason(context.TODO(), query)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "error querying Aurora Scheduler for pending Reasons")
@@ -983,7 +1067,9 @@ func (r *realisClient) GetTasksWithoutConfigs(query *aurora.TaskQuery) ([]*auror
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.GetTasksWithoutConfigs(context.TODO(), query)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "error querying Aurora Scheduler for task status without configs")
@@ -1009,7 +1095,9 @@ func (r *realisClient) FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.Task
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.GetTasksStatus(context.TODO(), taskQ)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "error querying Aurora Scheduler for task configuration")
@@ -1037,7 +1125,9 @@ func (r *realisClient) JobUpdateDetails(updateQuery aurora.JobUpdateQuery) (*aur
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.GetJobUpdateDetails(context.TODO(), &updateQuery)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "unable to get job update details")
@@ -1054,7 +1144,9 @@ func (r *realisClient) RollbackJobUpdate(key aurora.JobUpdateKey, message string
 		false,
 		func() (*aurora.Response, error) {
 			return r.client.RollbackJobUpdate(context.TODO(), &key, message)
-		})
+		},
+		nil,
+	)
 
 	if retryErr != nil {
 		return nil, errors.Wrap(retryErr, "unable to roll back job update")

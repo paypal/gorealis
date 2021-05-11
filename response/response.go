@@ -36,6 +36,10 @@ func ScheduleStatusResult(resp *aurora.Response) *aurora.ScheduleStatusResult_ {
 }
 
 func JobUpdateSummaries(resp *aurora.Response) []*aurora.JobUpdateSummary {
+	if resp.GetResult_() == nil || resp.GetResult_().GetGetJobUpdateSummariesResult_() == nil {
+		return nil
+	}
+
 	return resp.GetResult_().GetGetJobUpdateSummariesResult_().GetUpdateSummaries()
 }
 
