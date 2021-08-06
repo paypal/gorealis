@@ -168,7 +168,8 @@ func (m *Monitor) AutoPausedUpdateMonitor(key aurora.JobUpdateKey, interval, tim
 		return -1, err
 	}
 
-	if summary[0].State.Status != aurora.JobUpdateStatus_ROLL_FORWARD_PAUSED {
+	if !(summary[0].State.Status == aurora.JobUpdateStatus_ROLL_FORWARD_PAUSED ||
+		summary[0].State.Status == aurora.JobUpdateStatus_ROLLED_FORWARD) {
 		return -1, errors.Errorf("update is in a terminal state %v", summary[0].State.Status)
 	}
 
