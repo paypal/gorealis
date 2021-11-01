@@ -58,6 +58,18 @@ func (r *realisClient) SLADrainHosts(
 		return nil, errors.New("no hosts provided to drain")
 	}
 
+	if policy == nil || policy.CountSetFieldsSlaPolicy() == 0 {
+		policy = &defaultSlaPolicy
+		r.logger.Printf("Warning: start draining with default sla policy %v", policy)
+	}
+
+	if timeout < 0 {
+		r.logger.Printf("Warning: timeout %d secs is invalid, draining with default timeout %d secs",
+			timeout,
+			defaultSlaDrainTimeoutSecs)
+		timeout = defaultSlaDrainTimeoutSecs
+	}
+
 	drainList := aurora.NewHosts()
 	drainList.HostNames = hosts
 

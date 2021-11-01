@@ -750,6 +750,53 @@ func TestRealisClient_SLADrainHosts(t *testing.T) {
 		5,
 		10)
 	assert.NoError(t, err)
+
+	// slaDrainHosts goes with default policy if no policy is specified
+	_, err = r.SLADrainHosts(nil, 30, hosts...)
+	require.NoError(t, err, "unable to drain host with SLA policy")
+
+	// Monitor change to DRAINING and DRAINED mode
+	hostResults, err = monitor.HostMaintenance(
+		hosts,
+		[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
+		1,
+		50)
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]bool{"localhost": true}, hostResults)
+
+	_, _, err = r.EndMaintenance(hosts...)
+	require.NoError(t, err)
+
+	// Monitor change to DRAINING and DRAINED mode
+	_, err = monitor.HostMaintenance(
+		hosts,
+		[]aurora.MaintenanceMode{aurora.MaintenanceMode_NONE},
+		5,
+		10)
+	assert.NoError(t, err)
+
+	_, err = r.SLADrainHosts(&aurora.SlaPolicy{}, 30, hosts...)
+	require.NoError(t, err, "unable to drain host with SLA policy")
+
+	// Monitor change to DRAINING and DRAINED mode
+	hostResults, err = monitor.HostMaintenance(
+		hosts,
+		[]aurora.MaintenanceMode{aurora.MaintenanceMode_DRAINED, aurora.MaintenanceMode_DRAINING},
+		1,
+		50)
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]bool{"localhost": true}, hostResults)
+
+	_, _, err = r.EndMaintenance(hosts...)
+	require.NoError(t, err)
+
+	// Monitor change to DRAINING and DRAINED mode
+	_, err = monitor.HostMaintenance(
+		hosts,
+		[]aurora.MaintenanceMode{aurora.MaintenanceMode_NONE},
+		5,
+		10)
+	assert.NoError(t, err)
 }
 
 // Test multiple go routines using a single connection
