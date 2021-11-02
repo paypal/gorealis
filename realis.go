@@ -129,6 +129,15 @@ var defaultBackoff = Backoff{
 	Jitter:   0.1,
 }
 
+var defaultSlaPolicy = aurora.SlaPolicy{
+	PercentageSlaPolicy: &aurora.PercentageSlaPolicy{
+		Percentage:   66,
+		DurationSecs: 300,
+	},
+}
+
+const defaultSlaDrainTimeoutSecs = 900
+
 // ClientOption is an alias for a function that modifies the realis config object
 type ClientOption func(*config)
 
