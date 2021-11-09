@@ -1,4 +1,11 @@
-1.23.1 (unreleased)
+1.24.1 (unreleased)
+
+1.24.0 
+
+* enable default sla for slaDrain 
+* Changes Travis CI badge to Github Actions badge 
+* Bug fix for auto paused update monitor 
+* Adds support for running CI on github actions
 
 1.23.0
 
