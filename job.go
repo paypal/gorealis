@@ -62,6 +62,7 @@ type Job interface {
 	PartitionPolicy(policy *aurora.PartitionPolicy) Job
 	Tier(tier string) Job
 	SlaPolicy(policy *aurora.SlaPolicy) Job
+	Priority(priority int32) Job
 }
 
 type resourceType int
@@ -381,5 +382,10 @@ func (j *AuroraJob) Tier(tier string) Job {
 func (j *AuroraJob) SlaPolicy(policy *aurora.SlaPolicy) Job {
 	j.jobConfig.TaskConfig.SlaPolicy = policy
 
+	return j
+}
+
+func (j *AuroraJob) Priority(priority int32) Job {
+	j.jobConfig.TaskConfig.Priority = priority
 	return j
 }
