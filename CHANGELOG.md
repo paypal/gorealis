@@ -1,4 +1,8 @@
-1.24.1 (unreleased)
+1.25.1 (unreleased)
+
+1.25.0 
+
+* Add priority api 
 
 1.24.0 
 
